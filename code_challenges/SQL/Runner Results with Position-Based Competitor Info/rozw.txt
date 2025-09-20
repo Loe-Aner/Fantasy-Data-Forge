@@ -1,0 +1,29 @@
+WITH ttl AS (
+  SELECT
+    r.name AS runner_name,
+    r.runner_id,
+    ru.run_id,
+    ru.position,
+    ra.race_id,
+    ra.date
+  FROM runs AS ru
+  INNER JOIN runners AS r
+    USING (runner_id)
+  INNER JOIN races AS ra
+    USING (race_id)
+  WHERE ru.runner_id = 1
+)
+
+SELECT
+  m.runner_name,
+  m.run_id,
+  m.position,
+  m.race_id,
+  opp_r.name || ' (' || opp.runner_id || ')' AS "win/second"
+FROM ttl AS m
+INNER JOIN runs AS opp
+  ON opp.race_id = m.race_id
+ AND opp.position = CASE WHEN m.position = 1 THEN 2 ELSE 1 END
+INNER JOIN runners AS opp_r
+  ON opp_r.runner_id = opp.runner_id
+ORDER BY m.date ASC;
