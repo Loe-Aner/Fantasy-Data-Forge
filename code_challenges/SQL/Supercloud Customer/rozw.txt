@@ -1,0 +1,19 @@
+-- podkusiło mnie cos... ;)
+
+WITH tbl AS (
+SELECT
+  cc.customer_id,
+  p.product_category,
+  COUNT(*) OVER (PARTITION BY cc.customer_id) AS rc,
+  (SELECT COUNT(DISTINCT product_category) FROM products) AS mc
+FROM customer_contracts AS cc 
+INNER JOIN products AS p 
+  ON cc.product_id = p.product_id
+GROUP BY cc.customer_id, p.product_category
+ORDER BY cc.customer_id DESC
+)
+
+SELECT
+  DISTINCT customer_id
+FROM tbl
+WHERE rc = mc;

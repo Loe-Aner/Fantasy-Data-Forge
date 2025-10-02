@@ -1,0 +1,9 @@
+SELECT
+  CASE 
+    WHEN order_id % 2 = 1 AND order_id = MAX(order_id) OVER () THEN order_id
+    WHEN order_id % 2 = 1 THEN order_id + 1
+    ELSE order_id - 1
+  END AS corrected_order_id,
+  item
+FROM orders
+ORDER BY corrected_order_id;
