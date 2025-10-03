@@ -1,0 +1,28 @@
+-- celowo licze na piechotę - celem sa eksperymenty :)
+
+WITH raw AS (
+    SELECT 
+      LAT_N,
+      ROW_NUMBER() OVER (ORDER BY LAT_N ASC) AS rc
+    FROM STATION
+),
+maks_poz AS (
+    SELECT
+      MAX(rc) AS N,
+      CASE 
+        WHEN MAX(rc) % 2 = 1 THEN (MAX(rc) + 1) / 2
+        ELSE MAX(rc) / 2
+      END AS pos1,
+      CASE 
+        WHEN MAX(rc) % 2 = 1 THEN (MAX(rc) + 1) / 2
+        ELSE (MAX(rc) / 2) + 1
+      END AS pos2
+    FROM raw
+)
+SELECT 
+  CAST(
+    ROUND(AVG(CAST(LAT_N AS DECIMAL(18,8))), 4)
+    AS DECIMAL(18,4)
+  ) AS median
+FROM raw
+WHERE rc IN ( (SELECT pos1 FROM maks_poz), (SELECT pos2 FROM maks_poz) );
