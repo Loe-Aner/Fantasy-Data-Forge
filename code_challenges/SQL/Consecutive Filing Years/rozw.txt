@@ -1,0 +1,31 @@
+-- nieszablonowe podejście, nie do końca wydajne :)
+-- najbezpieczniej jak do tego podejść:
+--   a. policzyć roznice np. year - row_numer() dla każdego usera,
+--   b. potem count(*) i wybrać te >= 3
+
+WITH tbl_a AS 
+(SELECT 
+  user_id, 
+  EXTRACT(YEAR FROM filing_date) AS yr
+FROM filed_taxes
+WHERE product LIKE 'TurboTax%'
+ORDER BY user_id ASC, filing_date ASC
+),
+
+tbl_b AS
+(SELECT
+  user_id, yr,
+  COALESCE(yr - LEAD(yr) OVER (PARTITION BY user_id ORDER BY user_id ASC),-1) AS y
+FROM tbl_a),
+
+tbl_c AS
+(SELECT 
+  user_id, 
+  yr,
+  ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY user_id ASC) AS x
+FROM tbl_b
+WHERE y = -1)
+
+SELECT DISTINCT user_id
+FROM tbl_c
+WHERE x = 3;
