@@ -1,7 +1,7 @@
 # Cześć, Dzień dobry :)
 
 To repo to moja przestrzeń do **dodatkowej praktyki, nauki i eksperymentów** — od wizualizacji, przez odpowiedzi na nurtujące mnie pytania, po rozwijanie umiejętności programistycznych.  
-Pracuję jako **Analityk Danych** i mega lubię się rozwijać w: Python, SQL, DAX, Power BI, modelowaniu i wizualizacji danych.
+Pracuję jako **Ekspert ds. Raportowania** i mega lubię się rozwijać w: SQL, DAX, Power BI, Python, modelowaniu i wizualizacji danych.
 
 ---
 
@@ -33,9 +33,9 @@ Repo zawiera:
     `dashboards/one-pager-report-sales/`  
 
 - **Code Challenges/**
-  - **Python** – krótkie zadania/ćwiczenia, algorytmy.  
+  - **Python** – krótkie zadania/ćwiczenia, algorytmy. (czekam na premierę pewnej książki; wrócę do nich w przyszłości :) )  
     `code-challenges/python/`
-  - **SQL** – analizy i zapytania (okienka, CTE, agregacje, jakościowe porządki pod BI).  
+  - **SQL** – analizy i zapytania (strony typu datalemur, codewars, hackerrank, inne platformy).  
     `code-challenges/sql/`
 
 - **DAX/** – przykładowe miary wykorzystywane w dashboardach (znajdziesz je w każdym raporcie, w folderze o nazwie:
@@ -45,9 +45,9 @@ Repo zawiera:
 
 ## 🧰 Technologie
 
-**Języki**: 🐍 Python, 🗃️ SQL + DuckDB (podobny do PostgreSQL)     
+**Języki**: 🗃️ SQL + DuckDB + ew. T-SQL, 🐍 Python   
 **BI & Wizualizacja**: 📊 Power BI + DAX + PowerQuery (M)   
-**Obsługa danych**: 🐼 pandas (wkrótce ⚡ polars!), CSV/XLSX, czasem PDF (parsowanie)  
+**Obsługa danych**: 🐼 pandas, CSV/XLSX, czasem PDF (parsowanie)  
 **Kontrola wersji**: 🌿 Git + GitHub  
 
 ---
