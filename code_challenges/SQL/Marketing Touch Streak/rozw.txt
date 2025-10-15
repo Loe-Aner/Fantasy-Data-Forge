@@ -1,0 +1,28 @@
+WITH t AS (
+  SELECT DISTINCT c, 
+  (EXTRACT(YEAR FROM d)*100 + EXTRACT(WEEK FROM d))::INT AS yw
+  FROM (SELECT contact_id AS c, event_date AS d FROM marketing_touches) mt
+),
+g AS (
+  SELECT c, 
+  yw, 
+  yw - ROW_NUMBER() OVER (PARTITION BY c ORDER BY yw) AS grp
+  FROM t
+),
+s AS (
+  SELECT c
+  FROM g
+  GROUP BY c, grp
+  HAVING COUNT(*) >= 3
+),
+r AS (
+  SELECT DISTINCT contact_id AS c
+  FROM marketing_touches
+  WHERE event_type = 'trial_request'
+)
+SELECT email
+FROM crm_contacts cc
+INNER JOIN s 
+  ON cc.contact_id = s.c
+INNER JOIN r 
+  ON s.c = r.c;
