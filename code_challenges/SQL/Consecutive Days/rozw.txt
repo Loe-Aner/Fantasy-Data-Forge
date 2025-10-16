@@ -1,0 +1,24 @@
+WITH tbl AS (
+SELECT DISTINCT
+  user_id,
+  DATEPART(dayofyear, record_date) AS dy
+FROM sf_events),
+
+tbl_a AS (
+SELECT
+  user_id,
+  dy,
+  dy - COALESCE( LAG(dy) OVER (PARTITION BY user_id ORDER BY user_id, dy), dy - 1) AS x
+FROM tbl),
+
+tbl_b AS (
+SELECT
+  user_id,
+  SUM(x) OVER (PARTITION BY user_id ORDER BY dy
+               ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS y
+FROM tbl_a)
+
+SELECT
+  user_id
+FROM tbl_b
+WHERE y = 3;

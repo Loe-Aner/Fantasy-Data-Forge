@@ -1,0 +1,9 @@
+SELECT
+  company_name,
+  [2020] - [2019] AS dif
+FROM car_launches
+PIVOT (
+  COUNT(product_name)
+  FOR year IN ([2020], [2019])
+) AS p
+ORDER BY company_name;
