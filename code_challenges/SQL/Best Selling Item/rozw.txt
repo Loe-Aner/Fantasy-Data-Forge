@@ -1,0 +1,21 @@
+WITH tbl AS (
+  SELECT 
+    DATEPART(month, invoicedate) AS mth,
+    SUM(quantity * unitprice) AS total_paid,
+    description
+  FROM online_retail
+  GROUP BY DATEPART(month, invoicedate), description
+),
+
+tbl_f AS (
+SELECT
+  mth,
+  description,
+  total_paid,
+  ROW_NUMBER() OVER (PARTITION BY mth ORDER BY total_paid DESC) AS rnk
+FROM tbl
+)
+
+SELECT mth, description, total_paid
+FROM tbl_f
+WHERE rnk = 1;

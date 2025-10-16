@@ -1,0 +1,27 @@
+WITH tbl AS (
+  SELECT
+    fau.country,
+    MONTH(created_at) AS mth,
+    SUM(fcc.number_of_comments) AS number_of_comments
+  FROM fb_active_users AS fau
+  INNER JOIN fb_comments_count AS fcc
+    ON fau.user_id = fcc.user_id
+    WHERE fcc.created_at >= '2019-12-01'
+      AND fcc.created_at <  '2020-02-01'
+  GROUP BY fau.country, MONTH(created_at)
+),
+
+rnks AS (
+SELECT 
+  mth, country,
+  DENSE_RANK() OVER (PARTITION BY mth ORDER BY number_of_comments DESC) AS rnk
+FROM tbl
+)
+
+SELECT country
+FROM rnks
+PIVOT (
+    MIN(rnk) FOR mth IN ([12], [1])
+) AS p
+WHERE [1] < [12]
+ORDER BY country;
