@@ -1,0 +1,29 @@
+WITH tbl_a AS (
+  SELECT 
+    actor_name,
+    film_title,
+    film_rating,
+    release_date,
+    ROW_NUMBER() OVER (PARTITION BY actor_name ORDER BY release_date DESC) AS rn,
+    COUNT(*) OVER (PARTITION BY actor_name) AS fc
+  FROM actor_rating_shift
+),
+tbl_b AS (
+  SELECT 
+    actor_name,
+    MAX(CASE WHEN rn = 1 THEN film_rating END) AS latest_rating,
+    AVG(CASE WHEN rn > 1 THEN film_rating * 1.0 ELSE NULL END) AS avg_rating,
+    fc
+  FROM tbl_a
+  GROUP BY actor_name, fc
+)
+SELECT 
+  actor_name,
+  COALESCE(ROUND(avg_rating, 2), latest_rating) AS avg_rating,
+  latest_rating,
+  CASE 
+    WHEN fc = 1 THEN 0
+    ELSE ROUND(latest_rating - avg_rating, 2)
+  END AS rating_difference
+FROM tbl_b
+ORDER BY actor_name;
