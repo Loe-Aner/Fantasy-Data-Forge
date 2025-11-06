@@ -1,0 +1,30 @@
+WITH tbl_a AS (
+SELECT 
+  id, visit_date, people,
+  CASE
+    WHEN people >= 100 THEN 1 ELSE 0
+  END AS flag1
+FROM Stadium),
+
+tbl_b AS (
+SELECT *,
+  SUM(flag1) OVER (
+    ORDER BY id, visit_date
+    ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING
+  ) AS sum_three_next
+FROM tbl_a),
+
+tbl_c AS (
+SELECT *,
+  CASE
+    WHEN sum_three_next = 3
+      OR LAG(sum_three_next, 1) OVER (ORDER BY id) = 3 
+      OR LAG(sum_three_next, 2) OVER (ORDER BY id) = 3 
+    THEN 1 ELSE 0
+  END AS filter_by_1
+FROM tbl_b)
+
+SELECT id, visit_date, people
+FROM tbl_c
+WHERE filter_by_1 = 1
+ORDER BY visit_date ASC;
