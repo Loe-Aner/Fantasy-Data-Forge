@@ -8,12 +8,16 @@ Część informacji jest pozyskiwana automatycznie z plików PDF za pomocą **Ge
 
 ## 🎯 Cel projektu
 
-Celem tego dashboardu jest ułatwienie podjęcia decyzji **w który fundusz warto zainwestować**.  
-Analiza uwzględnia nie tylko **stopy zwrotu** (zarówno narastające, jak i kroczące w różnych horyzontach),  
-ale także **ryzyko** oraz **kluczowe parametry** takie jak wielkość aktywów netto, struktura aktywów, alokacja sektorowa, geograficzna i walutowa.  
+Celem tego dashboardu jest **prezentacja i porównanie** wybranych funduszy inwestycyjnych na podstawie ogólnodostępnych danych rynkowych.  
+Analiza obejmuje między innymi **stopy zwrotu** (narastające oraz kroczące w różnych horyzontach),  
+a także **ryzyko** i **kluczowe charakterystyki** takie jak **wielkość aktywów netto**, **struktura aktywów**,  
+**alokacja sektorowa**, **geograficzna** i **walutowa**.
 
-Dzięki temu możliwe jest pełniejsze spojrzenie na fundusze – nie tylko „ile zarobiły”,  
-ale także **jak stabilnie się rozwijają i w jakich warunkach rynkowych funkcjonują**.  
+Dzięki temu możliwe jest pełniejsze **zrozumienie profilu poszczególnych funduszy** – nie tylko tego, jak zmieniała się ich wartość w czasie,  
+ale również **w jakich warunkach rynkowych funkcjonowały oraz jak kształtowała się ich ekspozycja na różne klasy aktywów**.
+
+Dashboard ma wyłącznie charakter **informacyjno-analityczny**  
+i **nie stanowi rekomendacji inwestycyjnej**.
 
 ---
 
