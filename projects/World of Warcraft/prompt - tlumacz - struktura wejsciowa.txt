@@ -1,0 +1,35 @@
+{
+  "slownik_nazwy": {
+    "Stormwind": "Stormwind",
+    "Anduin Wrynn": "Anduin Wrynn"
+  },
+  "quest_en": {
+    "title_en": "…",
+    "objective_en": "…",
+    "description_en": "…",
+    "progress_en": "…",
+    "completion_en": "…"
+  },
+  "gossips_en": [
+    {
+      "id": 1,
+      "npc_id": 12345,
+      "npc_name_en": "Captain Bones",
+      "text_en": "…"
+    },
+    {
+      "id": 2,
+      "npc_id": 67890,
+      "npc_name_en": "Sergeant Arnok",
+      "text_en": "…"
+    }
+  ],
+  "bubbles_en": [
+    {
+      "id": 1,
+      "npc_id": 12345,
+      "npc_name_en": "Captain Bones",
+      "text_en": "…"
+    }
+  ]
+}
