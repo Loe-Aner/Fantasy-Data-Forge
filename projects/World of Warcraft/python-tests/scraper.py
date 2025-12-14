@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
 
 def pobierz_soup(url: str) -> BeautifulSoup:
     odpowiedz = requests.get(
@@ -109,52 +108,52 @@ def parsuj_nagrode(tresc):
     return parsuj_sekcje_paragrafowe(tresc, "Rewards")
 
 
-def parsuj_gossipy(tresc):
-    gossipy = []
-    if not tresc:
-        return gossipy
+# def parsuj_gossipy(tresc):
+#     gossipy = []
+#     if not tresc:
+#         return gossipy
 
-    for g in tresc.find_all(class_="dialogue plainlist"):
-        tytul = g.find(class_="dialogue-title")
-        npc_en = ""
-        if tytul:
-            p = tytul.find("p")
-            if p:
-                npc_en = p.get_text().strip()
+#     for g in tresc.find_all(class_="dialogue plainlist"):
+#         tytul = g.find(class_="dialogue-title")
+#         npc_en = ""
+#         if tytul:
+#             p = tytul.find("p")
+#             if p:
+#                 npc_en = p.get_text().strip()
 
-        teksty = []
-        for p in g.find_all("p"):
-            if tytul and tytul.find("p") == p:
-                continue
-            t = p.get_text().strip()
-            if t:
-                teksty.append(t)
+#         teksty = []
+#         for p in g.find_all("p"):
+#             if tytul and tytul.find("p") == p:
+#                 continue
+#             t = p.get_text().strip()
+#             if t:
+#                 teksty.append(t)
 
-        tekst_en = "\n".join(teksty).replace("\xa0", " ")
-        gossipy.append({"npc_en": npc_en, "tekst_en": tekst_en})
+#         tekst_en = "\n".join(teksty).replace("\xa0", " ")
+#         gossipy.append({"npc_en": npc_en, "tekst_en": tekst_en})
 
-    return gossipy
+#     return gossipy
 
 
-def parsuj_dymki(tresc):
-    dymki = []
-    if not tresc:
-        return dymki
+# def parsuj_dymki(tresc):
+#     dymki = []
+#     if not tresc:
+#         return dymki
 
-    for span in tresc.select("span.text-say"):
-        b = span.find("b")
-        if not b:
-            continue
+#     for span in tresc.select("span.text-say"):
+#         b = span.find("b")
+#         if not b:
+#             continue
 
-        prefix = b.get_text().strip().replace("\xa0", " ")
-        npc_en = prefix.replace("says:", "").strip()
+#         prefix = b.get_text().strip().replace("\xa0", " ")
+#         npc_en = prefix.replace("says:", "").strip()
 
-        b.extract()
-        tekst_en = span.get_text().strip().replace("\xa0", " ")
+#         b.extract()
+#         tekst_en = span.get_text().strip().replace("\xa0", " ")
 
-        dymki.append({"npc_en": npc_en, "tekst_en": tekst_en})
+#         dymki.append({"npc_en": npc_en, "tekst_en": tekst_en})
 
-    return dymki
+#     return dymki
 
 
 def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
