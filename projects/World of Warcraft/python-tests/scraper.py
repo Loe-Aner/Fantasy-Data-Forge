@@ -162,7 +162,7 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
         return []
 
     wynik = []
-    idx = 0
+    licznik = 0
 
     for el in tresc.descendants:
         if not hasattr(el, "name"):
@@ -187,16 +187,19 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
 
             tekst_en = "\n".join(teksty).replace("\xa0", " ")
 
-            idx += 1
+            licznik += 1
             wynik.append({
-                "id": idx,
+                "id": licznik,
                 "type": "gossip",
                 "npc_en": npc_en,
                 "tekst_en": tekst_en
             })
 
         # DYMKI
-        elif el.name == "span" and "text-say" in (el.get("class") or []):
+        elif el.name == "span" and any(
+            cls in (el.get("class") or [])
+            for cls in ("text-say", "text-bossemote")
+        ):
             b = el.find("b")
             if not b:
                 continue
@@ -204,16 +207,16 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
             prefix = b.get_text().strip().replace("\xa0", " ")
             npc_en = prefix.replace("says:", "").strip()
 
-            el_copy = BeautifulSoup(str(el), "html.parser").select_one("span.text-say")
+            el_copy = BeautifulSoup(str(el), "html.parser").select_one("span")
             b2 = el_copy.find("b")
             b2.extract()
             tekst_en = el_copy.get_text().strip().replace("\xa0", " ")
 
-            idx += 1
+            licznik += 1
             wynik.append({
-                "id": idx,
+                "id": licznik,
                 "type": "bubble",
-                "npc_en": npc_en,
+                "npc_en": npc_en.replace(":", ""),
                 "tekst_en": tekst_en
             })
 
@@ -224,6 +227,31 @@ def indeksuj_linie(text):
     linie = [x for x in linie if x]
     return {i: linia for i, linia in enumerate(linie, start=1)}
 
+def agreguj_kolejne_wypowiedzi(sequence):
+    wynik = []
+    ostatni = None
+
+    for el in sequence:
+        if (
+            ostatni
+            and el.get("type") == ostatni.get("type")
+            and el.get("npc_en") == ostatni.get("npc_en")
+        ):
+            start = len(ostatni["Wypowiedzi_EN"]) + 1
+            for _, tekst in el["Wypowiedzi_EN"].items():
+                ostatni["Wypowiedzi_EN"][start] = tekst
+                start += 1
+        else:
+            wynik.append(el)
+            ostatni = el
+
+    return wynik
+
+def renumeruj_id(sequence):
+    for i, el in enumerate(sequence, start=1):
+        el["id"] = i
+    return sequence
+
 def parsuj_misje_z_url(url: str):
     soup = pobierz_soup(url)
     tresc = pobierz_tresc(soup)
@@ -233,6 +261,9 @@ def parsuj_misje_z_url(url: str):
     for el in sequence:
         el["Wypowiedzi_EN"] = indeksuj_linie(el["tekst_en"])
         del el["tekst_en"]
+
+    sequence = agreguj_kolejne_wypowiedzi(sequence)
+    sequence = renumeruj_id(sequence)
 
     return {
         "Źródło": {
@@ -250,3 +281,9 @@ def parsuj_misje_z_url(url: str):
             "Gossipy_Dymki_EN": sequence
         }
     }
+
+# url = "https://warcraft.wiki.gg/wiki/Wrath_Unleashed_(quest)"
+# wynik = parsuj_misje_z_url(url)
+
+# import json
+# print(json.dumps(wynik, ensure_ascii=False, indent=2))
