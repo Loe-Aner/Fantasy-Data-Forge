@@ -189,7 +189,7 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
             licznik += 1
             wynik.append({
                 "id": licznik,
-                "type": "gossip",
+                "typ": "gossip",
                 "npc_en": npc_en,
                 "tekst_en": tekst_en
             })
@@ -214,7 +214,7 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
             licznik += 1
             wynik.append({
                 "id": licznik,
-                "type": "bubble",
+                "typ": "dymek",
                 "npc_en": npc_en.replace(":", ""),
                 "tekst_en": tekst_en
             })
@@ -233,12 +233,12 @@ def agreguj_kolejne_wypowiedzi(sequence):
     for el in sequence:
         if (
             ostatni
-            and el.get("type") == ostatni.get("type")
+            and el.get("typ") == ostatni.get("typ")
             and el.get("npc_en") == ostatni.get("npc_en")
         ):
-            start = len(ostatni["Wypowiedzi_EN"]) + 1
-            for _, tekst in el["Wypowiedzi_EN"].items():
-                ostatni["Wypowiedzi_EN"][start] = tekst
+            start = len(ostatni["wypowiedzi_EN"]) + 1
+            for _, tekst in el["wypowiedzi_EN"].items():
+                ostatni["wypowiedzi_EN"][start] = tekst
                 start += 1
         else:
             wynik.append(el)
@@ -258,7 +258,7 @@ def parsuj_misje_z_url(url: str):
     sequence = parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc)
 
     for el in sequence:
-        el["Wypowiedzi_EN"] = indeksuj_linie(el["tekst_en"])
+        el["wypowiedzi_EN"] = indeksuj_linie(el["tekst_en"])
         del el["tekst_en"]
 
     sequence = agreguj_kolejne_wypowiedzi(sequence)
