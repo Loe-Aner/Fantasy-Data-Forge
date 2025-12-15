@@ -1,0 +1,2 @@
+TABELA ZRODLO
+a. dodac flage w przypadku zmiany (selfoin?)

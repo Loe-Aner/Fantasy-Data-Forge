@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import hashlib
 
 def pobierz_soup(url: str) -> BeautifulSoup:
     odpowiedz = requests.get(
@@ -251,6 +252,12 @@ def renumeruj_id(sequence):
         el["id"] = i
     return sequence
 
+def policz_content_hash(tresc) -> str | None:
+    if not tresc:
+        return None
+    tekst = tresc.get_text(separator="\n").strip()
+    return hashlib.sha256(tekst.encode("utf-8")).hexdigest()
+
 def parsuj_misje_z_url(url: str):
     soup = pobierz_soup(url)
     tresc = pobierz_tresc(soup)
@@ -278,11 +285,12 @@ def parsuj_misje_z_url(url: str):
         },
         "Dialogi_EN": {
             "Gossipy_Dymki_EN": sequence
-        }
+        },
+        "Hash_HTML": policz_content_hash(tresc)
     }
 
-# url = "https://warcraft.wiki.gg/wiki/Wrath_Unleashed_(quest)"
-# wynik = parsuj_misje_z_url(url)
+url = "https://warcraft.wiki.gg/wiki/Wrath_Unleashed_(quest)"
+wynik = parsuj_misje_z_url(url)
 
-# import json
-# print(json.dumps(wynik, ensure_ascii=False, indent=2))
+import json
+print(json.dumps(wynik, ensure_ascii=False, indent=2))
