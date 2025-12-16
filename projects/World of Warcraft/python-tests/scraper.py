@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import hashlib
 
+
 def pobierz_soup(url: str) -> BeautifulSoup:
     odpowiedz = requests.get(
         url,
@@ -14,6 +15,71 @@ def pobierz_soup(url: str) -> BeautifulSoup:
 
 def pobierz_tresc(soup: BeautifulSoup):
     return soup.select_one("#bodyContent")
+
+
+def normalizuj_tekst(tekst: str) -> str:
+    if not tekst:
+        return ""
+    tekst = tekst.replace("\xa0", " ")
+    tekst = tekst.replace("\r\n", "\n").replace("\r", "\n")
+    linie = [linia.strip() for linia in tekst.split("\n")]
+    linie = [linia for linia in linie if linia]
+    return "\n".join(linie)
+
+
+def policz_hash_z_tekstu(tekst: str) -> str | None:
+    tekst = normalizuj_tekst(tekst)
+    if not tekst:
+        return None
+    return hashlib.sha256(tekst.encode("utf-8")).hexdigest()
+
+
+def złącz_slownik_linii(slownik_linii: dict) -> str:
+    """
+    Oczekuje np. {1: "a", 2: "b"} i zwraca "a\nb" (po kluczach rosnąco).
+    """
+    if not slownik_linii:
+        return ""
+    return "\n".join(
+        normalizuj_tekst(slownik_linii[k])
+        for k in sorted(slownik_linii.keys())
+        if slownik_linii.get(k)
+    ).strip()
+
+
+def złącz_cele(cele_slownik: dict) -> dict:
+    glowny = złącz_slownik_linii((cele_slownik or {}).get("Główny") or {})
+    podrzedny = złącz_slownik_linii((cele_slownik or {}).get("Podrzędny") or {})
+    return {"Główny": glowny, "Podrzędny": podrzedny}
+
+
+def złącz_dialogi(sequence: list, typy: set[str]) -> str:
+    """
+    Skleja tylko te eventy, które mają el["typ"] w podanym zbiorze `typy`.
+    Zachowuje kolejność z oryginalnej listy.
+    """
+    if not sequence:
+        return ""
+
+    bloki = []
+    for el in sequence:
+        typ = normalizuj_tekst(el.get("typ", ""))
+        if typ not in typy:
+            continue
+
+        npc = normalizuj_tekst(el.get("npc_en", ""))
+        wyp = el.get("wypowiedzi_EN") or {}
+        tekst = złącz_slownik_linii(wyp)
+        naglowek = " | ".join([x for x in [typ, npc] if x]).strip()
+
+        if naglowek and tekst:
+            bloki.append(f"{naglowek}\n{tekst}")
+        elif tekst:
+            bloki.append(tekst)
+        elif naglowek:
+            bloki.append(naglowek)
+
+    return "\n\n".join([b for b in bloki if b]).strip()
 
 
 def parsuj_podsumowanie_misji(tresc):
@@ -109,54 +175,6 @@ def parsuj_nagrode(tresc):
     return parsuj_sekcje_paragrafowe(tresc, "Rewards")
 
 
-# def parsuj_gossipy(tresc):
-#     gossipy = []
-#     if not tresc:
-#         return gossipy
-
-#     for g in tresc.find_all(class_="dialogue plainlist"):
-#         tytul = g.find(class_="dialogue-title")
-#         npc_en = ""
-#         if tytul:
-#             p = tytul.find("p")
-#             if p:
-#                 npc_en = p.get_text().strip()
-
-#         teksty = []
-#         for p in g.find_all("p"):
-#             if tytul and tytul.find("p") == p:
-#                 continue
-#             t = p.get_text().strip()
-#             if t:
-#                 teksty.append(t)
-
-#         tekst_en = "\n".join(teksty).replace("\xa0", " ")
-#         gossipy.append({"npc_en": npc_en, "tekst_en": tekst_en})
-
-#     return gossipy
-
-
-# def parsuj_dymki(tresc):
-#     dymki = []
-#     if not tresc:
-#         return dymki
-
-#     for span in tresc.select("span.text-say"):
-#         b = span.find("b")
-#         if not b:
-#             continue
-
-#         prefix = b.get_text().strip().replace("\xa0", " ")
-#         npc_en = prefix.replace("says:", "").strip()
-
-#         b.extract()
-#         tekst_en = span.get_text().strip().replace("\xa0", " ")
-
-#         dymki.append({"npc_en": npc_en, "tekst_en": tekst_en})
-
-#     return dymki
-
-
 def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
     if not tresc:
         return []
@@ -168,7 +186,6 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
         if not hasattr(el, "name"):
             continue
 
-        # GOSSIPY
         if el.name == "div" and "dialogue" in (el.get("class") or []):
             tytul = el.find(class_="dialogue-title")
             npc_en = ""
@@ -195,7 +212,6 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
                 "tekst_en": tekst_en
             })
 
-        # DYMKI
         elif el.name == "span" and any(
             cls in (el.get("class") or [])
             for cls in ("text-say", "text-bossemote")
@@ -222,10 +238,12 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
 
     return wynik
 
+
 def indeksuj_linie(text):
     linie = [x.strip() for x in text.split("\n")]
     linie = [x for x in linie if x]
     return {i: linia for i, linia in enumerate(linie, start=1)}
+
 
 def agreguj_kolejne_wypowiedzi(sequence):
     wynik = []
@@ -247,23 +265,25 @@ def agreguj_kolejne_wypowiedzi(sequence):
 
     return wynik
 
+
 def renumeruj_id(sequence):
     for i, el in enumerate(sequence, start=1):
         el["id"] = i
     return sequence
 
-def policz_content_hash(tresc) -> str | None:
-    if not tresc:
-        return None
-    tekst = tresc.get_text(separator="\n").strip()
-    return hashlib.sha256(tekst.encode("utf-8")).hexdigest()
 
 def parsuj_misje_z_url(url: str):
     soup = pobierz_soup(url)
     tresc = pobierz_tresc(soup)
 
-    sequence = parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc)
+    podsumowanie = parsuj_podsumowanie_misji(tresc)
+    cele = parsuj_cele_misji(tresc)
+    opis = parsuj_opis(tresc)
+    postep = parsuj_postep(tresc)
+    zakonczenie = parsuj_zakonczenie(tresc)
+    nagrody = parsuj_nagrode(tresc)
 
+    sequence = parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc)
     for el in sequence:
         el["wypowiedzi_EN"] = indeksuj_linie(el["tekst_en"])
         del el["tekst_en"]
@@ -271,26 +291,37 @@ def parsuj_misje_z_url(url: str):
     sequence = agreguj_kolejne_wypowiedzi(sequence)
     sequence = renumeruj_id(sequence)
 
+    cele_zlaczone = złącz_cele(cele)
+
+    hash_sekcji = {
+        "Cele_EN": {
+            "Główny": policz_hash_z_tekstu(cele_zlaczone["Główny"]),
+            "Podrzędny": policz_hash_z_tekstu(cele_zlaczone["Podrzędny"])
+        },
+        "Treść_EN": policz_hash_z_tekstu(złącz_slownik_linii(opis)),
+        "Postęp_EN": policz_hash_z_tekstu(złącz_slownik_linii(postep)),
+        "Zakończenie_EN": policz_hash_z_tekstu(złącz_slownik_linii(zakonczenie)),
+        "Nagrody_EN": policz_hash_z_tekstu(złącz_slownik_linii(nagrody)),
+        "Dialogi_EN": {
+            "Dymki_EN": policz_hash_z_tekstu(złącz_dialogi(sequence, {"dymek"})),
+            "Gossipy_EN": policz_hash_z_tekstu(złącz_dialogi(sequence, {"gossip"}))
+        }
+    }
+
     return {
         "Źródło": {
             "url": url
         },
         "Misje_EN": {
-            "Podsumowanie_EN": parsuj_podsumowanie_misji(tresc),
-            "Cele_EN": parsuj_cele_misji(tresc),
-            "Treść_EN": parsuj_opis(tresc),
-            "Postęp_EN": parsuj_postep(tresc),
-            "Zakończenie_EN": parsuj_zakonczenie(tresc),
-            "Nagrody_EN": parsuj_nagrode(tresc)
+            "Podsumowanie_EN": podsumowanie,
+            "Cele_EN": cele,
+            "Treść_EN": opis,
+            "Postęp_EN": postep,
+            "Zakończenie_EN": zakonczenie,
+            "Nagrody_EN": nagrody
         },
         "Dialogi_EN": {
             "Gossipy_Dymki_EN": sequence
         },
-        "Hash_HTML": policz_content_hash(tresc)
+        "Hash_HTML": hash_sekcji
     }
-
-url = "https://warcraft.wiki.gg/wiki/Wrath_Unleashed_(quest)"
-wynik = parsuj_misje_z_url(url)
-
-import json
-print(json.dumps(wynik, ensure_ascii=False, indent=2))
