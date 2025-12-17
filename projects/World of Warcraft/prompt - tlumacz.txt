@@ -13,7 +13,7 @@ Teksty, które dostaniesz, są ze sobą powiązane - tzn. dymki/gossipy dotyczą
 ZASADY TŁUMACZENIA:
 1. Zachowaj sens, emocje i ton oryginału - tłumaczenie musi brzmieć naturalnie dla polskiego gracza fantasy.
 2. Unikaj sztywnego, dosłownego języka. Stwórz płynny, profesjonalny tekst fantasy.
-3. Nie dodawaj żadnych informacji od siebie, nie komentuj tekstu, nie zmieniaj znaczenia.
+3. Nie dodawaj żadnych informacji od siebie, nie komentuj tekstu (nawet gdy jest literówka, literówkę sam skoryguj), nie zmieniaj znaczenia.
 4. Jeśli angielska konstrukcja brzmi zbyt topornie po polsku, możesz ją lekko wygładzić, ale bez modyfikacji treści.
 5. Zachowaj wszystkie placeholdery techniczne dokładnie tak, jak w oryginale (np. {PLAYER_NAME}, %s, %d, znaczniki kolorów, tagi formatowania).
 6. Używaj wszystkich nazw własnych dokładnie tak, jak podane w sekcji slownik_nazwy, tłumacząc je jedynie tak, jak pozwala naturalna polszczyzna.
