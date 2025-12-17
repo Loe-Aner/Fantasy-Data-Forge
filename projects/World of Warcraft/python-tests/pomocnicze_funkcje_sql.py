@@ -1,13 +1,15 @@
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
+__all__ = ["pobierz_dane_z_db", "dodaj_npc_do_db"]
+
 # zastanowic sie nad WHERE i innymi
-def pobierz_dane(
+def pobierz_dane_z_db(
         silnik, 
         tabela: str, 
         kolumny_FROM: list | None = None,
         top: int | None = None
-        ):
+    ):
     t = f"TOP {top}" if top is not None else ""
     k = ", ".join(kolumny_FROM) if kolumny_FROM is not None else "*"
 
@@ -36,7 +38,10 @@ def czerwony_przycisk(
     with silnik.begin() as conn:
         conn.execute(q)
 
-def dodaj_npc_do_db(silnik, nazwa: str) -> str:
+def dodaj_npc_do_db(
+        silnik, 
+        nazwa: str
+    ) -> str:
     q = text("""
         INSERT INTO dbo.NPC (NAZWA)
         VALUES (:nazwa);
@@ -45,8 +50,8 @@ def dodaj_npc_do_db(silnik, nazwa: str) -> str:
     try:
         with silnik.begin() as conn:
             conn.execute(q, {"nazwa": nazwa})
-        return "Dodano NPCa do bazy danych."
+        return f"Dodano NPCa << {nazwa} >> do bazy danych."
     except IntegrityError as e:
         if e.orig and any("2627" in str(arg) or "2601" in str(arg) for arg in e.orig.args):
-            return "NPC już istnieje w bazie danych."
+            return f"NPC << {nazwa} >> już istnieje w bazie danych."
         raise
