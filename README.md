@@ -1,19 +1,18 @@
 # Cześć, Dzień dobry :)
 
 To repo to moja przestrzeń do **dodatkowej praktyki, nauki i eksperymentów** — od wizualizacji, przez odpowiedzi na nurtujące mnie pytania, po rozwijanie umiejętności programistycznych.  
-Pracuję jako **Ekspert ds. Raportowania** i mega lubię się rozwijać w: SQL, DAX, Power BI, Python, modelowaniu i wizualizacji danych.
+Pracuję jako **Ekspert ds. Raportowania** w dziale **Business Intelligence & CRM** i mega lubię się rozwijać w: SQL, DAX, Power BI, Python, modelowaniu i wizualizacji danych.
 
 ---
 
 ## 🚀 O projektach
 
 Moje projekty są prowadzone **end-to-end**:  
-- 📥 **Pozyskiwanie danych** – API, Kaggle, pliki źródłowe, PDF-y  
-- 🔧 **Przygotowanie i modelowanie** – czyszczenie, transformacje, budowa modeli danych  
-- 📊 **Analiza i wizualizacja** – Power BI, SQL, Python  
+- 📥 **Pozyskiwanie danych** – API, Kaggle, pliki źródłowe, PDF-y, scraping 
+- 🔧 **Przygotowanie i modelowanie** – czyszczenie, transformacje, budowa modeli danych & baz danych
+- 📊 **Analiza i wizualizacja** – Power BI, SQL, Python
 
-Każdy projekt zaczyna się od **pytania biznesowego/badawczego**,  
-dlatego rozwiązania są **unikalne i nastawione na efekt**.  
+Każdy projekt zaczyna się od **pytania biznesowego/badawczego**, dlatego rozwiązania są **unikalne i nastawione na efekt**.  
 
 Repo zawiera:  
 - 💻 kod,  
