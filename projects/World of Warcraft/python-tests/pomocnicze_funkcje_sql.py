@@ -1,7 +1,7 @@
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-__all__ = ["pobierz_dane_z_db", "dodaj_npc_do_db"]
+__all__ = ["pobierz_dane_z_db", "dodaj_npc_do_db", "czerwony_przycisk"]
 
 # zastanowic sie nad WHERE i innymi
 def pobierz_dane_z_db(
