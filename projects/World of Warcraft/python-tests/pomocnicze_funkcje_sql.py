@@ -6,7 +6,8 @@ from sqlalchemy.exc import IntegrityError
 __all__ = ["czerwony_przycisk", 
            "utworz_engine_do_db", 
            "pobierz_dane_z_db", 
-           "zapisz_npc_i_status_do_db", "zapisz_npc_i_status_do_db_z_wyniku"
+           "zapisz_npc_i_status_do_db", "zapisz_npc_i_status_do_db_z_wyniku",
+           "zapisz_misje_i_status_do_db", "zapisz_misje_i_status_do_db_z_wyniku"
            ]
 
 def czerwony_przycisk(
@@ -77,7 +78,7 @@ def zapisz_npc_i_status_do_db(
         tabela_npc_statusy: str,
         nazwa: str,
         zrodlo: str,
-        status: str = "0_ORYGINAŁ"
+        status: str
     ) -> int:
 
     q_insert_npc = text(f"""
@@ -150,3 +151,234 @@ def zapisz_npc_i_status_do_db_z_wyniku(
             status=status
         )
 
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+
+
+def zapisz_misje_i_status_do_db(
+        silnik,
+        tabela_npc: str,
+        npc_start: str,
+        npc_koniec: str,
+        tabela_misje: str,
+        tabela_misje_statusy: str,
+        tytul: str,
+        nastepna_misja: str,
+        poprzednia_misja: str,
+        lvl: int,
+        url: str,
+        segment: str,
+        podsegment: str | None,
+        tresc: str,
+        status: str,
+        nr: int
+    ) -> int:
+
+    q_select_npc_start = text(f"""
+        SELECT NPC_ID_MOJE_PK
+        FROM {tabela_npc}
+        WHERE NAZWA = :npc_start
+    """)
+
+    q_select_npc_koniec = text(f"""
+        SELECT NPC_ID_MOJE_PK
+        FROM {tabela_npc}
+        WHERE NAZWA = :npc_koniec
+    """)
+
+    q_insert_misja = text(f"""
+        INSERT INTO {tabela_misje} (
+            MISJA_URL_WIKI, MISJA_TYTUL_EN, MISJA_TYTUL_NASTEPNA_EN, MISJA_TYTUL_POPRZEDNIA_EN,
+            WYMAGANY_LVL, NPC_START_ID, NPC_KONIEC_ID
+        )
+        OUTPUT inserted.MISJA_ID_MOJE_PK
+        VALUES (:url, :tytul, :nastepna_misja, :poprzednia_misja, :lvl, :npc_start_id, :npc_koniec_id);
+    """)
+
+    q_select_misja_id = text(f"""
+        SELECT MISJA_ID_MOJE_PK
+        FROM {tabela_misje}
+        WHERE MISJA_URL_WIKI = :url;
+    """)
+
+    q_insert_status = text(f"""
+        INSERT INTO {tabela_misje_statusy} (
+            MISJA_ID_MOJE_FK, SEGMENT, PODSEGMENT, STATUS, NR, TRESC
+        )
+        VALUES (:misja_id_fk, :segment, :podsegment, :status, :nr, :tresc);
+    """)
+
+    try:
+        with silnik.begin() as conn:
+            npc_start_id = conn.execute(q_select_npc_start, {"npc_start": npc_start}).scalar_one()
+            npc_koniec_id = conn.execute(q_select_npc_koniec, {"npc_koniec": npc_koniec}).scalar_one()
+
+            misja_id = conn.execute(
+                q_insert_misja,
+                {
+                    "url": url,
+                    "tytul": tytul,
+                    "nastepna_misja": nastepna_misja,
+                    "poprzednia_misja": poprzednia_misja,
+                    "lvl": lvl,
+                    "npc_start_id": npc_start_id,
+                    "npc_koniec_id": npc_koniec_id
+                }
+            ).scalar_one()
+
+            conn.execute(
+                q_insert_status,
+                {
+                    "misja_id_fk": misja_id,
+                    "segment": segment,
+                    "podsegment": podsegment,
+                    "status": status,
+                    "nr": nr,
+                    "tresc": tresc
+                }
+            )
+            return misja_id
+
+    except IntegrityError as e:
+        if e.orig and any("2627" in str(arg) or "2601" in str(arg) for arg in e.orig.args):
+            with silnik.begin() as conn:
+                misja_id = conn.execute(q_select_misja_id, {"url": url}).scalar_one()
+
+                try:
+                    conn.execute(
+                        q_insert_status,
+                        {
+                            "misja_id_fk": misja_id,
+                            "segment": segment,
+                            "podsegment": podsegment,
+                            "status": status,
+                            "nr": nr,
+                            "tresc": tresc
+                        }
+                    )
+                except IntegrityError as e2:
+                    if e2.orig and any("2627" in str(arg) or "2601" in str(arg) for arg in e2.orig.args):
+                        pass
+                    else:
+                        raise
+
+                return misja_id
+
+        raise
+
+def zapisz_misje_i_status_do_db_z_wyniku(
+        silnik,
+        wynik: dict,
+        tabela_npc: str,
+        tabela_misje: str,
+        tabela_misje_statusy: str,
+        status: str = "0_ORYGINAŁ"
+    ) -> None:
+
+    mapa_segment = {
+        "Cele_EN": "CEL",
+        "Treść_EN": "TREŚĆ",
+        "Postęp_EN": "POSTĘP",
+        "Zakończenie_EN": "ZAKOŃCZENIE",
+        "Nagrody_EN": "NAGRODY"
+    }
+
+    mapa_podsegment = {
+        "Główny": "GŁÓWNY_CEL",
+        "Podrzędny": "PODRZĘDNY_CEL"
+    }
+
+    misje_en = wynik.get("Misje_EN", {})
+    podsumowanie = misje_en.get("Podsumowanie_EN", {})
+
+    url = wynik.get("Źródło", {}).get("url")
+    tytul = podsumowanie.get("Tytuł")
+    npc_start = podsumowanie.get("Start_NPC")
+    npc_koniec = podsumowanie.get("Koniec_NPC")
+    nastepna_misja = podsumowanie.get("Następna_Misja")
+    poprzednia_misja = podsumowanie.get("Poprzednia_Misja")
+
+    lvl_raw = podsumowanie.get("Wymagany_Poziom")
+    lvl = int(str(lvl_raw).strip()) if lvl_raw is not None and str(lvl_raw).strip() != "" else 0
+
+    sekcje_do_statusow = ["Cele_EN", "Treść_EN", "Postęp_EN", "Zakończenie_EN", "Nagrody_EN"]
+
+    for segment_json in sekcje_do_statusow:
+        segment_db = mapa_segment.get(segment_json)
+        if segment_db is None:
+            continue
+
+        segment_dict = misje_en.get(segment_json, {})
+        if not isinstance(segment_dict, dict) or len(segment_dict) == 0:
+            continue
+
+        if segment_json == "Cele_EN":
+            for podsegment_json, wartosc in segment_dict.items():
+                podsegment_db = mapa_podsegment.get(podsegment_json)
+                if podsegment_db is None:
+                    continue
+                if not isinstance(wartosc, dict):
+                    continue
+
+                for nr_key, tresc in wartosc.items():
+                    if tresc is None:
+                        continue
+                    tresc = str(tresc).strip()
+                    if tresc == "":
+                        continue
+
+                    try:
+                        nr = int(str(nr_key).strip())
+                    except ValueError:
+                        nr = 1
+
+                    zapisz_misje_i_status_do_db(
+                        silnik=silnik,
+                        tabela_npc=tabela_npc,
+                        npc_start=npc_start,
+                        npc_koniec=npc_koniec,
+                        tabela_misje=tabela_misje,
+                        tabela_misje_statusy=tabela_misje_statusy,
+                        tytul=tytul,
+                        nastepna_misja=nastepna_misja,
+                        poprzednia_misja=poprzednia_misja,
+                        lvl=lvl,
+                        url=url,
+                        segment=segment_db, 
+                        podsegment=podsegment_db,
+                        tresc=tresc,
+                        status=status,
+                        nr=nr
+                    )
+
+        else:
+            for nr_key, tresc in segment_dict.items():
+                if tresc is None:
+                    continue
+                tresc = str(tresc).strip()
+                if tresc == "":
+                    continue
+
+                try:
+                    nr = int(str(nr_key).strip())
+                except ValueError:
+                    nr = 1
+
+                zapisz_misje_i_status_do_db(
+                    silnik=silnik,
+                    tabela_npc=tabela_npc,
+                    npc_start=npc_start,
+                    npc_koniec=npc_koniec,
+                    tabela_misje=tabela_misje,
+                    tabela_misje_statusy=tabela_misje_statusy,
+                    tytul=tytul,
+                    nastepna_misja=nastepna_misja,
+                    poprzednia_misja=poprzednia_misja,
+                    lvl=lvl,
+                    url=url,
+                    segment=segment_db,
+                    podsegment=None,
+                    tresc=tresc,
+                    status=status,
+                    nr=nr
+                )

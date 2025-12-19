@@ -1,0 +1,11 @@
+select 'MISJE', *
+from dbo.MISJE;
+
+SELECT 'MISJE_STATUSY', *
+FROM dbo.MISJE_STATUSY;
+
+SELECT 'NPC', *
+FROM dbo.NPC;
+
+SELECT 'NPC_STATUSY', *
+FROM dbo.NPC_STATUSY;
