@@ -303,18 +303,18 @@ def zapisz_misje_i_status_do_db_z_wyniku(
 
     sekcje_do_statusow = ["Cele_EN", "Treść_EN", "Postęp_EN", "Zakończenie_EN", "Nagrody_EN"]
 
-    for segment_json in sekcje_do_statusow:
-        segment_db = mapa_segment.get(segment_json)
+    for segment in sekcje_do_statusow:
+        segment_db = mapa_segment.get(segment)
         if segment_db is None:
             continue
 
-        segment_dict = misje_en.get(segment_json, {})
+        segment_dict = misje_en.get(segment, {})
         if not isinstance(segment_dict, dict) or len(segment_dict) == 0:
             continue
 
-        if segment_json == "Cele_EN":
-            for podsegment_json, wartosc in segment_dict.items():
-                podsegment_db = mapa_podsegment.get(podsegment_json)
+        if segment == "Cele_EN":
+            for podsegment, wartosc in segment_dict.items():
+                podsegment_db = mapa_podsegment.get(podsegment)
                 if podsegment_db is None:
                     continue
                 if not isinstance(wartosc, dict):

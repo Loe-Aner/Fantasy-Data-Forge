@@ -1,5 +1,5 @@
-select 'MISJE', *
-from dbo.MISJE;
+SELECT 'MISJE', *
+FROM dbo.MISJE;
 
 SELECT 'MISJE_STATUSY', *
 FROM dbo.MISJE_STATUSY;
