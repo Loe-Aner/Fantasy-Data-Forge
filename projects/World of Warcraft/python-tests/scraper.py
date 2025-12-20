@@ -1,16 +1,29 @@
 import requests
 from bs4 import BeautifulSoup
 import hashlib
+import time
 
 
 def pobierz_soup(url: str) -> BeautifulSoup:
-    odpowiedz = requests.get(
-        url,
-        headers={"User-Agent": "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"},
-        timeout=30
-    )
+    headers = {"User-Agent": "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"}
+
+    proby = 6
+    opoznienie = 2
+
+    for i in range(1, proby + 1):
+        odpowiedz = requests.get(url, headers=headers, timeout=30)
+
+        if odpowiedz.status_code in (429, 503):
+            # backoff: 2s, 4s, 8s, 16s...
+            wait_s = opoznienie * (2 ** (i - 1))
+            print(f"429/503 dla {url} - czekam {wait_s}s (próba {i}/{proby})")
+            time.sleep(wait_s)
+            continue
+
+        odpowiedz.raise_for_status()
+        return BeautifulSoup(odpowiedz.text, "html.parser")
+
     odpowiedz.raise_for_status()
-    return BeautifulSoup(odpowiedz.text, "html.parser")
 
 
 def pobierz_tresc(soup: BeautifulSoup):
@@ -214,7 +227,7 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
 
         elif el.name == "span" and any(
             cls in (el.get("class") or [])
-            for cls in ("text-say", "text-bossemote")
+            for cls in ("text-say", "text-bossemote", "text-yell")
         ):
             b = el.find("b")
             if not b:
@@ -232,7 +245,7 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
             wynik.append({
                 "id": licznik,
                 "typ": "dymek",
-                "npc_en": npc_en.replace(":", ""),
+                "npc_en": npc_en.replace(":", "").replace("yells", "").strip(),
                 "tekst_en": tekst_en
             })
 

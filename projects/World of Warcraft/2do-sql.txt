@@ -1,5 +1,2 @@
 TABELA ZRODLO
 a. dodac flage w przypadku zmiany (selfoin?)
-b. dodac tabele z linkami które będą zawieraly strony do scrapowania, potem na tej tabeli będzie robiony update z misja_id z tabeli MISJE (zastanowić się czy na pewno?)
---- wtedy url w jednej tabeli chyba nie ma sensu
---- to gdzie trzymać url misje? bo ostatecznie skrypt musi przechodzić przez linki w petli. Plik excel odczytywany w pandzie?
