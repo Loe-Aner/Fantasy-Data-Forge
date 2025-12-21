@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import time
-from scraper import pobierz_soup, pobierz_tresc
+from scraper_wiki import pobierz_soup, pobierz_tresc
 
 # def wyscrapuj_linki_z_progression_wiki(tresc):
 #     if not tresc:

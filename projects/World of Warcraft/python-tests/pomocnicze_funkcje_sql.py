@@ -4,13 +4,11 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 import time
 from scraper_pomocnicze import wyscrapuj_linki_z_kategorii_z_paginacja
-from scraper import parsuj_misje_z_url
+from scraper_wiki import parsuj_misje_z_url
 
 __all__ = [
-    "czerwony_przycisk",
     "_czy_duplikat",
     "utworz_engine_do_db",
-    # "pobierz_dane_z_db",
 
     "zapisz_npc_i_status_do_db",
     "zapisz_npc_i_status_do_db_z_wyniku",
@@ -324,7 +322,7 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
         lvl = 0
     else:
         lvl_txt = lvl_txt.split("-")[0].strip()
-        lvl_digits = "".join(ch for ch in lvl_txt if ch.isdigit())
+        lvl_digits = "".join(ch for ch in lvl_txt if ch.isdigit())[:2]
         lvl = int(lvl_digits) if lvl_digits != "" else 0
 
 

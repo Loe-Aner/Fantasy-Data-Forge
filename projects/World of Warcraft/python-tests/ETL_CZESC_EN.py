@@ -1,5 +1,5 @@
 from pomocnicze_funkcje_sql import *
-from scraper import parsuj_misje_z_url
+from scraper_wiki import parsuj_misje_z_url
 import time
 from sqlalchemy import text
 

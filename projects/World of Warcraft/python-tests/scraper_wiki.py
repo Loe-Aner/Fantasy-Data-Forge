@@ -5,7 +5,7 @@ import time
 import re
 
 
-def pobierz_soup(url: str) -> BeautifulSoup:
+def pobierz_soup(url: str, parser: str = "html.parser") -> BeautifulSoup | None:
     headers = {"User-Agent": "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"}
 
     proby = 6
@@ -15,14 +15,13 @@ def pobierz_soup(url: str) -> BeautifulSoup:
         odpowiedz = requests.get(url, headers=headers, timeout=30)
 
         if odpowiedz.status_code in (429, 503):
-            # backoff: 2s, 4s, 8s, 16s...
             wait_s = opoznienie * (2 ** (i - 1))
             print(f"429/503 dla {url} - czekam {wait_s}s (próba {i}/{proby})")
             time.sleep(wait_s)
             continue
 
         odpowiedz.raise_for_status()
-        return BeautifulSoup(odpowiedz.text, "html.parser")
+        return BeautifulSoup(odpowiedz.text, parser)
 
     odpowiedz.raise_for_status()
 
