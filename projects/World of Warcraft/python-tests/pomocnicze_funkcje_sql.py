@@ -4,6 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 import time
 from scraper_pomocnicze import wyscrapuj_linki_z_kategorii_z_paginacja
+from scraper import parsuj_misje_z_url
 
 __all__ = [
     "czerwony_przycisk",
@@ -31,7 +32,8 @@ __all__ = [
     
     "roznice_hashe",
     "hash_typ_lista",
-    "roznice_hashe_usun_rekordy_z_db"
+    "roznice_hashe_usun_rekordy_z_db",
+    "hashuj_kategorie_i_zapisz_zrodlo"
 ]
 
 
@@ -801,9 +803,10 @@ def hash_typ_lista():
     return hash_typ_lista
 
 def roznice_hashe_usun_rekordy_z_db(
-        silnik
-        ):
-    
+        silnik,
+        zrodlo_insert_url: str
+    ):
+
     print("▶ Szukam różnic w hashach...")
     hash_slownik = roznice_hashe(
         silnik=silnik,
@@ -828,7 +831,29 @@ def roznice_hashe_usun_rekordy_z_db(
             "dbo.MISJE"
         ]
 
+        q_select_url = text("""
+            SELECT MISJA_URL_WIKI
+            FROM dbo.MISJE
+            WHERE MISJA_ID_MOJE_PK = :misja_id
+        """)
+
+        q_insert_url = text("""
+            INSERT INTO dbo.LINKI_DO_SCRAPOWANIA (URL, ZRODLO_NAZWA)
+            VALUES (:url, :zrodlo)
+        """)
+
         with silnik.begin() as conn:
+            misja_url = conn.execute(q_select_url, {"misja_id": m}).scalar_one()
+            print(f"    + wrzucam do LINKI_DO_SCRAPOWANIA: {misja_url}")
+
+            try:
+                conn.execute(q_insert_url, {"url": misja_url, "zrodlo": zrodlo_insert_url})
+            except IntegrityError as e:
+                if _czy_duplikat(e):
+                    print("      - już było w kolejce (duplikat)")
+                else:
+                    raise
+
             for tabela in tabele_do_skanowania:
                 kolumna = "MISJA_ID_MOJE_PK" if tabela == "dbo.MISJE" else "MISJA_ID_MOJE_FK"
 
@@ -837,7 +862,69 @@ def roznice_hashe_usun_rekordy_z_db(
                     WHERE {kolumna} = :m
                 """)
 
-                result = conn.execute(q_delete_id, {"m": m})
-                print(f"    - {tabela}: usunięto {result.rowcount} wierszy")
+                wynik_out = conn.execute(q_delete_id, {"m": m})
+                print(f"    - {tabela}: usunięto {wynik_out.rowcount} wierszy")
 
         print(f"=== Zakończono MISJA_ID = {m} ===\n")
+
+def hashuj_kategorie_i_zapisz_zrodlo(
+        silnik,
+        kategorie: list[str],
+        zrodlo: str,
+        sleep_s: int = 3,
+        tabela_misje: str = "dbo.MISJE",
+        tabela_zrodlo: str = "dbo.ZRODLO"
+    ) -> None:
+
+    q_select_misja_id = text(f"""
+        SELECT MISJA_ID_MOJE_PK
+        FROM {tabela_misje}
+        WHERE MISJA_URL_WIKI = :url
+    """)
+
+    for kat_i, kat_url in enumerate(kategorie, start=1):
+        print(f"\n=== KATEGORIA [{kat_i}/{len(kategorie)}]: {kat_url} ===")
+
+        questy = wyscrapuj_linki_z_kategorii_z_paginacja(
+            kategoria_url=kat_url,
+            sleep_s=sleep_s
+        )
+
+        print(f"Znaleziono {len(questy)} questów")
+
+        for i, url in enumerate(questy, start=1):
+            print(f"  [{i}/{len(questy)}] Hashuję: {url}")
+
+            try:
+                wynik = parsuj_misje_z_url(url)
+                misja_url = wynik.get("Źródło", {}).get("url")
+
+                with silnik.connect() as conn:
+                    row = conn.execute(q_select_misja_id, {"url": misja_url}).first()
+
+                if not row:
+                    print("    → brak w MISJE, dodaję do LINKI_DO_SCRAPOWANIA")
+                    zapisz_link_do_scrapowania(
+                        silnik=silnik,
+                        url=misja_url,
+                        zrodlo=zrodlo
+                    )
+                    time.sleep(sleep_s)
+                    continue
+
+                misja_id = row[0]
+
+                zapisz_zrodlo_do_db(
+                    silnik=silnik,
+                    tabela_zrodlo=tabela_zrodlo,
+                    misja_id=misja_id,
+                    wynik=wynik,
+                    zrodlo=zrodlo
+                )
+
+                print("    + zapisano hashe do ZRODLO")
+
+            except Exception as e:
+                print(f"    ! BŁĄD: {e}")
+
+            time.sleep(sleep_s)
