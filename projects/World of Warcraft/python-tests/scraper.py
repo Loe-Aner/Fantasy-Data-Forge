@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import hashlib
 import time
+import re
 
 
 def pobierz_soup(url: str) -> BeautifulSoup:
@@ -187,6 +188,16 @@ def parsuj_zakonczenie(tresc):
 def parsuj_nagrode(tresc):
     return parsuj_sekcje_paragrafowe(tresc, "Rewards")
 
+def wyczysc_tekst_en(tekst: str) -> str:
+    if not tekst:
+        return ""
+
+    tekst = tekst.replace("\xa0", " ")
+    tekst = tekst.replace("(Optional)", "").replace("(provided)", "")
+    tekst = re.sub(r"\s*\(\d+\)\s*$", "", tekst)
+
+    return tekst.strip()
+
 
 def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
     if not tresc:
@@ -205,17 +216,18 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
             if tytul:
                 p = tytul.find("p")
                 if p:
-                    npc_en = p.get_text().strip()
+                    npc_en = wyczysc_tekst_en(p.get_text())
 
             teksty = []
             for p in el.find_all("p"):
                 if tytul and tytul.find("p") == p:
                     continue
-                t = p.get_text().strip()
+                t = p.get_text()
+                t = wyczysc_tekst_en(t)
                 if t:
                     teksty.append(t)
 
-            tekst_en = "\n".join(teksty).replace("\xa0", " ")
+            tekst_en = "\n".join(teksty)
 
             licznik += 1
             wynik.append({
@@ -233,13 +245,14 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
             if not b:
                 continue
 
-            prefix = b.get_text().strip().replace("\xa0", " ")
+            prefix = wyczysc_tekst_en(b.get_text())
             npc_en = prefix.replace("says:", "").strip()
 
             el_copy = BeautifulSoup(str(el), "html.parser").select_one("span")
             b2 = el_copy.find("b")
             b2.extract()
-            tekst_en = el_copy.get_text().strip().replace("\xa0", " ")
+
+            tekst_en = wyczysc_tekst_en(el_copy.get_text())
 
             licznik += 1
             wynik.append({
@@ -250,6 +263,7 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
             })
 
     return wynik
+
 
 
 def indeksuj_linie(text):

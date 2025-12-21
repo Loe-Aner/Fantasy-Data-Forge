@@ -26,7 +26,8 @@ __all__ = [
 
     "wyscrapuj_kategorie_questow_i_zapisz_linki_do_db",
     "pobierz_linki_do_scrapowania",
-    "usun_link_z_kolejki"
+    "usun_link_z_kolejki",
+    "zapisz_link_do_scrapowania"
 ]
 
 
@@ -630,6 +631,31 @@ def zapisz_zrodlo_do_db(
         ).scalar_one()
 
         return tech_id
+
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+
+
+def zapisz_link_do_scrapowania(
+        silnik,
+        url: str,
+        zrodlo: str
+    ) -> None:
+
+    q = text("""
+        INSERT INTO dbo.LINKI_DO_SCRAPOWANIA (URL, ZRODLO_NAZWA)
+        VALUES (:url, :zrodlo)
+    """)
+
+    try:
+        with silnik.begin() as conn:
+            conn.execute(q, {"url": url, "zrodlo": zrodlo})
+    except IntegrityError as e:
+        if "2627" in str(e) or "2601" in str(e):
+            pass
+        else:
+            raise
+
     
 # def zapisz_linki_do_db(
 #         silnik,
