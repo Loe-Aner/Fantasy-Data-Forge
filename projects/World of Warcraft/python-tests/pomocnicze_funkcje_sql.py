@@ -9,7 +9,7 @@ __all__ = [
     "czerwony_przycisk",
     "_czy_duplikat",
     "utworz_engine_do_db",
-    "pobierz_dane_z_db",
+    # "pobierz_dane_z_db",
 
     "zapisz_npc_i_status_do_db",
     "zapisz_npc_i_status_do_db_z_wyniku",
@@ -27,7 +27,11 @@ __all__ = [
     "wyscrapuj_kategorie_questow_i_zapisz_linki_do_db",
     "pobierz_linki_do_scrapowania",
     "usun_link_z_kolejki",
-    "zapisz_link_do_scrapowania"
+    "zapisz_link_do_scrapowania",
+    
+    "roznice_hashe",
+    "hash_typ_lista",
+    "roznice_hashe_usun_rekordy_z_db"
 ]
 
 
@@ -82,24 +86,24 @@ def _czy_duplikat(e: IntegrityError) -> bool:
     )
 
 # zastanowic sie nad WHERE i innymi
-def pobierz_dane_z_db(
-        silnik, 
-        tabela: str, 
-        kolumny_FROM: list | None = None,
-        top: int | None = None
-    ):
-    t = f"TOP {top}" if top is not None else ""
-    kf = ", ".join(kolumny_FROM) if kolumny_FROM is not None else "*"
+# def pobierz_dane_z_db(
+#         silnik, 
+#         tabela: str, 
+#         kolumny_FROM: list | None = None,
+#         top: int | None = None
+#     ):
+#     t = f"TOP {top}" if top is not None else ""
+#     kf = ", ".join(kolumny_FROM) if kolumny_FROM is not None else "*"
 
-    q = text(f"""
-      SELECT {t}
-             {kf}
-      FROM {tabela}
-    """)
+#     q = text(f"""
+#       SELECT {t}
+#              {kf}
+#       FROM {tabela}
+#     """)
     
-    with silnik.connect() as conn:
-        wiersze = conn.execute(q).mappings().all()
-        return [dict(w) for w in wiersze]
+#     with silnik.connect() as conn:
+#         wiersze = conn.execute(q).mappings().all()
+#         return [dict(w) for w in wiersze]
 
 def zapisz_npc_i_status_do_db(
         silnik,
@@ -236,7 +240,7 @@ def zapewnij_misje_i_pobierz_id(
     except IntegrityError as e:
         if not _czy_duplikat(e):
             raise
-        with silnik.begin() as conn:
+        with silnik.connect() as conn:
             return conn.execute(q_select_misja_id, {"url": url}).scalar_one()
 
 
@@ -745,3 +749,95 @@ def usun_link_z_kolejki(silnik, url: str) -> None:
     """)
     with silnik.begin() as conn:
         conn.execute(q, {"url": url})
+
+def roznice_hashe (
+        silnik,
+        dozwolone_kolumny: list
+        ):
+
+    hash_roznice = {}
+
+    for hash_typ in dozwolone_kolumny:
+        with silnik.connect() as conn:
+            roznice = text(f"""
+                WITH dwa_ostatnie AS (
+                    SELECT
+                        MISJA_ID_MOJE_FK,
+                        {hash_typ},
+                        DATA_WYSCRAPOWANIA,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY MISJA_ID_MOJE_FK
+                            ORDER BY DATA_WYSCRAPOWANIA DESC
+                        ) AS rnk
+                    FROM dbo.ZRODLO
+                    WHERE ZRODLO_NAZWA = N'wiki'
+                ),
+                porownanie AS (
+                    SELECT
+                        MISJA_ID_MOJE_FK,
+                        {hash_typ} AS NAJN,
+                        LAG({hash_typ}) OVER (
+                            PARTITION BY MISJA_ID_MOJE_FK
+                            ORDER BY DATA_WYSCRAPOWANIA DESC
+                        ) AS POPRZ,
+                        rnk
+                    FROM dwa_ostatnie
+                    WHERE rnk <= 2
+                )
+                SELECT
+                    MISJA_ID_MOJE_FK
+                FROM porownanie
+                WHERE 1=1
+                AND POPRZ IS NOT NULL
+                AND NAJN <> POPRZ;
+                """)
+            r = conn.execute(roznice).scalars().all()
+            hash_roznice[hash_typ] = r
+    return hash_roznice
+
+def hash_typ_lista():
+    hash_typ_lista = ["HTML_HASH_GLOWNY_CEL", "HTML_HASH_PODRZEDNY_CEL", "HTML_HASH_TRESC", "HTML_HASH_POSTEP", "HTML_HASH_ZAKONCZENIE",
+                    "HTML_HASH_NAGRODY", "HTML_HASH_DYMKI", "HTML_HASH_GOSSIP"]
+    return hash_typ_lista
+
+def roznice_hashe_usun_rekordy_z_db(
+        silnik
+        ):
+    
+    print("▶ Szukam różnic w hashach...")
+    hash_slownik = roznice_hashe(
+        silnik=silnik,
+        dozwolone_kolumny=hash_typ_lista()
+    )
+
+    misje = set()
+    for hash_typ, lista_id in hash_slownik.items():
+        print(f"  • {hash_typ}: {len(lista_id)} misji")
+        misje.update(lista_id)
+
+    print(f"\n▶ Łącznie misji do czyszczenia: {len(misje)}")
+    print(f"▶ ID misji: {sorted(misje)}\n")
+
+    for m in misje:
+        print(f"=== Czyszczę MISJA_ID = {m} ===")
+
+        tabele_do_skanowania = [
+            "dbo.DIALOGI_STATUSY",
+            "dbo.MISJE_STATUSY",
+            "dbo.ZRODLO",
+            "dbo.MISJE"
+        ]
+
+        with silnik.begin() as conn:
+            for tabela in tabele_do_skanowania:
+                kolumna = "MISJA_ID_MOJE_PK" if tabela == "dbo.MISJE" else "MISJA_ID_MOJE_FK"
+
+                q_delete_id = text(f"""
+                    DELETE FROM {tabela}
+                    WHERE {kolumna} = :m
+                """)
+
+                result = conn.execute(q_delete_id, {"m": m})
+                print(f"    - {tabela}: usunięto {result.rowcount} wierszy")
+
+        print(f"=== Zakończono MISJA_ID = {m} ===\n")

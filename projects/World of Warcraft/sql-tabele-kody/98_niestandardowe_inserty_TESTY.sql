@@ -1,0 +1,39 @@
+--INSERT INTO dbo.ZRODLO (MISJA_ID_MOJE_FK, ZRODLO_NAZWA, HTML_HASH_GLOWNY_CEL)
+--VALUES (1, 'wiki', '280d79569ba9e96fcaf99c0274da5c11a89efd2a9c53d04a116f2ef30450def5');
+
+
+--SELECT *
+--FROM dbo.ZRODLO
+--WHERE MISJA_ID_MOJE_FK = 1;
+
+WITH dwa_ostatnie AS (
+    SELECT
+        MISJA_ID_MOJE_FK,
+        HTML_HASH_GLOWNY_CEL,
+        DATA_WYSCRAPOWANIA,
+        ROW_NUMBER() OVER (
+            PARTITION BY MISJA_ID_MOJE_FK
+            ORDER BY DATA_WYSCRAPOWANIA DESC
+        ) AS rnk
+    FROM dbo.ZRODLO
+    WHERE ZRODLO_NAZWA = N'wiki'
+      AND MISJA_ID_MOJE_FK = 1
+),
+porownanie AS (
+    SELECT
+        MISJA_ID_MOJE_FK,
+        HTML_HASH_GLOWNY_CEL AS NAJN,
+        LAG(HTML_HASH_GLOWNY_CEL) OVER (
+            PARTITION BY MISJA_ID_MOJE_FK
+            ORDER BY DATA_WYSCRAPOWANIA DESC
+        ) AS POPRZ,
+        rnk
+    FROM dwa_ostatnie
+    WHERE rnk <= 2
+)
+SELECT
+    MISJA_ID_MOJE_FK
+FROM porownanie
+WHERE 1=1
+  AND POPRZ IS NOT NULL
+  AND NAJN <> POPRZ;
