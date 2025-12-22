@@ -6,24 +6,34 @@ import re
 
 
 def pobierz_soup(url: str, parser: str = "html.parser") -> BeautifulSoup | None:
-    headers = {"User-Agent": "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"}
+    headers = {
+        "User-Agent": "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"
+    }
 
     proby = 6
     opoznienie = 2
 
     for i in range(1, proby + 1):
-        odpowiedz = requests.get(url, headers=headers, timeout=30)
+        try:
+            odpowiedz = requests.get(url, headers=headers, timeout=30)
 
-        if odpowiedz.status_code in (429, 503):
+            if odpowiedz.status_code in (429, 502, 503):
+                wait_s = opoznienie * (2 ** (i - 1))
+                print(f"{odpowiedz.status_code} dla {url} – czekam {wait_s}s (próba {i}/{proby})")
+                time.sleep(wait_s)
+                continue
+
+            odpowiedz.raise_for_status()
+            return BeautifulSoup(odpowiedz.text, parser)
+
+        except requests.exceptions.RequestException as e:
             wait_s = opoznienie * (2 ** (i - 1))
-            print(f"429/503 dla {url} - czekam {wait_s}s (próba {i}/{proby})")
+            print(f"Błąd requestu dla {url}: {e} – retry za {wait_s}s (próba {i}/{proby})")
             time.sleep(wait_s)
-            continue
 
-        odpowiedz.raise_for_status()
-        return BeautifulSoup(odpowiedz.text, parser)
+    print(f"SKIP: nie udało się pobrać {url} po {proby} próbach")
+    return None
 
-    odpowiedz.raise_for_status()
 
 
 def pobierz_tresc(soup: BeautifulSoup):

@@ -636,16 +636,12 @@ def zapisz_zrodlo_do_db(
 
         return tech_id
 
-from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
-
 
 def zapisz_link_do_scrapowania(
-        silnik,
-        url: str,
-        zrodlo: str
-    ) -> None:
-
+    silnik,
+    url: str,
+    zrodlo: str
+) -> None:
     q = text("""
         INSERT INTO dbo.LINKI_DO_SCRAPOWANIA (URL, ZRODLO_NAZWA)
         VALUES (:url, :zrodlo)
@@ -655,10 +651,9 @@ def zapisz_link_do_scrapowania(
         with silnik.begin() as conn:
             conn.execute(q, {"url": url, "zrodlo": zrodlo})
     except IntegrityError as e:
-        if "2627" in str(e) or "2601" in str(e):
-            pass
-        else:
-            raise
+        if _czy_duplikat(e):
+            return
+        raise
 
     
 # def zapisz_linki_do_db(
