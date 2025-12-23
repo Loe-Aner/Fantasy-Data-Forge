@@ -5,3 +5,7 @@
 __pycache__/
 *.pyc
 excel-mappingi/surowe/
+*.txt
+*.docx
+*.xlsx
+*.xlsm

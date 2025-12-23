@@ -1,7 +1,0 @@
-Najpierw zapisuję NPC do dbo.NPC
-- zapisuję NAZWA (i źródło)
-- baza sama nadaje ID i ja je od razu odbieram
-
-Następnie zapisuję status NPC do dbo.NPC_STATUSY
-- używam ID, które właśnie dostałem z inserta
-- robię insert: NPC_ID_FK, STATUS
