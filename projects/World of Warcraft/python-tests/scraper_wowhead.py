@@ -30,6 +30,10 @@ def normalize_cell(v):
     return v
 
 def buduj_mapping_01():
+    """
+    Tworzy nowego excela, który jest rozbudowany o nazwę linii fabularnej oraz w którym patchu dodano misję.
+    Funkcja bazuje na excelu "surowym", który znajduje się w folderze "surowe" -> plik "wowhead_id_kraina_dodatek".
+    """
     raw_path = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\wowhead_id_kraina_dodatek.xlsx"
     out_path = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\mapping_01.xlsx"
 

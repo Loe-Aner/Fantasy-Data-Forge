@@ -31,7 +31,8 @@ roznice_hashe_usun_rekordy_z_db(
     )
 
 
-# SCRAPOWANIE TYLKO TYCH MISJI, KTORYCH NIE MA W BAZIE DANYCH
+# SCRAPOWANIE TYLKO TE MISJE, KTORYCH NIE MA W BAZIE DANYCH
+# CZYLI BAZUJE NA TYM CO JEST W dbo.LINKI_DO_SCRAPOWANIA (TABELA PRZYGOTOWANA W SKRYPCIE WYŻEJ)
 linki = pobierz_linki_do_scrapowania(silnik)
 
 print(f"Do przerobienia: {len(linki)} misji")
