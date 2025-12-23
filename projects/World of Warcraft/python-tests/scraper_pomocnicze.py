@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import time
-from scraper_wiki import pobierz_soup, pobierz_tresc
+from scraper_wiki_main import pobierz_soup, pobierz_tresc
 
 # def wyscrapuj_linki_z_progression_wiki(tresc):
 #     if not tresc:
@@ -112,7 +112,12 @@ def wyscrapuj_linki_z_kategorii_z_paginacja(
             print(f"    - Strona kategorii #{nr_strony}: {nastepny_url}")
 
         soup = pobierz_soup(nastepny_url)
+        if soup is None:
+            break
+
         tresc = pobierz_tresc(soup)
+        if not tresc:
+            break
 
         linki = wyscrapuj_linki_z_kategorii_wiki(tresc)
         wynik.extend(linki)

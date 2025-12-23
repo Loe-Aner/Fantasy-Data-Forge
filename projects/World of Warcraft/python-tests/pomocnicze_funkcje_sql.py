@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 import time
 from scraper_pomocnicze import wyscrapuj_linki_z_kategorii_z_paginacja
-from scraper_wiki import parsuj_misje_z_url
+from scraper_wiki_main import parsuj_misje_z_url
 import pandas as pd
 
 __all__ = [
@@ -707,7 +707,7 @@ def wyscrapuj_kategorie_questow_i_zapisz_linki_do_db(
 
         linki = wyscrapuj_linki_z_kategorii_z_paginacja(
             kategoria_url=kat_url,
-            sleep_s=sleep_s,
+            sleep_s=0,
             printuj_paginacje=printuj_paginacje
         )
 
@@ -867,7 +867,7 @@ def hashuj_kategorie_i_zapisz_zrodlo(
         silnik,
         kategorie: list[str],
         zrodlo: str,
-        sleep_s: int = 3,
+        sleep_s: int = 0,
         tabela_misje: str = "dbo.MISJE",
         tabela_zrodlo: str = "dbo.ZRODLO"
     ) -> None:

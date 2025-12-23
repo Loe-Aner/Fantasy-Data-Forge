@@ -1,39 +1,185 @@
-import requests
-from bs4 import BeautifulSoup
-import hashlib
-import time
+import asyncio
+import atexit
+import os
 import re
+import time
+import hashlib
+from dataclasses import dataclass
+from weakref import WeakKeyDictionary
+
+import httpx
+from bs4 import BeautifulSoup
+from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_after_attempt, wait_exponential
+
+try:
+    from requests_cache import AsyncCachedSession
+except Exception:  # pragma: no cover - optional dependency
+    AsyncCachedSession = None
 
 
-def pobierz_soup(url: str, parser: str = "html.parser") -> BeautifulSoup | None:
-    headers = {
-        "User-Agent": "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"
+USER_AGENT = "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"
+DEFAULT_TIMEOUT = 30
+
+ENABLE_CACHE = os.getenv("SCRAPER_CACHE_ENABLED", "0").lower() in {"1", "true", "yes"}
+CACHE_NAME = os.getenv("SCRAPER_CACHE_NAME", "wow_scraper_cache")
+CACHE_EXPIRE = int(os.getenv("SCRAPER_CACHE_EXPIRE", "86400"))
+
+WIKI_MAX_CONCURRENCY = int(os.getenv("WIKI_MAX_CONCURRENCY", "4"))
+WOWHEAD_MAX_CONCURRENCY = int(os.getenv("WOWHEAD_MAX_CONCURRENCY", "4"))
+
+WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.3"))
+WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.3"))
+
+
+class HostThrottle:
+    def __init__(self, min_delay: float):
+        self.min_delay = max(0.0, min_delay)
+        self._lock = asyncio.Lock()
+        self._last_call = 0.0
+
+    async def wait(self) -> None:
+        async with self._lock:
+            elapsed = time.monotonic() - self._last_call
+            remaining = self.min_delay - elapsed
+            if remaining > 0:
+                await asyncio.sleep(remaining)
+            self._last_call = time.monotonic()
+
+
+@dataclass
+class _LoopState:
+    wiki_semaphore: asyncio.Semaphore
+    wowhead_semaphore: asyncio.Semaphore
+    throttles: dict
+
+
+_LOOP_STATES: "WeakKeyDictionary[asyncio.AbstractEventLoop, _LoopState]" = WeakKeyDictionary()
+
+def _get_loop_state() -> _LoopState:
+    loop = asyncio.get_running_loop()
+    state = _LOOP_STATES.get(loop)
+    if state is None:
+        state = _LoopState(
+            wiki_semaphore=asyncio.Semaphore(WIKI_MAX_CONCURRENCY),
+            wowhead_semaphore=asyncio.Semaphore(WOWHEAD_MAX_CONCURRENCY),
+            throttles={
+                "wiki": HostThrottle(WIKI_DELAY),
+                "wowhead": HostThrottle(WOWHEAD_DELAY),
+            },
+        )
+        _LOOP_STATES[loop] = state
+    return state
+
+
+_CLIENT: httpx.AsyncClient | None = None
+
+def _build_client() -> httpx.AsyncClient:
+    common_kwargs = {
+        "headers": {"User-Agent": USER_AGENT},
+        "timeout": DEFAULT_TIMEOUT,
+        "follow_redirects": True,
     }
 
-    proby = 6
-    opoznienie = 2
+    if ENABLE_CACHE and AsyncCachedSession is not None:
+        return AsyncCachedSession(
+            cache_name=CACHE_NAME,
+            backend="sqlite",
+            expire_after=CACHE_EXPIRE,
+            allowable_methods=["GET"],
+            **common_kwargs,
+        )
 
-    for i in range(1, proby + 1):
-        try:
-            odpowiedz = requests.get(url, headers=headers, timeout=30)
+    return httpx.AsyncClient(**common_kwargs)
 
-            if odpowiedz.status_code in (429, 502, 503):
-                wait_s = opoznienie * (2 ** (i - 1))
-                print(f"{odpowiedz.status_code} dla {url} – czekam {wait_s}s (próba {i}/{proby})")
-                time.sleep(wait_s)
-                continue
+def _get_client() -> httpx.AsyncClient:
+    global _CLIENT
+    if _CLIENT is None:
+        _CLIENT = _build_client()
+    return _CLIENT
 
-            odpowiedz.raise_for_status()
-            return BeautifulSoup(odpowiedz.text, parser)
+async def _aclose_client() -> None:
+    global _CLIENT
+    if _CLIENT is None:
+        return
+    client = _CLIENT
+    _CLIENT = None
+    await client.aclose()
 
-        except requests.exceptions.RequestException as e:
-            wait_s = opoznienie * (2 ** (i - 1))
-            print(f"Błąd requestu dla {url}: {e} – retry za {wait_s}s (próba {i}/{proby})")
-            time.sleep(wait_s)
 
-    print(f"SKIP: nie udało się pobrać {url} po {proby} próbach")
-    return None
+_RUNNER: asyncio.Runner | None = None
 
+def _get_runner() -> asyncio.Runner:
+    global _RUNNER
+    if _RUNNER is None:
+        _RUNNER = asyncio.Runner()
+    return _RUNNER
+
+def _shutdown_runner_and_client() -> None:
+    global _RUNNER
+    if _RUNNER is None:
+        return
+    try:
+        _RUNNER.run(_aclose_client())
+    except Exception:
+        pass
+    try:
+        _RUNNER.close()
+    finally:
+        _RUNNER = None
+
+atexit.register(_shutdown_runner_and_client)
+
+
+async def _fetch_html(url: str, host: str) -> str:
+    client = _get_client()
+    state = _get_loop_state()
+
+    semaphore = state.wiki_semaphore if host == "wiki" else state.wowhead_semaphore
+    throttle = state.throttles[host]
+
+    async def _do_request() -> httpx.Response:
+        async with semaphore:
+            await throttle.wait()
+            response = await client.get(url)
+
+        if response.status_code in (429, 502, 503):
+            raise httpx.HTTPStatusError(
+                f"{response.status_code} status for {url}",
+                request=response.request,
+                response=response,
+            )
+
+        response.raise_for_status()
+        return response
+
+    try:
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(6),
+            wait=wait_exponential(multiplier=1, min=2, max=60),
+            retry=retry_if_exception_type(httpx.HTTPError),
+            reraise=True,
+        ):
+            with attempt:
+                response = await _do_request()
+                return response.text
+    except RetryError as exc:
+        print(f"SKIP: nie udało się pobrać {url} po 6 próbach: {exc}")
+        raise
+
+
+async def pobierz_soup_async(url: str, parser: str = "html.parser", host: str | None = None) -> BeautifulSoup | None:
+    target_host = host or ("wowhead" if "wowhead" in url else "wiki")
+    try:
+        html = await _fetch_html(url, target_host)
+        return BeautifulSoup(html, parser)
+    except (httpx.HTTPError, RetryError) as e:
+        print(f"Błąd pobierania {url}: {e}")
+        return None
+
+
+def pobierz_soup(url: str, parser: str = "html.parser", host: str | None = None) -> BeautifulSoup | None:
+    runner = _get_runner()
+    return runner.run(pobierz_soup_async(url, parser=parser, host=host))
 
 
 def pobierz_tresc(soup: BeautifulSoup):

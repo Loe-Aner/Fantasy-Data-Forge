@@ -1,10 +1,13 @@
+import asyncio
 import os
+import random
 import re
 import time
-import random
+
 import pandas as pd
 from openpyxl import Workbook, load_workbook
-from scraper_wiki import pobierz_soup
+from scraper_wiki_main import pobierz_soup_async
+import scraper_wiki_main as sw
 
 
 def wyciagnij_patch(soup):
@@ -29,11 +32,10 @@ def normalize_cell(v):
         return None
     return v
 
-def buduj_mapping_01():
-    """
-    Tworzy nowego excela, który jest rozbudowany o nazwę linii fabularnej oraz w którym patchu dodano misję.
-    Funkcja bazuje na excelu "surowym", który znajduje się w folderze "surowe" -> plik "wowhead_id_kraina_dodatek".
-    """
+async def _pobierz_soup_wowhead(url: str):
+    return await pobierz_soup_async(url, parser="lxml", host="wowhead")
+
+async def buduj_mapping_01_async():
     raw_path = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\wowhead_id_kraina_dodatek.xlsx"
     out_path = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\mapping_01.xlsx"
 
@@ -41,7 +43,8 @@ def buduj_mapping_01():
     output_sheet = "mapping_01"
     url_col = "MISJA_URL_WOWHEAD"
 
-    batch_size = 10
+    max_concurrency = 4
+    batch_size = 25
 
     df_raw = pd.read_excel(raw_path, sheet_name=input_sheet)
     print(f"Odczytano {len(df_raw)} wierszy z pliku surowego")
@@ -83,61 +86,75 @@ def buduj_mapping_01():
         print("Nic nowego do zrobienia")
         return
 
+    row_by_url = {
+        str(getattr(row, url_col)).strip(): row._asdict()
+        for row in df_new.itertuples(index=False)
+    }
+
     wb = load_workbook(out_path)
     ws = wb[output_sheet]
+
+    urls = [str(u).strip() for u in df_new[url_col].tolist()]
+
+    sem = asyncio.Semaphore(max_concurrency)
+
+    async def _scrape_one(link: str):
+        async with sem:
+            soup = await _pobierz_soup_wowhead(link)
+
+        if soup is None:
+            return link, "", "", "Błąd pobierania strony"
+
+        element = soup.select_one(".quick-facts-storyline-title")
+        storyline = element.get_text().strip() if element else ""
+        patch = wyciagnij_patch(soup) or ""
+
+        return link, storyline, patch, ""
 
     bufor = []
     dopisane = 0
     bledy = 0
 
-    for idx, row in enumerate(df_new.itertuples(index=False), start=1):
-        row_dict = row._asdict()
-        link = row_dict[url_col]
+    print(f"Start scrapowania {len(urls)} stron (max_concurrency={max_concurrency})")
 
-        print(f"[{idx}/{len(df_new)}] Scrapuję: {link}")
-        soup = pobierz_soup(link, parser="lxml")
+    for start in range(0, len(urls), batch_size):
+        batch_urls = urls[start:start + batch_size]
+        print(f"\nPaczka URL-i: {start + 1}-{start + len(batch_urls)} / {len(urls)}")
 
-        if soup is None:
-            bledy += 1
-            print("  Błąd pobierania strony")
-            continue
+        wyniki = await asyncio.gather(*(_scrape_one(u) for u in batch_urls))
 
-        element = soup.select_one(".quick-facts-storyline-title")
-        storyline = element.get_text().strip() if element else ""
+        for link, storyline, patch, err in wyniki:
+            if err:
+                bledy += 1
+                print(f"  FAIL: {link} | {err}")
+                continue
 
-        if not storyline:
-            print("  Brak storyline — zapisuję pusty")
+            row_dict = row_by_url.get(link)
+            if not row_dict:
+                bledy += 1
+                print(f"  FAIL: {link} | brak wiersza wejściowego w row_by_url")
+                continue
 
-        patch = wyciagnij_patch(soup)
+            row_dict["storyline"] = storyline
+            row_dict["patch"] = patch
 
-        if not patch:
-            print("  Brak patcha")
+            out_row = [normalize_cell(row_dict.get(col)) for col in headers]
+            bufor.append(out_row)
 
-        row_dict["storyline"] = storyline
-        row_dict["patch"] = patch
+            print(f"  OK: {link} | storyline='{storyline}' | patch='{patch}'")
 
-        out_row = [normalize_cell(row_dict.get(col)) for col in headers]
-        bufor.append(out_row)
-
-        print(f"  OK | storyline='{storyline}' | patch='{patch}'")
-
-        if len(bufor) >= batch_size:
+        if bufor:
             start_row = ws.max_row + 1
             for r in bufor:
                 ws.append(r)
             wb.save(out_path)
             dopisane += len(bufor)
-            print(f"Zapisano paczkę {len(bufor)} wierszy od wiersza {start_row}")
+            print(f"Zapisano {len(bufor)} wierszy od wiersza {start_row}")
             bufor = []
 
-        time.sleep(random.uniform(1.3, 1.9))
+    print(f"\nKoniec. Dopisano: {dopisane}, błędy pobierania: {bledy}")
 
-    if bufor:
-        start_row = ws.max_row + 1
-        for r in bufor:
-            ws.append(r)
-        wb.save(out_path)
-        dopisane += len(bufor)
-        print(f"Zapisano ostatnią paczkę {len(bufor)} wierszy od wiersza {start_row}")
 
-    print(f"Koniec. Dopisano: {dopisane}, błędy pobierania: {bledy}")
+def buduj_mapping_01():
+    runner = sw._get_runner()
+    runner.run(buduj_mapping_01_async())

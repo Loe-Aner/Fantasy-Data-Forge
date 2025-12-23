@@ -1,15 +1,16 @@
 from pomocnicze_funkcje_sql import *
-from scraper_wiki import parsuj_misje_z_url
+import scraper_wiki_main as sw
+from scraper_wiki_async import parsuj_wiele_misji_async
 import time
 from sqlalchemy import text
 
 # BAZA 
 kategorie = [
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
 ]
 silnik = utworz_engine_do_db()
@@ -38,54 +39,73 @@ linki = pobierz_linki_do_scrapowania(silnik)
 
 print(f"Do przerobienia: {len(linki)} misji")
 
-for i, url in enumerate(linki, start=1):
-    print(f"\n[{i}/{len(linki)}] Przetwarzam: {url}")
+MAX_CONCURRENCY = 5
+BATCH_SIZE = 30
 
-    try:
-        wynik = parsuj_misje_z_url(url)
+runner = sw._get_runner()
 
-        zapisz_npc_i_status_do_db_z_wyniku(
-            silnik=silnik,
-            tabela_npc="dbo.NPC",
-            tabela_npc_statusy="dbo.NPC_STATUSY",
-            szukaj_wg=["Start_NPC", "Koniec_NPC"],
-            wyscrapowana_tresc=wynik,
-            zrodlo="wiki",
-            status="0_ORYGINAŁ"
-        )
+def chunks(lista: list[str], size: int):
+    for i in range(0, len(lista), size):
+        yield lista[i : i + size]
 
-        misja_id = zapisz_misje_i_statusy_do_db_z_wyniku(
-            silnik=silnik,
-            wynik=wynik,
-            tabela_npc="dbo.NPC",
-            tabela_misje="dbo.MISJE",
-            tabela_misje_statusy="dbo.MISJE_STATUSY",
-            status="0_ORYGINAŁ"
-        )
+przerobione = 0
 
-        zapisz_dialogi_statusy_do_db_z_wyniku(
-            silnik=silnik,
-            wynik=wynik,
-            misja_id=misja_id,
-            tabela_npc="dbo.NPC",
-            tabela_npc_statusy="dbo.NPC_STATUSY",
-            tabela_dialogi_statusy="dbo.DIALOGI_STATUSY",
-            zrodlo="wiki",
-            status="0_ORYGINAŁ"
-        )
+for batch_nr, batch in enumerate(chunks(linki, BATCH_SIZE), start=1):
+    print(f"\n=== PACZKA {batch_nr} | {len(batch)} linków ===")
 
-        zapisz_zrodlo_do_db(
-            silnik=silnik,
-            tabela_zrodlo="dbo.ZRODLO",
-            misja_id=misja_id,
-            wynik=wynik,
-            zrodlo="wiki"
-        )
+    pary = runner.run(parsuj_wiele_misji_async(batch, max_concurrency=MAX_CONCURRENCY))
 
-        print(f"OK - zapisano MISJA_ID = {misja_id}")
-        usun_link_z_kolejki(silnik, url)
+    for i, (url, wynik) in enumerate(pary, start=1):
+        print(f"\n[{i}/{len(batch)}] Zapisuję: {url}")
 
-    except Exception as e:
-        print(f"BŁĄD przy {url}: {e}")
+        if wynik is None:
+            print("SKIP - nie udało się pobrać/sparsować (wynik=None)")
+            continue
 
-    time.sleep(3)
+        try:
+            zapisz_npc_i_status_do_db_z_wyniku(
+                silnik=silnik,
+                tabela_npc="dbo.NPC",
+                tabela_npc_statusy="dbo.NPC_STATUSY",
+                szukaj_wg=["Start_NPC", "Koniec_NPC"],
+                wyscrapowana_tresc=wynik,
+                zrodlo="wiki",
+                status="0_ORYGINAŁ",
+            )
+
+            misja_id = zapisz_misje_i_statusy_do_db_z_wyniku(
+                silnik=silnik,
+                wynik=wynik,
+                tabela_npc="dbo.NPC",
+                tabela_misje="dbo.MISJE",
+                tabela_misje_statusy="dbo.MISJE_STATUSY",
+                status="0_ORYGINAŁ",
+            )
+
+            zapisz_dialogi_statusy_do_db_z_wyniku(
+                silnik=silnik,
+                wynik=wynik,
+                misja_id=misja_id,
+                tabela_npc="dbo.NPC",
+                tabela_npc_statusy="dbo.NPC_STATUSY",
+                tabela_dialogi_statusy="dbo.DIALOGI_STATUSY",
+                zrodlo="wiki",
+                status="0_ORYGINAŁ",
+            )
+
+            zapisz_zrodlo_do_db(
+                silnik=silnik,
+                tabela_zrodlo="dbo.ZRODLO",
+                misja_id=misja_id,
+                wynik=wynik,
+                zrodlo="wiki",
+            )
+
+            print(f"OK - zapisano MISJA_ID = {misja_id}")
+            usun_link_z_kolejki(silnik, url)
+            przerobione += 1
+
+        except Exception as e:
+            print(f"BŁĄD przy zapisie {url}: {e}")
+
+print(f"\nKoniec. Przerobione OK: {przerobione}/{len(linki)}")
