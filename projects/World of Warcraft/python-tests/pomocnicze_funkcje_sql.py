@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 import time
 from scraper_pomocnicze import wyscrapuj_linki_z_kategorii_z_paginacja
 from scraper_wiki import parsuj_misje_z_url
+import pandas as pd
 
 __all__ = [
     "_czy_duplikat",
@@ -31,7 +32,9 @@ __all__ = [
     "roznice_hashe",
     "hash_typ_lista",
     "roznice_hashe_usun_rekordy_z_db",
-    "hashuj_kategorie_i_zapisz_zrodlo"
+    "hashuj_kategorie_i_zapisz_zrodlo",
+
+    "aktualizuj_misje_z_excela"
 ]
 
 
@@ -921,3 +924,62 @@ def hashuj_kategorie_i_zapisz_zrodlo(
                 print(f"    ! BŁĄD: {e}")
 
             time.sleep(sleep_s)
+
+
+def aktualizuj_misje_z_excela(df, silnik, chunk_size=10_000):
+    df = df.dropna(how="all").copy()
+    df["NAZWA_LINII_FABULARNEJ_EN"] = df["NAZWA_LINII_FABULARNEJ_EN"].fillna("NoData")
+
+    q = text("SELECT MISJA_TYTUL_EN FROM dbo.MISJE;")
+    with silnik.connect() as conn:
+        tytuly_db = {row[0] for row in conn.execute(q).all()}
+
+    excel_total = len(df)
+    df = df[df["MISJA_TYTUL_EN"].isin(tytuly_db)]
+    match_total = len(df)
+
+    if match_total == 0:
+        print(f"UPDATE MISJE: 0 dopasowań (Excel={excel_total}, DB={len(tytuly_db)})")
+        return
+
+    u = text("""
+    UPDATE dbo.MISJE
+    SET MISJA_ID_Z_GRY            = :misja_id_z_gry,
+        MISJA_URL_WOWHEAD         = :misja_url_wowhead,
+        NAZWA_LINII_FABULARNEJ_EN = :nazwa_linii_fabularnej_en,
+        KONTYNENT_EN              = :kontynent_en,
+        KRAINA_EN                 = :kraina_en,
+        DODATEK_EN                = :dodatek_en,
+        KONTYNENT_PL              = :kontynent_pl,
+        KRAINA_PL                 = :kraina_pl,
+        DODATEK_PL                = :dodatek_pl,
+        DODANO_W_PATCHU           = :dodano_w_patchu,
+        DATA_UPDATE               = SYSDATETIME()
+    WHERE MISJA_TYTUL_EN = :misja_tytul_en
+    """)
+
+    parametry = [
+        {
+            "misja_id_z_gry": int(r["MISJA_ID_Z_GRY"]) if pd.notna(r["MISJA_ID_Z_GRY"]) else None,
+            "misja_url_wowhead": r["MISJA_URL_WOWHEAD"],
+            "nazwa_linii_fabularnej_en": r["NAZWA_LINII_FABULARNEJ_EN"],
+            "kontynent_en": r["KONTYNENT_EN"],
+            "kraina_en": r["KRAINA_EN_FINAL"],
+            "dodatek_en": r["DODATEK_EN"],
+            "kontynent_pl": r["KONTYNENT_PL"],
+            "kraina_pl": r["KRAINA_PL"],
+            "dodatek_pl": r["DODATEK_PL"],
+            "dodano_w_patchu": r["DODANO_W_PATCHU"],
+            "misja_tytul_en": r["MISJA_TYTUL_EN"],
+        }
+        for r in df.to_dict("records")
+    ]
+
+    total = len(parametry)
+    chunks = (total + chunk_size - 1) // chunk_size
+
+    with silnik.begin() as conn:
+        for i in range(0, total, chunk_size):
+            conn.execute(u, parametry[i:i + chunk_size])
+
+    print(f"UPDATE MISJE: Excel={excel_total}, dopasowane_do_DB={match_total}, wysłane={total}, batche={chunks}")

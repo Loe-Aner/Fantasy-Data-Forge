@@ -4,8 +4,10 @@
 *.key
 __pycache__/
 *.pyc
-excel-mappingi/surowe/
 *.txt
 *.docx
 *.xlsx
 *.xlsm
+*.ipynb
+*.csv
+*.xls

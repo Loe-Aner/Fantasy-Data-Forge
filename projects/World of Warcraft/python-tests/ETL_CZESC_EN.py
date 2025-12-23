@@ -5,11 +5,12 @@ from sqlalchemy import text
 
 # BAZA 
 kategorie = [
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
 ]
 silnik = utworz_engine_do_db()
 
