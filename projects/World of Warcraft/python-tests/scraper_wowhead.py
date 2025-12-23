@@ -1,10 +1,12 @@
+import asyncio
 import os
+import random
 import re
 import time
-import random
+
 import pandas as pd
 from openpyxl import Workbook, load_workbook
-from scraper_wiki import pobierz_soup
+from scraper_wiki import pobierz_soup_async
 
 
 def wyciagnij_patch(soup):
@@ -29,7 +31,11 @@ def normalize_cell(v):
         return None
     return v
 
-def buduj_mapping_01():
+async def _pobierz_soup_wowhead(url: str):
+    return await pobierz_soup_async(url, parser="lxml", host="wowhead")
+
+
+async def buduj_mapping_01_async():
     """
     Tworzy nowego excela, który jest rozbudowany o nazwę linii fabularnej oraz w którym patchu dodano misję.
     Funkcja bazuje na excelu "surowym", który znajduje się w folderze "surowe" -> plik "wowhead_id_kraina_dodatek".
@@ -95,7 +101,7 @@ def buduj_mapping_01():
         link = row_dict[url_col]
 
         print(f"[{idx}/{len(df_new)}] Scrapuję: {link}")
-        soup = pobierz_soup(link, parser="lxml")
+        soup = await _pobierz_soup_wowhead(link)
 
         if soup is None:
             bledy += 1
@@ -130,7 +136,7 @@ def buduj_mapping_01():
             print(f"Zapisano paczkę {len(bufor)} wierszy od wiersza {start_row}")
             bufor = []
 
-        time.sleep(random.uniform(1.3, 1.9))
+        await asyncio.sleep(random.uniform(1.3, 1.9))
 
     if bufor:
         start_row = ws.max_row + 1
@@ -141,3 +147,7 @@ def buduj_mapping_01():
         print(f"Zapisano ostatnią paczkę {len(bufor)} wierszy od wiersza {start_row}")
 
     print(f"Koniec. Dopisano: {dopisane}, błędy pobierania: {bledy}")
+
+
+def buduj_mapping_01():
+    asyncio.run(buduj_mapping_01_async())
