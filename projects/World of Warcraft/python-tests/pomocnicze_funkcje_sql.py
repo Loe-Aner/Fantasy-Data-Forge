@@ -88,25 +88,6 @@ def _czy_duplikat(e: IntegrityError) -> bool:
         and any("2627" in str(arg) or "2601" in str(arg) for arg in getattr(e.orig, "args", []))
     )
 
-# zastanowic sie nad WHERE i innymi
-# def pobierz_dane_z_db(
-#         silnik, 
-#         tabela: str, 
-#         kolumny_FROM: list | None = None,
-#         top: int | None = None
-#     ):
-#     t = f"TOP {top}" if top is not None else ""
-#     kf = ", ".join(kolumny_FROM) if kolumny_FROM is not None else "*"
-
-#     q = text(f"""
-#       SELECT {t}
-#              {kf}
-#       FROM {tabela}
-#     """)
-    
-#     with silnik.connect() as conn:
-#         wiersze = conn.execute(q).mappings().all()
-#         return [dict(w) for w in wiersze]
 
 def zapisz_npc_i_status_do_db(
         silnik,
@@ -658,30 +639,6 @@ def zapisz_link_do_scrapowania(
             return
         raise
 
-    
-# def zapisz_linki_do_db(
-#         silnik,
-#         tresc,
-#         zrodlo: str
-#     ):
-#     """
-#     Przekazać tylko pierwszą misję w danym ciągu z wiki.
-#     """
-
-#     q_insert_url = text("""
-#         INSERT INTO dbo.LINKI_DO_SCRAPOWANIA (URL, ZRODLO_NAZWA)
-#         VALUES (:url, :zrodlo)
-#     """)
-
-#     with silnik.begin() as conn:
-#         for url in wyscrapuj_linki_z_progression_wiki(tresc):
-#             if not url:
-#                 continue
-#             try:
-#                 conn.execute(q_insert_url, {"url": url, "zrodlo": zrodlo})
-#             except IntegrityError as e:
-#                 if not _czy_duplikat(e):
-#                     raise
 
 def wyscrapuj_kategorie_questow_i_zapisz_linki_do_db(
         silnik,

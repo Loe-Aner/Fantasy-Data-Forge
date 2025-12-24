@@ -1,16 +1,16 @@
 import asyncio
 import os
-import random
 import re
-import time
-
 import pandas as pd
 from openpyxl import Workbook, load_workbook
-from scraper_wiki_main import pobierz_soup_async
-import scraper_wiki_main as sw
+from bs4 import BeautifulSoup
 
 
-def wyciagnij_patch(soup):
+from scraper_wiki_async import WoWScraperService
+
+
+def wyciagnij_patch_logic(soup: BeautifulSoup) -> str:
+    """Logika wyciągania patcha z soup."""
     for s in soup.find_all("script"):
         t = s.get_text(" ", strip=True)
         if "Added in patch" not in t:
@@ -23,6 +23,45 @@ def wyciagnij_patch(soup):
             return m.group(1)
     return ""
 
+def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str]:
+    """
+    Funkcja worker. Przyjmuje czysty HTML, zwraca gotowe dane.
+    Zwraca krotkę: (url, storyline, patch, error_msg)
+    """
+    if not html:
+        return url, "", "", "Brak HTML"
+
+    try:
+        soup = BeautifulSoup(html, "lxml")
+    except Exception:
+        soup = BeautifulSoup(html, "html.parser")
+
+    element = soup.select_one(".quick-facts-storyline-title")
+    storyline = element.get_text().strip() if element else ""
+    patch = wyciagnij_patch_logic(soup)
+    
+    return url, storyline, patch, ""
+
+# --- KLASA SCRAPERA WOWHEAD (DZIEDZICZENIE) ---
+
+class WowheadScraper(WoWScraperService):
+    """
+    Korzystamy z silnika WoWScraperService (retry, limity, klient HTTP),
+    ale zmieniamy metodę process_url, żeby parsowała pod Wowheada.
+    """
+    async def process_url(self, url: str):
+        html = await self._fetch_html(url)
+        
+        if not html:
+            return url, "", "", "Błąd pobierania (HTTP)"
+
+        loop = asyncio.get_running_loop()
+        wynik = await loop.run_in_executor(None, parsuj_wowhead_html, html, url)
+        
+        return wynik
+
+# --- FUNKCJE POMOCNICZE EXCEL ---
+
 def normalize_cell(v):
     if v is None:
         return None
@@ -32,8 +71,10 @@ def normalize_cell(v):
         return None
     return v
 
-async def _pobierz_soup_wowhead(url: str):
-    return await pobierz_soup_async(url, parser="lxml", host="wowhead")
+def zapisz_excel_w_tle(wb: Workbook, path: str):
+    wb.save(path)
+
+# --- GŁÓWNA PĘTLA ---
 
 async def buduj_mapping_01_async():
     raw_path = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\wowhead_id_kraina_dodatek.xlsx"
@@ -42,13 +83,14 @@ async def buduj_mapping_01_async():
     input_sheet = "prawie_gotowe_dane"
     output_sheet = "mapping_01"
     url_col = "MISJA_URL_WOWHEAD"
+    
+    # Konfiguracja
+    MAX_CONCURRENCY = 4
+    BATCH_SIZE = 25
 
-    max_concurrency = 4
-    batch_size = 25
-
+    print(f"Wczytuję dane z: {raw_path}")
     df_raw = pd.read_excel(raw_path, sheet_name=input_sheet)
-    print(f"Odczytano {len(df_raw)} wierszy z pliku surowego")
-
+    
     if url_col not in df_raw.columns:
         raise ValueError(f"Brak kolumny {url_col}")
 
@@ -67,94 +109,77 @@ async def buduj_mapping_01_async():
 
     df_out = pd.read_excel(out_path, sheet_name=output_sheet)
     if url_col in df_out.columns:
-        existing_urls = set(
-            df_out[url_col]
-            .dropna()
-            .astype(str)
-            .str.strip()
-            .tolist()
-        )
+        existing_urls = set(df_out[url_col].dropna().astype(str).str.strip().tolist())
     else:
         existing_urls = set()
 
-    print(f"W pliku wynikowym jest już {len(existing_urls)} URL-i")
-
     df_new = df_raw[~df_raw[url_col].isin(existing_urls)].copy()
-    print(f"Nowych questów do pobrania: {len(df_new)}")
+    print(f"Postęp: {len(existing_urls)} zrobionych. Nowych do pobrania: {len(df_new)}")
 
     if df_new.empty:
-        print("Nic nowego do zrobienia")
+        print("Wszystko zrobione! Idź pograć w WoW-a.")
         return
 
     row_by_url = {
         str(getattr(row, url_col)).strip(): row._asdict()
         for row in df_new.itertuples(index=False)
     }
+    
+    urls_to_process = list(row_by_url.keys())
 
     wb = load_workbook(out_path)
     ws = wb[output_sheet]
 
-    urls = [str(u).strip() for u in df_new[url_col].tolist()]
+    scraper = WowheadScraper(concurrency=MAX_CONCURRENCY)
+    loop = asyncio.get_running_loop()
 
-    sem = asyncio.Semaphore(max_concurrency)
-
-    async def _scrape_one(link: str):
-        async with sem:
-            soup = await _pobierz_soup_wowhead(link)
-
-        if soup is None:
-            return link, "", "", "Błąd pobierania strony"
-
-        element = soup.select_one(".quick-facts-storyline-title")
-        storyline = element.get_text().strip() if element else ""
-        patch = wyciagnij_patch(soup) or ""
-
-        return link, storyline, patch, ""
-
-    bufor = []
     dopisane = 0
     bledy = 0
 
-    print(f"Start scrapowania {len(urls)} stron (max_concurrency={max_concurrency})")
+    try:
+        print(f"Start scrapowania {len(urls_to_process)} misji...")
+        
+        for start in range(0, len(urls_to_process), BATCH_SIZE):
+            batch_urls = urls_to_process[start : start + BATCH_SIZE]
+            print(f"\nBatch {start + 1}-{start + len(batch_urls)} / {len(urls_to_process)}")
 
-    for start in range(0, len(urls), batch_size):
-        batch_urls = urls[start:start + batch_size]
-        print(f"\nPaczka URL-i: {start + 1}-{start + len(batch_urls)} / {len(urls)}")
+            tasks = [scraper.process_url(u) for u in batch_urls]
+            wyniki = await asyncio.gather(*tasks)
 
-        wyniki = await asyncio.gather(*(_scrape_one(u) for u in batch_urls))
-
-        for link, storyline, patch, err in wyniki:
-            if err:
-                bledy += 1
-                print(f"  FAIL: {link} | {err}")
-                continue
-
-            row_dict = row_by_url.get(link)
-            if not row_dict:
-                bledy += 1
-                print(f"  FAIL: {link} | brak wiersza wejściowego w row_by_url")
-                continue
-
-            row_dict["storyline"] = storyline
-            row_dict["patch"] = patch
-
-            out_row = [normalize_cell(row_dict.get(col)) for col in headers]
-            bufor.append(out_row)
-
-            print(f"  OK: {link} | storyline='{storyline}' | patch='{patch}'")
-
-        if bufor:
-            start_row = ws.max_row + 1
-            for r in bufor:
-                ws.append(r)
-            wb.save(out_path)
-            dopisane += len(bufor)
-            print(f"Zapisano {len(bufor)} wierszy od wiersza {start_row}")
             bufor = []
+            
+            for link, storyline, patch, err in wyniki:
+                if err:
+                    bledy += 1
+                    print(f" [FAIL] {link} -> {err}")
+                    continue
+                
+                row_data = row_by_url.get(link)
+                if not row_data:
+                    continue
 
-    print(f"\nKoniec. Dopisano: {dopisane}, błędy pobierania: {bledy}")
+                row_data["storyline"] = storyline
+                row_data["patch"] = patch
+                
+                excel_row = [normalize_cell(row_data.get(h)) for h in headers]
+                bufor.append(excel_row)
+                print(f" [OK] {link} (Patch: {patch})")
 
+            if bufor:
+                for r in bufor:
+                    ws.append(r)
+
+                print(" -> Zapisuję batch do pliku...")
+                await loop.run_in_executor(None, zapisz_excel_w_tle, wb, out_path)
+                dopisane += len(bufor)
+
+    finally:
+        await scraper.close()
+
+    print(f"\nPodsumowanie: Sukces: {dopisane}, Błędy: {bledy}")
 
 def buduj_mapping_01():
-    runner = sw._get_runner()
-    runner.run(buduj_mapping_01_async())
+    asyncio.run(buduj_mapping_01_async())
+
+if __name__ == "__main__":
+    buduj_mapping_01()

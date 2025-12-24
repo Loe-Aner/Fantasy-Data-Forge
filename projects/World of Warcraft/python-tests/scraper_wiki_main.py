@@ -343,6 +343,7 @@ def parsuj_zakonczenie(tresc):
 def parsuj_nagrode(tresc):
     return parsuj_sekcje_paragrafowe(tresc, "Rewards")
 
+
 def wyczysc_tekst_en(tekst: str) -> str:
     if not tekst:
         return ""
@@ -418,7 +419,6 @@ def parsuj_wspolna_kolejnosc_gossipow_i_dymkow(tresc):
             })
 
     return wynik
-
 
 
 def indeksuj_linie(text):

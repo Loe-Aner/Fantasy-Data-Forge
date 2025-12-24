@@ -3,15 +3,16 @@ import scraper_wiki_main as sw
 from scraper_wiki_async import parsuj_wiele_misji_async
 import time
 from sqlalchemy import text
+import asyncio
 
 # BAZA 
 kategorie = [
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
+    #"htps://warcraft.wiki.gg/wiki/Category:Quests_at_83",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
 ]
 silnik = utworz_engine_do_db()
 
@@ -42,7 +43,6 @@ print(f"Do przerobienia: {len(linki)} misji")
 MAX_CONCURRENCY = 5
 BATCH_SIZE = 30
 
-runner = sw._get_runner()
 
 def chunks(lista: list[str], size: int):
     for i in range(0, len(lista), size):
@@ -53,7 +53,7 @@ przerobione = 0
 for batch_nr, batch in enumerate(chunks(linki, BATCH_SIZE), start=1):
     print(f"\n=== PACZKA {batch_nr} | {len(batch)} linków ===")
 
-    pary = runner.run(parsuj_wiele_misji_async(batch, max_concurrency=MAX_CONCURRENCY))
+    pary = asyncio.run(parsuj_wiele_misji_async(batch, max_concurrency=MAX_CONCURRENCY))
 
     for i, (url, wynik) in enumerate(pary, start=1):
         print(f"\n[{i}/{len(batch)}] Zapisuję: {url}")

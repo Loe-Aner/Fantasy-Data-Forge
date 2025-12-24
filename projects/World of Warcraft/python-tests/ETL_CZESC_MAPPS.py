@@ -24,7 +24,7 @@ buduj_mapping_01()
 
 # TUTAJ JEST ROBIONY UPDATE TABELI dbo.MISJE O POZOSTALE ATRYBUTY JAK LINK DO WOWHEAD, GLOWNE ID MISJI Z GRY ITP.
 # ZANIM ODPALE SKRYPT, TRZEBA SPRAWDZIC CZY FORMULY W EXCELU NIE WYSYPALY SIE PO DODANIU DANYCH WYZEJ
-aktualizuj_misje_z_excela(
-    df, 
-    silnik
-    )
+# aktualizuj_misje_z_excela(
+#     df, 
+#     silnik
+#     )
