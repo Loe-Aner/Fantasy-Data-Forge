@@ -1,11 +1,17 @@
-from sqlalchemy import create_engine
-from sqlalchemy.engine import URL, Engine
-from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
+import os
+import json
 import time
+
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+from sqlalchemy import create_engine, text, bindparam
+from sqlalchemy.engine import URL, Engine
+from sqlalchemy.exc import IntegrityError
+import pandas as pd
+
 from scraper_pomocnicze import wyscrapuj_linki_z_kategorii_z_paginacja
 from scraper_wiki_main import parsuj_misje_z_url
-import pandas as pd
 
 __all__ = [
     "_czy_duplikat",
@@ -34,7 +40,10 @@ __all__ = [
     "roznice_hashe_usun_rekordy_z_db",
     "hashuj_kategorie_i_zapisz_zrodlo",
 
-    "aktualizuj_misje_z_excela"
+    "aktualizuj_misje_z_excela",
+
+    "pobierz_przetworz_zapisz_batch_lista",
+    "pobierz_liste_id_dla_dodatku"
 ]
 
 
@@ -940,3 +949,118 @@ def aktualizuj_misje_z_excela(df, silnik, chunk_size=10_000):
             conn.execute(u, parametry[i:i + chunk_size])
 
     print(f"UPDATE MISJE: Excel={excel_total}, dopasowane_do_DB={match_total}, wysłane={total}, batche={chunks}")
+
+def zaladuj_api_i_klienta(
+        nazwa_api: str
+    ):
+    load_dotenv()
+    API_KEY = os.environ.get(nazwa_api)
+
+    if not API_KEY:
+        raise ValueError("BRAK KLUCZA!")
+    else:
+        print("KLUCZ ZWARTY I GOTOWY!")
+        return genai.Client(api_key=API_KEY)
+
+def pobierz_przetworz_zapisz_batch_lista(
+        silnik, 
+        lista_id_batch,
+        nazwa_dodatku,
+        folder_zapisz: str = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\slowa_kluczowe_batche"
+    ):
+    
+    min_b = min(lista_id_batch)
+    max_b = max(lista_id_batch)
+    nazwa_pliku = f"batch_{min_b}_{max_b}.csv"
+    pelna_sciezka = os.path.join(folder_zapisz, nazwa_pliku)
+
+    klient = zaladuj_api_i_klienta("API_SŁOWA_KLUCZOWE")
+    
+    q = text("""
+    WITH Statusy_Agg AS (
+        SELECT MISJA_ID_MOJE_FK, STRING_AGG(ISNULL(TRESC, ''), '. ') AS TRESC_STATUSOW
+        FROM dbo.MISJE_STATUSY 
+        WHERE STATUS = '0_ORYGINAŁ' 
+        GROUP BY MISJA_ID_MOJE_FK
+    ),
+    Dialogi_Agg AS (
+        SELECT MISJA_ID_MOJE_FK, STRING_AGG(ISNULL(TRESC, ''), '. ') AS TRESC_DIALOGOW
+        FROM dbo.DIALOGI_STATUSY 
+        WHERE STATUS = '0_ORYGINAŁ' 
+        GROUP BY MISJA_ID_MOJE_FK
+    )
+    SELECT 
+        m.MISJA_ID_MOJE_PK,
+        m.MISJA_TYTUL_EN + '. ' + COALESCE(s.TRESC_STATUSOW, '') + '. ' + COALESCE(d.TRESC_DIALOGOW, '') AS PELNY_TEKST
+    FROM dbo.MISJE AS m
+    LEFT JOIN Statusy_Agg AS s 
+        ON m.MISJA_ID_MOJE_PK = s.MISJA_ID_MOJE_FK
+    LEFT JOIN Dialogi_Agg d 
+        ON m.MISJA_ID_MOJE_PK = d.MISJA_ID_MOJE_FK
+    WHERE m.DODATEK_EN = :dodatek
+      AND m.MISJA_ID_MOJE_PK IN :lista_id
+    """).bindparams(bindparam("lista_id", expanding=True))
+
+    with silnik.connect() as conn:
+        slownik = conn.execute(q, {
+            "lista_id": list(lista_id_batch), 
+            "dodatek": nazwa_dodatku
+        }).mappings()
+        
+        wsad_dla_geminisia = [
+            {"id": w["MISJA_ID_MOJE_PK"], "txt": w["PELNY_TEKST"]} 
+            for w in slownik
+        ]
+
+    if not wsad_dla_geminisia:
+        print(f"Brak danych dla batcha {min_b}-{max_b}.")
+        return None
+
+    instrukcja = """
+    You are a strict Data Extraction Engine for World of Warcraft.
+    Analyze the provided quest texts to extract Proper Nouns.
+    CRITICAL RULES:
+    1. Return an object for EVERY single "id".
+    2. If no keywords found, return "keywords": [].
+    3. Ignore common words.
+    Return ONLY a JSON list.
+    """
+
+    try:
+        odpowiedz = klient.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=json.dumps(wsad_dla_geminisia),
+            config={
+                "system_instruction": instrukcja,
+                "response_mime_type": "application/json"
+            }
+        )
+        
+        wynik_lista = json.loads(odpowiedz.text)
+        df = pd.DataFrame(wynik_lista).explode("keywords").reset_index(drop=True)
+        df.to_csv(pelna_sciezka, index=False, encoding="utf-8-sig", sep=";")
+        
+        print(f"Zapisano: {nazwa_pliku} (Ilość: {len(lista_id_batch)})")
+        time.sleep(2) 
+        return pelna_sciezka
+                
+    except Exception as e:
+        print(f"Błąd w batchu {min_b}-{max_b}: {e}")
+        return None
+    
+
+def pobierz_liste_id_dla_dodatku(silnik, nazwa_dodatku: str):
+    """
+    Zwraca listę wszystkich istniejących ID dla danego dodatku (np. [1, 2, 5, 1200, 1201]).
+    """
+    q = text("""
+        SELECT MISJA_ID_MOJE_PK
+        FROM dbo.MISJE
+        WHERE DODATEK_EN = :dodatek
+        ORDER BY MISJA_ID_MOJE_PK
+    """)
+    
+    with silnik.connect() as conn:
+        wynik = [row[0] for row in conn.execute(q, {"dodatek": nazwa_dodatku})]
+        
+    return wynik

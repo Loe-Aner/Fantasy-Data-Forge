@@ -1,6 +1,7 @@
+import pandas as pd
+
 from scraper_wowhead import *
 from pomocnicze_funkcje_sql import *
-import pandas as pd
 
 silnik = utworz_engine_do_db()
 
@@ -24,7 +25,37 @@ buduj_mapping_01()
 
 # TUTAJ JEST ROBIONY UPDATE TABELI dbo.MISJE O POZOSTALE ATRYBUTY JAK LINK DO WOWHEAD, GLOWNE ID MISJI Z GRY ITP.
 # ZANIM ODPALE SKRYPT, TRZEBA SPRAWDZIC CZY FORMULY W EXCELU NIE WYSYPALY SIE PO DODANIU DANYCH WYZEJ
-# aktualizuj_misje_z_excela(
-#     df, 
-#     silnik
-#     )
+aktualizuj_misje_z_excela(
+    df, 
+    silnik
+)
+
+
+# TUTAJ GENEROWANE SA PACZKI CSV'EK - NUMERY W NAZWIE OZNACZAJA ID PRZYPISANE PRZEZE MNIE W DB
+# PACZKI TE POTEM SA LACZONE W POWER QUERY W EXCELU
+NAZWA_DODATKU = 'Midnight'
+BATCH_SIZE = 50
+
+wszystkie_id = pobierz_liste_id_dla_dodatku(silnik, NAZWA_DODATKU)
+liczba_misji = len(wszystkie_id)
+
+if liczba_misji == 0:
+    print(f"Brak misji dla dodatku '{NAZWA_DODATKU}'.")
+else:
+    print(f"--- START ZADANIA ---")
+    print(f"Dodatek: {NAZWA_DODATKU}")
+    print(f"Znaleziono misji: {liczba_misji}")
+    print(f"Planowane paczki: {(liczba_misji // BATCH_SIZE) + 1}")
+    print("---------------------")
+
+    for i in range(0, liczba_misji, BATCH_SIZE):  
+        paczka_id = wszystkie_id[i : i + BATCH_SIZE]
+        
+        print(f"Przetwarzam misje {i+1} do {min(i+BATCH_SIZE, liczba_misji)} (z puli {liczba_misji})...")
+        
+        pobierz_przetworz_zapisz_batch_lista(
+            silnik=silnik,
+            lista_id_batch=paczka_id,
+            nazwa_dodatku=NAZWA_DODATKU
+        )
+    print("--- KONIEC ---")
