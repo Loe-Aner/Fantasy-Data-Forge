@@ -964,11 +964,12 @@ def zaladuj_api_i_klienta(
 
 def pobierz_przetworz_zapisz_batch_lista(
         silnik, 
-        lista_id_batch,
+        lista_id_batch, 
         nazwa_dodatku,
         folder_zapisz: str = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\slowa_kluczowe_batche"
     ):
     
+    # Nazwa pliku
     min_b = min(lista_id_batch)
     max_b = max(lista_id_batch)
     nazwa_pliku = f"batch_{min_b}_{max_b}.csv"
@@ -999,7 +1000,7 @@ def pobierz_przetworz_zapisz_batch_lista(
         ON m.MISJA_ID_MOJE_PK = d.MISJA_ID_MOJE_FK
     WHERE m.DODATEK_EN = :dodatek
       AND m.MISJA_ID_MOJE_PK IN :lista_id
-    """).bindparams(bindparam("lista_id", expanding=True))
+    """).bindparams(bindparam('lista_id', expanding=True))
 
     with silnik.connect() as conn:
         slownik = conn.execute(q, {
@@ -1017,13 +1018,32 @@ def pobierz_przetworz_zapisz_batch_lista(
         return None
 
     instrukcja = """
-    You are a strict Data Extraction Engine for World of Warcraft.
-    Analyze the provided quest texts to extract Proper Nouns.
-    CRITICAL RULES:
-    1. Return an object for EVERY single "id".
-    2. If no keywords found, return "keywords": [].
-    3. Ignore common words.
-    Return ONLY a JSON list.
+    You are an expert World of Warcraft Translator and Lorewalker.
+    Analyze the provided quest texts.
+    
+    TASK:
+    1. Extract Proper Nouns (Names, Locations, Organizations, Items).
+    2. Provide a Polish translation for each extracted term based on WoW context.
+       - Names (Jaina): Keep original or standard Polish equivalent if exists.
+       - Items/Objects (Twilight's Blade): Translate to Polish (Ostrze Zmierzchu).
+       - Locations (Stormwind): Use official PL localization (Wichrogród) or keep English if untranslatable.
+    3. Assign a Category: NPC, LOCATION, ITEM, ORG, OTHER.
+
+    CRITICAL OUTPUT RULES:
+    - Return ONLY a JSON list of objects.
+    - Structure:
+      [
+        {
+          "quest_id": 123,
+          "extracted": [
+             {"en": "Jaina Proudmoore", "pl": "Jaina Proudmoore", "type": "NPC"},
+             {"en": "Dalaran", "pl": "Dalaran", "type": "LOCATION"},
+             {"en": "Strange Key", "pl": "Dziwny Klucz", "type": "ITEM"}
+          ]
+        }
+      ]
+    - Return "extracted": [] if nothing found.
+    - Do not skip any Quest ID.
     """
 
     try:
@@ -1037,10 +1057,22 @@ def pobierz_przetworz_zapisz_batch_lista(
         )
         
         wynik_lista = json.loads(odpowiedz.text)
-        df = pd.DataFrame(wynik_lista).explode("keywords").reset_index(drop=True)
-        df.to_csv(pelna_sciezka, index=False, encoding="utf-8-sig", sep=";")
+
+        df = pd.DataFrame(wynik_lista)
+        df_exploded = df.explode("extracted")
+        df_exploded = df_exploded.dropna(subset=["extracted"])
+
+        if df_exploded.empty:
+            print(f"Batch {min_b}-{max_b} przetworzony, ale nie znaleziono słów kluczowych.")
+            return None
+
+        dane_szczegolowe = df_exploded["extracted"].apply(pd.Series)
         
-        print(f"Zapisano: {nazwa_pliku} (Ilość: {len(lista_id_batch)})")
+        df_final = pd.concat([df_exploded["quest_id"], dane_szczegolowe], axis=1)
+
+        df_final.to_csv(pelna_sciezka, index=False, encoding="utf-8-sig", sep=";")
+        
+        print(f"Zapisano: {nazwa_pliku} (Ilość wierszy: {len(df_final)})")
         time.sleep(2) 
         return pelna_sciezka
                 

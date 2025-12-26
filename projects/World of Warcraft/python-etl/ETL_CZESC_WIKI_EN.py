@@ -1,17 +1,15 @@
 from pomocnicze_funkcje_sql import *
-import scraper_wiki_main as sw
 from scraper_wiki_async import parsuj_wiele_misji_async
-import time
 from sqlalchemy import text
 import asyncio
 
 # BAZA 
 kategorie = [
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
-    #"htps://warcraft.wiki.gg/wiki/Category:Quests_at_83",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
 ]
 silnik = utworz_engine_do_db()

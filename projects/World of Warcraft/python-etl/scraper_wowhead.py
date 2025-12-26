@@ -84,9 +84,8 @@ async def buduj_mapping_01_async():
     output_sheet = "mapping_01"
     url_col = "MISJA_URL_WOWHEAD"
     
-    # Konfiguracja
-    MAX_CONCURRENCY = 4
-    BATCH_SIZE = 25
+    MAX_CONCURRENCY = 8
+    BATCH_SIZE = 48
 
     print(f"Wczytuję dane z: {raw_path}")
     df_raw = pd.read_excel(raw_path, sheet_name=input_sheet)
