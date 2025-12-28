@@ -43,7 +43,10 @@ __all__ = [
     "aktualizuj_misje_z_excela",
 
     "pobierz_przetworz_zapisz_batch_lista",
-    "pobierz_liste_id_dla_dodatku"
+    "pobierz_liste_id_dla_dodatku",
+
+    "slowa_kluczowe_do_db",
+    "mapowanie_misji_do_db"
 ]
 
 
@@ -51,17 +54,24 @@ def czerwony_przycisk(
         silnik
     ):
     q = text("""
-        DROP TABLE IF EXISTS dbo.LINKI_DO_SCRAPOWANIA;
+        DROP TABLE IF EXISTS dbo.MISJE_SLOWA_KLUCZOWE;
+        DROP TABLE IF EXISTS dbo.MISJE_SLOWA;
+        
         DROP TABLE IF EXISTS dbo.DIALOGI_STATUSY;
+        DROP TABLE IF EXISTS dbo.MISJE_STATUSY;
         DROP TABLE IF EXISTS dbo.NPC_STATUSY;
-        DROP TABLE IF EXISTS dbo.MISJE_STATUSY
         DROP TABLE IF EXISTS dbo.ZRODLO;
+        
         DROP TABLE IF EXISTS dbo.MISJE;
+        
         DROP TABLE IF EXISTS dbo.NPC;
+        DROP TABLE IF EXISTS dbo.SLOWA_KLUCZOWE;
+        DROP TABLE IF EXISTS dbo.LINKI_DO_SCRAPOWANIA;
 """)
     
     with silnik.begin() as conn:
         conn.execute(q)
+        print("Baza została wyczyszczona.")
 
 def utworz_engine_do_db(
         sterownik: str = "mssql+pyodbc",
@@ -197,7 +207,7 @@ def zapewnij_misje_i_pobierz_id(
 
     q_insert_misja = text(f"""
         INSERT INTO {tabela_misje} (
-            MISJA_URL_WIKI, MISJA_TYTUL_EN, MISJA_TYTUL_NASTEPNA_EN, MISJA_TYTUL_POPRZEDNIA_EN,
+            MISJA_URL_WIKI, MISJA_TYTUL_EN, MISJA_TYTUL_NASTEPNA_EN, MISJA_TYTUL_POPRZEDNIA_EN, 
             WYMAGANY_LVL, NPC_START_ID, NPC_KONIEC_ID
         )
         OUTPUT inserted.MISJA_ID_MOJE_PK
@@ -210,10 +220,26 @@ def zapewnij_misje_i_pobierz_id(
         WHERE MISJA_URL_WIKI = :url;
     """)
 
+    npc_start = (npc_start or "").strip()
+    npc_koniec = (npc_koniec or "").strip()
+
     try:
         with silnik.begin() as conn:
-            npc_start_id = conn.execute(q_select_npc_id, {"nazwa": (npc_start or "").strip()}).scalar_one()
-            npc_koniec_id = conn.execute(q_select_npc_id, {"nazwa": (npc_koniec or "").strip()}).scalar_one()
+            if npc_start:
+                try:
+                    npc_start_id = conn.execute(q_select_npc_id, {"nazwa": npc_start}).scalar_one()
+                except Exception:
+                    npc_start_id = None 
+            else:
+                npc_start_id = None
+
+            if npc_koniec:
+                try:
+                    npc_koniec_id = conn.execute(q_select_npc_id, {"nazwa": npc_koniec}).scalar_one()
+                except Exception:
+                    npc_koniec_id = None
+            else:
+                npc_koniec_id = None
 
             misja_id = conn.execute(
                 q_insert_misja,
@@ -790,7 +816,8 @@ def roznice_hashe_usun_rekordy_z_db(
             "dbo.DIALOGI_STATUSY",
             "dbo.MISJE_STATUSY",
             "dbo.ZRODLO",
-            "dbo.MISJE"
+            "dbo.MISJE",
+            "dbo.MISJE_SLOWA_KLUCZOWE"
         ]
 
         q_select_url = text("""
@@ -1069,7 +1096,6 @@ def pobierz_przetworz_zapisz_batch_lista(
         dane_szczegolowe = df_exploded["extracted"].apply(pd.Series)
         
         df_final = pd.concat([df_exploded["quest_id"], dane_szczegolowe], axis=1)
-
         df_final.to_csv(pelna_sciezka, index=False, encoding="utf-8-sig", sep=";")
         
         print(f"Zapisano: {nazwa_pliku} (Ilość wierszy: {len(df_final)})")
@@ -1096,3 +1122,159 @@ def pobierz_liste_id_dla_dodatku(silnik, nazwa_dodatku: str):
         wynik = [row[0] for row in conn.execute(q, {"dodatek": nazwa_dodatku})]
         
     return wynik
+
+
+def slowa_kluczowe_do_db (
+        plik_do_otwarcia = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
+        silnik = utworz_engine_do_db()
+):
+    plik_slowa_kluczowe = pd.read_excel(
+        plik_do_otwarcia, 
+        sheet_name="do_tabeli_slowa_kluczowe", 
+        usecols=["SLOWO_EN", "SLOWO_PL", "KATEGORIA"]
+    )
+
+    with silnik.begin() as conn:
+        q_insert_sk = text("""
+          INSERT INTO dbo.SLOWA_KLUCZOWE (SLOWO_EN, SLOWO_PL, KATEGORIA)
+          VALUES (:slowo_en, :slowo_pl, :kategoria)
+        """)
+
+        q_select_sk = text("""
+          SELECT SLOWO_EN, KATEGORIA
+          FROM dbo.SLOWA_KLUCZOWE
+        """)
+
+        unikalne_sk_sql = set(conn.execute(q_select_sk).all())
+        unikalne_sk_excel = set(zip(
+                plik_slowa_kluczowe["SLOWO_EN"], 
+                plik_slowa_kluczowe["KATEGORIA"]
+        ))
+
+        do_dodania = unikalne_sk_excel - unikalne_sk_sql
+        maska = plik_slowa_kluczowe[["SLOWO_EN", "KATEGORIA"]].apply(tuple, axis=1).isin(do_dodania)
+
+        df_do_wgrania = plik_slowa_kluczowe[maska]
+        
+        for slowo_en, slowo_pl, kategoria in df_do_wgrania.values:
+            conn.execute(q_insert_sk, {"slowo_en": slowo_en, "slowo_pl": slowo_pl, "kategoria": kategoria})
+            print(f"Wrzucono krotkę dla słowa {slowo_en}.") 
+
+
+def mapowanie_misji_do_db(
+        plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
+        silnik=utworz_engine_do_db()
+):
+    plik_lacznika = pd.read_excel(
+        plik_do_otwarcia,
+        sheet_name="do_tabeli_misje_slowa_kluczowe",
+        usecols=["MISJA_ID_MOJE_FK", "SLOWO_EN"]
+    )
+
+    with silnik.begin() as conn:
+        q_insert_lacznik = text("""
+            INSERT INTO dbo.MISJE_SLOWA_KLUCZOWE (MISJA_ID_MOJE_FK, SLOWO_ID)
+            VALUES (:misja_id, :slowo_id)
+        """)
+        
+        q_select_lacznik = text("SELECT MISJA_SLOWO_ID_PK, SLOWO_ID FROM dbo.MISJE_SLOWA_KLUCZOWE")
+        q_mapowanie_slow = text("SELECT SLOWO_EN, SLOWO_ID_PK FROM dbo.SLOWA_KLUCZOWE")
+        q_dostepne_misje = text("SELECT MISJA_ID_MOJE_PK FROM dbo.MISJE")
+
+        unikalne_pary_sql = set(conn.execute(q_select_lacznik).all())
+        mapa_slow_sql = dict(conn.execute(q_mapowanie_slow).all())
+        dostepne_misje_sql = set(conn.execute(q_dostepne_misje).scalars().all())
+
+        plik_lacznika["SLOWO_ID"] = plik_lacznika["SLOWO_EN"].map(mapa_slow_sql)
+        
+        odrzucone_brak_slowa = plik_lacznika[plik_lacznika["SLOWO_ID"].isna()].copy()
+        odrzucone_brak_slowa["PRZYCZYNA"] = "Brak słowa w DB"
+        
+        plik_lacznika = plik_lacznika.dropna(subset=["SLOWO_ID"])
+        plik_lacznika = plik_lacznika.dropna(subset=["MISJA_ID_MOJE_FK"])
+        
+        plik_lacznika["SLOWO_ID"] = plik_lacznika["SLOWO_ID"].astype("int64")
+        plik_lacznika["MISJA_ID_MOJE_FK"] = plik_lacznika["MISJA_ID_MOJE_FK"].astype("int64")
+
+        maska_poprawne_misje = plik_lacznika["MISJA_ID_MOJE_FK"].isin(dostepne_misje_sql)
+        odrzucone_brak_misji = plik_lacznika[~maska_poprawne_misje].copy()
+        odrzucone_brak_misji["PRZYCZYNA"] = "Brak ID misji w DB"
+
+        plik_lacznika = plik_lacznika[maska_poprawne_misje]
+
+        unikalne_pary_excel = set(zip(
+            plik_lacznika["MISJA_ID_MOJE_FK"],
+            plik_lacznika["SLOWO_ID"]
+        ))
+
+        pary_juz_istniejace = unikalne_pary_excel.intersection(unikalne_pary_sql)
+        maska_duplikaty_db = plik_lacznika[["MISJA_ID_MOJE_FK", "SLOWO_ID"]].apply(tuple, axis=1).isin(pary_juz_istniejace)
+        
+        odrzucone_duplikaty_db = plik_lacznika[maska_duplikaty_db].copy()
+        odrzucone_duplikaty_db["PRZYCZYNA"] = "Relacja już istnieje w DB"
+
+        do_dodania = unikalne_pary_excel - unikalne_pary_sql
+        maska_do_wgrania = plik_lacznika[["MISJA_ID_MOJE_FK", "SLOWO_ID"]].apply(tuple, axis=1).isin(do_dodania)
+        df_do_wgrania = plik_lacznika[maska_do_wgrania]
+        
+        subset_do_petli = df_do_wgrania[["MISJA_ID_MOJE_FK", "SLOWO_ID"]]
+        subset_do_petli = subset_do_petli.drop_duplicates()
+
+        print(f"Rozpoczynam dodawanie {len(subset_do_petli)} nowych powiązań...")
+
+        licznik_duplikatow = 0
+        licznik_sukcesow = 0
+
+        for misja_id, slowo_id in subset_do_petli.values:
+            try:
+                conn.execute(q_insert_lacznik, {
+                    "misja_id": int(misja_id),
+                    "slowo_id": int(slowo_id)
+                })
+                licznik_sukcesow += 1
+                
+            except IntegrityError as e:
+                if _czy_duplikat(e):
+                    licznik_duplikatow += 1
+                    print(f"⚠️ Wykryto duplikat przy wstawianiu: Misja {misja_id}, Słowo {slowo_id} - pomijam.")
+                else:
+                    raise e
+
+        print("\n" + "="*40)
+        print(f"✅ Sukces: Dodano {licznik_sukcesow} powiązań.")
+        print(f"⚠️ Pominięto duplikatów (wyłapanych przez): {licznik_duplikatow}")
+    
+    raport_odrzuconych = pd.concat([
+        odrzucone_brak_slowa,
+        odrzucone_brak_misji,
+        odrzucone_duplikaty_db
+    ], ignore_index=True)
+
+    if raport_odrzuconych.empty:
+        print("🎉 Brak odrzuconych rekordów. Wszystko weszło trutututu!")
+    else:
+        print("⚠️  Pominięto rekordy z następujących przyczyn:")
+        grupy = raport_odrzuconych.groupby("PRZYCZYNA")
+        
+        for przyczyna, grupa in grupy:
+            ilosc = len(grupa)
+            print("-" * 40)
+            
+            if przyczyna == "Relacja już istnieje w DB":
+                print(f"🔵 {przyczyna}: {ilosc} szt.")
+                
+            elif przyczyna == "Brak słowa w DB":
+                lista_brakujacych = grupa["SLOWO_EN"].unique().tolist()
+                print(f"🔴 {przyczyna}: {ilosc} szt.")
+                print(f"   Lista słów do dodania: {lista_brakujacych}")
+                
+            elif przyczyna == "Brak ID misji w DB":
+                lista_id = grupa["MISJA_ID_MOJE_FK"].unique().tolist()
+                print(f"🔴 {przyczyna}: {ilosc} szt.")
+                print(f"   Lista nieistniejących ID misji: {lista_id}")
+            
+            else:
+                print(f"⚪ {przyczyna}: {ilosc} szt.")
+
+    print("="*40 + "\n")
+

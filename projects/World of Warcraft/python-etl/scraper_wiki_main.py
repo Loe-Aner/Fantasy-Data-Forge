@@ -24,8 +24,8 @@ ENABLE_CACHE = os.getenv("SCRAPER_CACHE_ENABLED", "0").lower() in {"1", "true", 
 CACHE_NAME = os.getenv("SCRAPER_CACHE_NAME", "wow_scraper_cache")
 CACHE_EXPIRE = int(os.getenv("SCRAPER_CACHE_EXPIRE", "86400"))
 
-WIKI_MAX_CONCURRENCY = int(os.getenv("WIKI_MAX_CONCURRENCY", "4"))
-WOWHEAD_MAX_CONCURRENCY = int(os.getenv("WOWHEAD_MAX_CONCURRENCY", "4"))
+WIKI_MAX_CONCURRENCY = int(os.getenv("WIKI_MAX_CONCURRENCY", "5"))
+WOWHEAD_MAX_CONCURRENCY = int(os.getenv("WOWHEAD_MAX_CONCURRENCY", "5"))
 
 WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.3"))
 WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.3"))
@@ -178,8 +178,21 @@ async def pobierz_soup_async(url: str, parser: str = "html.parser", host: str | 
 
 
 def pobierz_soup(url: str, parser: str = "html.parser", host: str | None = None) -> BeautifulSoup | None:
-    runner = _get_runner()
-    return runner.run(pobierz_soup_async(url, parser=parser, host=host))
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        # SCENARIUSZ: JUPYTER / NOTEBOOK
+        import nest_asyncio
+        nest_asyncio.apply()
+        
+        return loop.run_until_complete(pobierz_soup_async(url, parser=parser, host=host))
+    else:
+        # SCENARIUSZ: ZWYKŁY SKRYPT .PY
+        runner = _get_runner()
+        return runner.run(pobierz_soup_async(url, parser=parser, host=host))
 
 
 def pobierz_tresc(soup: BeautifulSoup):

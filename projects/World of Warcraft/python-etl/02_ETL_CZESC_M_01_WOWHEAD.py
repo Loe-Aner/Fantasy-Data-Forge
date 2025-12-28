@@ -1,5 +1,5 @@
-from scraper_wowhead import *
-from pomocnicze_funkcje_sql import *
+from scraper_wowhead import buduj_mapping_01
+from pomocnicze_funkcje_sql import utworz_engine_do_db
 
 silnik = utworz_engine_do_db()
 

@@ -3,7 +3,7 @@ from scraper_wiki_async import parsuj_wiele_misji_async
 from sqlalchemy import text
 import asyncio
 
-# BAZA 
+# BAZA
 kategorie = [
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",

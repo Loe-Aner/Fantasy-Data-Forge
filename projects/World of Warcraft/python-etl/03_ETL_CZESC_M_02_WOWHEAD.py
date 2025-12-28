@@ -1,7 +1,6 @@
 import pandas as pd
 
-from scraper_wowhead import *
-from pomocnicze_funkcje_sql import *
+from pomocnicze_funkcje_sql import utworz_engine_do_db, aktualizuj_misje_z_excela
 
 silnik = utworz_engine_do_db()
 

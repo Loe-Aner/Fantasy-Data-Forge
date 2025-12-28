@@ -1,7 +1,6 @@
-import pandas as pd
-
-from scraper_wowhead import *
-from pomocnicze_funkcje_sql import *
+from pomocnicze_funkcje_sql import (
+    utworz_engine_do_db, pobierz_liste_id_dla_dodatku, pobierz_przetworz_zapisz_batch_lista
+)
 
 silnik = utworz_engine_do_db()
 
