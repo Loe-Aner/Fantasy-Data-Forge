@@ -83,7 +83,17 @@ async def buduj_mapping_01_async():
     input_sheet = "prawie_gotowe_dane"
     output_sheet = "mapping_01"
     url_col = "MISJA_URL_WOWHEAD"
-    
+
+    FINAL_HEADERS = [
+        "KRAINA_EN",
+        "MISJA_ID_Z_GRY",
+        "MISJA_TYTUL_EN",
+        "DODATEK_EN",
+        "MISJA_URL_WOWHEAD",
+        "NAZWA_LINII_FABULARNEJ_EN",
+        "DODANO_W_PATCHU"
+    ]
+
     MAX_CONCURRENCY = 8
     BATCH_SIZE = 48
 
@@ -96,15 +106,15 @@ async def buduj_mapping_01_async():
     df_raw[url_col] = df_raw[url_col].astype(str).str.strip()
     df_raw = df_raw[df_raw[url_col].notna() & (df_raw[url_col] != "")].copy()
 
-    headers = list(df_raw.columns) + ["storyline", "patch"]
-
     if not os.path.exists(out_path):
         wb = Workbook()
         ws = wb.active
         ws.title = output_sheet
-        ws.append(headers)
+        ws.append(FINAL_HEADERS)
         wb.save(out_path)
         print("Utworzono nowy plik mapping_01.xlsx")
+    else:
+        df_check = pd.read_excel(out_path, sheet_name=output_sheet, nrows=0)
 
     df_out = pd.read_excel(out_path, sheet_name=output_sheet)
     if url_col in df_out.columns:
@@ -120,8 +130,8 @@ async def buduj_mapping_01_async():
         return
 
     row_by_url = {
-        str(getattr(row, url_col)).strip(): row._asdict()
-        for row in df_new.itertuples(index=False)
+        str(row[url_col]).strip(): row.to_dict()
+        for _, row in df_new.iterrows()
     }
     
     urls_to_process = list(row_by_url.keys())
@@ -159,8 +169,12 @@ async def buduj_mapping_01_async():
 
                 row_data["storyline"] = storyline
                 row_data["patch"] = patch
-                
-                excel_row = [normalize_cell(row_data.get(h)) for h in headers]
+
+                excel_row = []
+                for header in FINAL_HEADERS:
+                    val = row_data.get(header)
+                    excel_row.append(normalize_cell(val))
+
                 bufor.append(excel_row)
                 print(f" [OK] {link} (Patch: {patch})")
 

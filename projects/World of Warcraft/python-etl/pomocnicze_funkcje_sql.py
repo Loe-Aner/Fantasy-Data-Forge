@@ -71,7 +71,7 @@ def czerwony_przycisk(
     
     with silnik.begin() as conn:
         conn.execute(q)
-        print("Baza została wyczyszczona.")
+        print("Baza danych... już nie istnieje. Zadowolony jesteś z siebie?")
 
 def utworz_engine_do_db(
         sterownik: str = "mssql+pyodbc",
@@ -813,12 +813,12 @@ def roznice_hashe_usun_rekordy_z_db(
         print(f"=== Czyszczę MISJA_ID = {m} ===")
 
         tabele_do_skanowania = [
-            "dbo.DIALOGI_STATUSY",
-            "dbo.MISJE_STATUSY",
-            "dbo.ZRODLO",
-            "dbo.MISJE",
-            "dbo.MISJE_SLOWA_KLUCZOWE"
-        ]
+                    "dbo.MISJE_SLOWA_KLUCZOWE",
+                    "dbo.DIALOGI_STATUSY",
+                    "dbo.MISJE_STATUSY",
+                    "dbo.ZRODLO",
+                    "dbo.MISJE"
+                ]
 
         q_select_url = text("""
             SELECT MISJA_URL_WIKI
@@ -996,7 +996,6 @@ def pobierz_przetworz_zapisz_batch_lista(
         folder_zapisz: str = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\slowa_kluczowe_batche"
     ):
     
-    # Nazwa pliku
     min_b = min(lista_id_batch)
     max_b = max(lista_id_batch)
     nazwa_pliku = f"batch_{min_b}_{max_b}.csv"
@@ -1155,10 +1154,23 @@ def slowa_kluczowe_do_db (
         maska = plik_slowa_kluczowe[["SLOWO_EN", "KATEGORIA"]].apply(tuple, axis=1).isin(do_dodania)
 
         df_do_wgrania = plik_slowa_kluczowe[maska]
-        
+
+        print(f"Rozpoczynam dodawanie {len(df_do_wgrania)} nowych słów kluczowych...")
+
         for slowo_en, slowo_pl, kategoria in df_do_wgrania.values:
-            conn.execute(q_insert_sk, {"slowo_en": slowo_en, "slowo_pl": slowo_pl, "kategoria": kategoria})
-            print(f"Wrzucono krotkę dla słowa {slowo_en}.") 
+            try:
+                conn.execute(q_insert_sk, {
+                    "slowo_en": slowo_en, 
+                    "slowo_pl": slowo_pl, 
+                    "kategoria": kategoria
+                })
+                print(f"Wrzucono krotkę dla słowa {slowo_en}.") 
+                
+            except IntegrityError as e:
+                if _czy_duplikat(e):
+                    print(f"Duplikat przy słowie: {slowo_en} - pomijam.")
+                else:
+                    raise e
 
 
 def mapowanie_misji_do_db(
@@ -1251,7 +1263,7 @@ def mapowanie_misji_do_db(
     ], ignore_index=True)
 
     if raport_odrzuconych.empty:
-        print("🎉 Brak odrzuconych rekordów. Wszystko weszło trutututu!")
+        print("🎉 Brak odrzuconych rekordów. Wszystko weszło!")
     else:
         print("⚠️  Pominięto rekordy z następujących przyczyn:")
         grupy = raport_odrzuconych.groupby("PRZYCZYNA")
@@ -1277,4 +1289,3 @@ def mapowanie_misji_do_db(
                 print(f"⚪ {przyczyna}: {ilosc} szt.")
 
     print("="*40 + "\n")
-
