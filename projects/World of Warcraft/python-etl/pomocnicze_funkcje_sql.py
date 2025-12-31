@@ -46,7 +46,9 @@ __all__ = [
     "pobierz_liste_id_dla_dodatku",
 
     "slowa_kluczowe_do_db",
-    "mapowanie_misji_do_db"
+    "mapowanie_misji_do_db",
+
+    "zapisz_npc_i_status_przetlumaczony_do_db"
 ]
 
 
@@ -1123,60 +1125,72 @@ def pobierz_liste_id_dla_dodatku(silnik, nazwa_dodatku: str):
     return wynik
 
 
-def slowa_kluczowe_do_db (
-        plik_do_otwarcia = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
-        silnik = utworz_engine_do_db()
+def slowa_kluczowe_do_db(
+    plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
+    silnik=utworz_engine_do_db()
 ):
+
     plik_slowa_kluczowe = pd.read_excel(
         plik_do_otwarcia, 
         sheet_name="do_tabeli_slowa_kluczowe", 
         usecols=["SLOWO_EN", "SLOWO_PL", "KATEGORIA"]
     )
-
+    
     with silnik.begin() as conn:
+        q_select_sk = text("SELECT SLOWO_EN, SLOWO_PL FROM dbo.SLOWA_KLUCZOWE")
+        
         q_insert_sk = text("""
-          INSERT INTO dbo.SLOWA_KLUCZOWE (SLOWO_EN, SLOWO_PL, KATEGORIA)
-          VALUES (:slowo_en, :slowo_pl, :kategoria)
+            INSERT INTO dbo.SLOWA_KLUCZOWE (SLOWO_EN, SLOWO_PL, KATEGORIA)
+            VALUES (:slowo_en, :slowo_pl, :kategoria)
+        """)
+        
+        q_update_sk = text("""
+            UPDATE dbo.SLOWA_KLUCZOWE
+            SET SLOWO_PL = :slowo_pl
+            WHERE SLOWO_EN = :slowo_en
         """)
 
-        q_select_sk = text("""
-          SELECT SLOWO_EN, KATEGORIA
-          FROM dbo.SLOWA_KLUCZOWE
-        """)
+        db_records = conn.execute(q_select_sk).all()
+        
+        mapa_db = {row[0]: row[1] for row in db_records}
+        zestaw_en_db = set(mapa_db.keys())
 
-        unikalne_sk_sql = set(conn.execute(q_select_sk).all())
-        unikalne_sk_excel = set(zip(
-                plik_slowa_kluczowe["SLOWO_EN"], 
-                plik_slowa_kluczowe["KATEGORIA"]
-        ))
+        lista_do_wstawienia = []
+        lista_do_aktualizacji = []
 
-        do_dodania = unikalne_sk_excel - unikalne_sk_sql
-        maska = plik_slowa_kluczowe[["SLOWO_EN", "KATEGORIA"]].apply(tuple, axis=1).isin(do_dodania)
-
-        df_do_wgrania = plik_slowa_kluczowe[maska]
-
-        print(f"Rozpoczynam dodawanie {len(df_do_wgrania)} nowych słów kluczowych...")
-
-        for slowo_en, slowo_pl, kategoria in df_do_wgrania.values:
-            try:
-                conn.execute(q_insert_sk, {
+        for slowo_en, slowo_pl, kategoria in plik_slowa_kluczowe.values:
+            if slowo_en not in zestaw_en_db:
+                lista_do_wstawienia.append({
                     "slowo_en": slowo_en, 
                     "slowo_pl": slowo_pl, 
                     "kategoria": kategoria
                 })
-                print(f"Wrzucono krotkę dla słowa {slowo_en}.") 
-                
-            except IntegrityError as e:
-                if _czy_duplikat(e):
-                    print(f"Duplikat przy słowie: {slowo_en} - pomijam.")
-                else:
-                    raise e
+            elif mapa_db[slowo_en] != slowo_pl:
+                lista_do_aktualizacji.append({
+                    "slowo_en": slowo_en, 
+                    "slowo_pl": slowo_pl
+                })
+
+        if lista_do_wstawienia:
+            print(f"Wykryto {len(lista_do_wstawienia)} nowych słów. Dodaję...")
+            conn.execute(q_insert_sk, lista_do_wstawienia)
+            print("Zakończono dodawanie.")
+        else:
+            print("Brak nowych słów do dodania.")
+
+        if lista_do_aktualizacji:
+            print(f"Wykryto {len(lista_do_aktualizacji)} zmienionych tłumaczeń. Aktualizuję...")
+            conn.execute(q_update_sk, lista_do_aktualizacji)
+            print("Zakończono aktualizację.")
+        else:
+            print("Brak tłumaczeń wymagających aktualizacji.")
 
 
 def mapowanie_misji_do_db(
-        plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
-        silnik=utworz_engine_do_db()
+    plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
+    silnik=utworz_engine_do_db()
 ):
+
     plik_lacznika = pd.read_excel(
         plik_do_otwarcia,
         sheet_name="do_tabeli_misje_slowa_kluczowe",
@@ -1184,18 +1198,21 @@ def mapowanie_misji_do_db(
     )
 
     with silnik.begin() as conn:
+        q_mapowanie_slow = text("SELECT SLOWO_EN, SLOWO_ID_PK " \
+        "                        FROM dbo.SLOWA_KLUCZOWE")
+        q_dostepne_misje = text("SELECT MISJA_ID_MOJE_PK " \
+        "                        FROM dbo.MISJE")
+        q_select_lacznik = text("SELECT MISJA_ID_MOJE_FK, SLOWO_ID " \
+        "                        FROM dbo.MISJE_SLOWA_KLUCZOWE")
+        
         q_insert_lacznik = text("""
             INSERT INTO dbo.MISJE_SLOWA_KLUCZOWE (MISJA_ID_MOJE_FK, SLOWO_ID)
             VALUES (:misja_id, :slowo_id)
         """)
         
-        q_select_lacznik = text("SELECT MISJA_SLOWO_ID_PK, SLOWO_ID FROM dbo.MISJE_SLOWA_KLUCZOWE")
-        q_mapowanie_slow = text("SELECT SLOWO_EN, SLOWO_ID_PK FROM dbo.SLOWA_KLUCZOWE")
-        q_dostepne_misje = text("SELECT MISJA_ID_MOJE_PK FROM dbo.MISJE")
-
-        unikalne_pary_sql = set(conn.execute(q_select_lacznik).all())
         mapa_slow_sql = dict(conn.execute(q_mapowanie_slow).all())
         dostepne_misje_sql = set(conn.execute(q_dostepne_misje).scalars().all())
+        istniejace_pary_sql = set(conn.execute(q_select_lacznik).all())
 
         plik_lacznika["SLOWO_ID"] = plik_lacznika["SLOWO_EN"].map(mapa_slow_sql)
         
@@ -1203,89 +1220,151 @@ def mapowanie_misji_do_db(
         odrzucone_brak_slowa["PRZYCZYNA"] = "Brak słowa w DB"
         
         plik_lacznika = plik_lacznika.dropna(subset=["SLOWO_ID"])
-        plik_lacznika = plik_lacznika.dropna(subset=["MISJA_ID_MOJE_FK"])
-        
         plik_lacznika["SLOWO_ID"] = plik_lacznika["SLOWO_ID"].astype("int64")
-        plik_lacznika["MISJA_ID_MOJE_FK"] = plik_lacznika["MISJA_ID_MOJE_FK"].astype("int64")
 
+        # Walidacja Misji
         maska_poprawne_misje = plik_lacznika["MISJA_ID_MOJE_FK"].isin(dostepne_misje_sql)
         odrzucone_brak_misji = plik_lacznika[~maska_poprawne_misje].copy()
         odrzucone_brak_misji["PRZYCZYNA"] = "Brak ID misji w DB"
 
         plik_lacznika = plik_lacznika[maska_poprawne_misje]
 
-        unikalne_pary_excel = set(zip(
-            plik_lacznika["MISJA_ID_MOJE_FK"],
-            plik_lacznika["SLOWO_ID"]
-        ))
-
-        pary_juz_istniejace = unikalne_pary_excel.intersection(unikalne_pary_sql)
-        maska_duplikaty_db = plik_lacznika[["MISJA_ID_MOJE_FK", "SLOWO_ID"]].apply(tuple, axis=1).isin(pary_juz_istniejace)
+        # Walidacja Duplikatów
+        pary_z_excela = set(zip(plik_lacznika["MISJA_ID_MOJE_FK"], plik_lacznika["SLOWO_ID"]))
         
-        odrzucone_duplikaty_db = plik_lacznika[maska_duplikaty_db].copy()
+        do_wgrania_set = pary_z_excela - istniejace_pary_sql
+        juz_w_bazie_set = pary_z_excela.intersection(istniejace_pary_sql)
+
+        maska_juz_w_bazie = plik_lacznika[["MISJA_ID_MOJE_FK", "SLOWO_ID"]].apply(tuple, axis=1).isin(juz_w_bazie_set)
+        odrzucone_duplikaty_db = plik_lacznika[maska_juz_w_bazie].copy()
         odrzucone_duplikaty_db["PRZYCZYNA"] = "Relacja już istnieje w DB"
 
-        do_dodania = unikalne_pary_excel - unikalne_pary_sql
-        maska_do_wgrania = plik_lacznika[["MISJA_ID_MOJE_FK", "SLOWO_ID"]].apply(tuple, axis=1).isin(do_dodania)
-        df_do_wgrania = plik_lacznika[maska_do_wgrania]
-        
-        subset_do_petli = df_do_wgrania[["MISJA_ID_MOJE_FK", "SLOWO_ID"]]
-        subset_do_petli = subset_do_petli.drop_duplicates()
+        dane_do_insertu = [
+            {"misja_id": m_id, "slowo_id": s_id}
+            for m_id, s_id in do_wgrania_set
+        ]
 
-        print(f"Rozpoczynam dodawanie {len(subset_do_petli)} nowych powiązań...")
+        if dane_do_insertu:
+            print(f"Rozpoczynam dodawanie {len(dane_do_insertu)} nowych powiązań...")
+            conn.execute(q_insert_lacznik, dane_do_insertu)
+            print(f"✅ Sukces: Dodano {len(dane_do_insertu)} powiązań.")
+        else:
+            print("Brak nowych powiązań do dodania.")
 
-        licznik_duplikatow = 0
-        licznik_sukcesow = 0
-
-        for misja_id, slowo_id in subset_do_petli.values:
-            try:
-                conn.execute(q_insert_lacznik, {
-                    "misja_id": int(misja_id),
-                    "slowo_id": int(slowo_id)
-                })
-                licznik_sukcesow += 1
-                
-            except IntegrityError as e:
-                if _czy_duplikat(e):
-                    licznik_duplikatow += 1
-                    print(f"⚠️ Wykryto duplikat przy wstawianiu: Misja {misja_id}, Słowo {slowo_id} - pomijam.")
-                else:
-                    raise e
-
-        print("\n" + "="*40)
-        print(f"✅ Sukces: Dodano {licznik_sukcesow} powiązań.")
-        print(f"⚠️ Pominięto duplikatów (wyłapanych przez): {licznik_duplikatow}")
-    
+    # Raportowanie
     raport_odrzuconych = pd.concat([
         odrzucone_brak_slowa,
         odrzucone_brak_misji,
         odrzucone_duplikaty_db
     ], ignore_index=True)
 
-    if raport_odrzuconych.empty:
-        print("🎉 Brak odrzuconych rekordów. Wszystko weszło!")
-    else:
-        print("⚠️  Pominięto rekordy z następujących przyczyn:")
+    if not raport_odrzuconych.empty:
+        print("\n⚠️  Raport odrzuconych rekordów:")
         grupy = raport_odrzuconych.groupby("PRZYCZYNA")
-        
         for przyczyna, grupa in grupy:
-            ilosc = len(grupa)
-            print("-" * 40)
-            
-            if przyczyna == "Relacja już istnieje w DB":
-                print(f"🔵 {przyczyna}: {ilosc} szt.")
-                
-            elif przyczyna == "Brak słowa w DB":
-                lista_brakujacych = grupa["SLOWO_EN"].unique().tolist()
-                print(f"🔴 {przyczyna}: {ilosc} szt.")
-                print(f"   Lista słów do dodania: {lista_brakujacych}")
-                
-            elif przyczyna == "Brak ID misji w DB":
-                lista_id = grupa["MISJA_ID_MOJE_FK"].unique().tolist()
-                print(f"🔴 {przyczyna}: {ilosc} szt.")
-                print(f"   Lista nieistniejących ID misji: {lista_id}")
-            
-            else:
-                print(f"⚪ {przyczyna}: {ilosc} szt.")
+            print(f"🔴 {przyczyna}: {len(grupa)} szt.")
+            if "Brak" in przyczyna:
+                kolumna_info = "SLOWO_EN" if "słowa" in przyczyna else "MISJA_ID_MOJE_FK"
+                print(f"   Przykłady: {grupa[kolumna_info].unique()}")
+    else:
+        print("\n🎉 Wszystkie rekordy z Excela są poprawne i trafiły do bazy (lub już tam były).")
 
-    print("="*40 + "\n")
+
+def zapisz_npc_i_status_przetlumaczony_do_db(
+    silnik, 
+    plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx",
+    rozmiar_partii=10000
+):
+    status_docelowy = "3_ZATWIERDZONO"
+
+    df = pd.read_excel(
+        plik_do_otwarcia, 
+        sheet_name="surowe", 
+        usecols=["NPC_ID_MOJE_PK", "NAZWA", "NAZWA_PL_FINAL", "PLEC", "RASA", "KLASA", "TYTUL"]
+    )
+
+    q_pobierz_juz_zatwierdzone = text("""
+        SELECT NPC_ID_FK 
+        FROM dbo.NPC_STATUSY 
+        WHERE STATUS = :status
+    """)
+
+    with silnik.connect() as conn:
+        df_istniejace = pd.read_sql(q_pobierz_juz_zatwierdzone, conn, params={"status": status_docelowy})
+
+    zestaw_juz_zatwierdzonych_id = set(df_istniejace["NPC_ID_FK"].astype(int))
+
+    maska_juz_sa_zatwierdzone = df["NPC_ID_MOJE_PK"].isin(zestaw_juz_zatwierdzonych_id)
+    
+    df_do_update_statusy = df[maska_juz_sa_zatwierdzone]
+    df_do_insert_statusy = df[~maska_juz_sa_zatwierdzone]
+
+    q_insert_statusy = text("""
+        INSERT INTO dbo.NPC_STATUSY (NPC_ID_FK, STATUS, NAZWA)
+        VALUES (:npc_id, :status, :nazwa_pl)
+    """)
+
+    q_update_statusy = text("""
+        UPDATE dbo.NPC_STATUSY
+        SET NAZWA = :nazwa_pl
+        WHERE NPC_ID_FK = :npc_id 
+          AND STATUS = :status
+    """)
+
+    q_update_npc_glowne = text("""
+        UPDATE dbo.NPC
+        SET PLEC = :plec, 
+            RASA = :rasa,
+            KLASA = :klasa,
+            TYTUL = :tytul
+        WHERE NAZWA = :nazwa_eng
+    """)
+
+    parametry_insert_statusy = [
+        {
+            "npc_id": int(r["NPC_ID_MOJE_PK"]),
+            "status": status_docelowy,
+            "nazwa_pl": r["NAZWA_PL_FINAL"]
+        }
+        for r in df_do_insert_statusy.to_dict("records")
+    ]
+
+    parametry_update_statusy = [
+        {
+            "npc_id": int(r["NPC_ID_MOJE_PK"]),
+            "status": status_docelowy,
+            "nazwa_pl": r["NAZWA_PL_FINAL"]
+        }
+        for r in df_do_update_statusy.to_dict("records")
+    ]
+
+    df_do_aktualizacji_npc = df[df["PLEC"].notna() & (df["PLEC"] != "")]
+    parametry_update_npc_glowne = [
+        {
+            "nazwa_eng": r["NAZWA"],
+            "plec": r["PLEC"],
+            "rasa": r["RASA"],
+            "klasa": r["KLASA"],
+            "tytul": r["TYTUL"]
+        }
+        for r in df_do_aktualizacji_npc.to_dict("records")
+    ]
+
+    l_ins_stat = len(parametry_insert_statusy)
+    l_upd_stat = len(parametry_update_statusy)
+    l_upd_npc = len(parametry_update_npc_glowne)
+
+    with silnik.begin() as conn:
+        for i in range(0, l_ins_stat, rozmiar_partii):
+            conn.execute(q_insert_statusy, parametry_insert_statusy[i:i + rozmiar_partii])
+            
+        for i in range(0, l_upd_stat, rozmiar_partii):
+            conn.execute(q_update_statusy, parametry_update_statusy[i:i + rozmiar_partii])
+
+        for i in range(0, l_upd_npc, rozmiar_partii):
+            conn.execute(q_update_npc_glowne, parametry_update_npc_glowne[i:i + rozmiar_partii])
+
+    print(f"PROCES ZAKONCZONY. Excel={len(df)}")
+    print(f"Tabela STATUSY -> INSERT (Nowe wiersze): {l_ins_stat}")
+    print(f"Tabela STATUSY -> UPDATE (Istniejące zatwierdzone): {l_upd_stat}")
+    print(f"Tabela NPC -> UPDATE po nazwie: {l_upd_npc}")
