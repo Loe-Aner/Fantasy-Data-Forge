@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from google import genai
 
 from sqlalchemy import text, bindparam
-
 import pandas as pd
 
 def zaladuj_api_i_klienta(

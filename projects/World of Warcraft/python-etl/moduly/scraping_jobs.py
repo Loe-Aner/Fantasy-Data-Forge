@@ -1,6 +1,5 @@
 import time
 from sqlalchemy import text
-from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 
 from scraper_wiki_main import pobierz_soup, pobierz_tresc, parsuj_misje_z_url

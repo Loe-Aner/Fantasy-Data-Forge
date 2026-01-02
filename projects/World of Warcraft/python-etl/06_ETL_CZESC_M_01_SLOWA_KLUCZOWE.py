@@ -12,9 +12,10 @@ from moduly.ai_gemini import pobierz_przetworz_zapisz_batch_lista
 
 silnik = utworz_engine_do_db()
 
-NAZWA_DODATKU = 'Midnight'
+NAZWA_DODATKU = 'Shadowlands'
 BATCH_SIZE = 100
 SCIEZKA_EXCEL = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx"
+
 
 wszystkie_id_sql = pobierz_liste_id_dla_dodatku(silnik, NAZWA_DODATKU)
 

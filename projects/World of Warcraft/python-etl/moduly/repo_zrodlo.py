@@ -1,7 +1,5 @@
 from sqlalchemy import text
 
-from moduly.db_core import _czy_duplikat
-
 def zapisz_zrodlo_do_db(
         silnik,
         tabela_zrodlo: str,
