@@ -1,16 +1,30 @@
-from pomocnicze_funkcje_sql import *
-from scraper_wiki_async import parsuj_wiele_misji_async
-from sqlalchemy import text
 import asyncio
+
+from moduly.db_core import utworz_engine_do_db
+from moduly.repo_kolejka_linkow import (
+    pobierz_linki_do_scrapowania, 
+    usun_link_z_kolejki
+)
+from moduly.repo_zrodlo import zapisz_zrodlo_do_db
+from moduly.scraping_jobs import hashuj_kategorie_i_zapisz_zrodlo
+from moduly.maintenance_hashe import roznice_hashe_usun_rekordy_z_db
+from moduly.services_persist_wynik import (
+    zapisz_npc_i_status_do_db_z_wyniku,
+    zapisz_misje_i_statusy_do_db_z_wyniku,
+    zapisz_dialogi_statusy_do_db_z_wyniku
+)
+from scraper_wiki_async import parsuj_wiele_misji_async
+
 
 # BAZA
 kategorie = [
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_1-10"
 ]
 silnik = utworz_engine_do_db()
 
@@ -38,8 +52,8 @@ linki = pobierz_linki_do_scrapowania(silnik)
 
 print(f"Do przerobienia: {len(linki)} misji")
 
-MAX_CONCURRENCY = 5
-BATCH_SIZE = 30
+MAX_CONCURRENCY = 4
+BATCH_SIZE = 32
 
 
 def chunks(lista: list[str], size: int):

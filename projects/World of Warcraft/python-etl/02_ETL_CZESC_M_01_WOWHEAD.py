@@ -1,8 +1,4 @@
 from scraper_wowhead import buduj_mapping_01
-from pomocnicze_funkcje_sql import utworz_engine_do_db
-
-silnik = utworz_engine_do_db()
-
 
 # NAJPIERW PRZYGOTOWAC EXCEL W FOLDERZE 'SUROWE' --> 'wowhead_id_kraina_dodatek'
 #    A. WEJSC W LINKI W PIERWSZEJ ZAKLADCE

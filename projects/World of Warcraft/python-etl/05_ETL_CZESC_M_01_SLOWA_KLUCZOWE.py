@@ -1,7 +1,10 @@
 import pandas as pd
-from pomocnicze_funkcje_sql import (
-    utworz_engine_do_db, pobierz_liste_id_dla_dodatku, pobierz_przetworz_zapisz_batch_lista
-)
+
+from moduly.db_core import utworz_engine_do_db
+from moduly.repo_misje import pobierz_liste_id_dla_dodatku
+from moduly.ai_gemini import pobierz_przetworz_zapisz_batch_lista
+
+
 
 # TUTAJ GENEROWANE SA PACZKI CSV'EK - NUMERY W NAZWIE OZNACZAJA PRZEDZIALY ID PRZYPISANE PRZEZE MNIE W DB
 # PRZED WYGENEROWANIEM, KOD SPRAWDZA W ARKUSZU 'do_tabeli_misje_slowa_kluczowe' CZY MISJE JUŻ SĄ - JAK TAK TO ICH NIE PRZERABIA

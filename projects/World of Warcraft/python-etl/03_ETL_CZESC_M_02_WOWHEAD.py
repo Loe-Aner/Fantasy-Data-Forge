@@ -1,6 +1,7 @@
 import pandas as pd
 
-from pomocnicze_funkcje_sql import utworz_engine_do_db, aktualizuj_misje_z_excela
+from moduly.db_core import utworz_engine_do_db
+from moduly.etl_excel import aktualizuj_misje_z_excela
 
 silnik = utworz_engine_do_db()
 

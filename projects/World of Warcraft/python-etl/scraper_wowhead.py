@@ -4,30 +4,41 @@ import re
 import pandas as pd
 from openpyxl import Workbook, load_workbook
 from bs4 import BeautifulSoup
-
-
 from scraper_wiki_async import WoWScraperService
 
+def wyciagnij_patch_final(soup: BeautifulSoup) -> str:
+    element_tekstowy = soup.find(string=re.compile("Added in patch"))
+    
+    if element_tekstowy:
+        rodzic = element_tekstowy.parent
+        caly_tekst = rodzic.get_text(separator=" ", strip=True)
+        
+        dopasowanie = re.search(r"(\d+\.\d+\.\d+)", caly_tekst)
+        if dopasowanie:
+            return dopasowanie.group(1)
+            
+    return ""
 
-def wyciagnij_patch_logic(soup: BeautifulSoup) -> str:
-    """Logika wyciągania patcha z soup."""
-    for s in soup.find_all("script"):
-        t = s.get_text(" ", strip=True)
-        if "Added in patch" not in t:
-            continue
-        m = re.search(
-            r'Added in patch\s*\[acronym=\\?"[^"]*\\?"\]([0-9]+\.[0-9]+\.[0-9]+)\[\\?/acronym\]',
-            t
-        )
-        if m:
-            return m.group(1)
+def wyciagnij_storyline_final(soup: BeautifulSoup) -> str:
+    element_tytul = soup.select_one(".quick-facts-storyline-title")
+    if element_tytul:
+        return element_tytul.get_text(strip=True)
+
+    naglowek = soup.find("th", string=re.compile("Storyline"))
+    if naglowek:
+        wiersz_naglowka = naglowek.find_parent("tr")
+        if wiersz_naglowka:
+            wiersz_danych = wiersz_naglowka.find_next_sibling("tr")
+            if wiersz_danych:
+                kontener = wiersz_danych.select_one(".quick-facts-storyline")
+                if kontener:
+                    link = kontener.find("a")
+                    if link:
+                        return link.get_text(strip=True)
+    
     return ""
 
 def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str]:
-    """
-    Funkcja worker. Przyjmuje czysty HTML, zwraca gotowe dane.
-    Zwraca krotkę: (url, storyline, patch, error_msg)
-    """
     if not html:
         return url, "", "", "Brak HTML"
 
@@ -36,19 +47,12 @@ def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str]:
     except Exception:
         soup = BeautifulSoup(html, "html.parser")
 
-    element = soup.select_one(".quick-facts-storyline-title")
-    storyline = element.get_text().strip() if element else ""
-    patch = wyciagnij_patch_logic(soup)
+    linia_fabularna = wyciagnij_storyline_final(soup)
+    patch = wyciagnij_patch_final(soup)
     
-    return url, storyline, patch, ""
-
-# --- KLASA SCRAPERA WOWHEAD (DZIEDZICZENIE) ---
+    return url, linia_fabularna, patch, ""
 
 class WowheadScraper(WoWScraperService):
-    """
-    Korzystamy z silnika WoWScraperService (retry, limity, klient HTTP),
-    ale zmieniamy metodę process_url, żeby parsowała pod Wowheada.
-    """
     async def process_url(self, url: str):
         html = await self._fetch_html(url)
         
@@ -59,8 +63,6 @@ class WowheadScraper(WoWScraperService):
         wynik = await loop.run_in_executor(None, parsuj_wowhead_html, html, url)
         
         return wynik
-
-# --- FUNKCJE POMOCNICZE EXCEL ---
 
 def normalize_cell(v):
     if v is None:
@@ -73,8 +75,6 @@ def normalize_cell(v):
 
 def zapisz_excel_w_tle(wb: Workbook, path: str):
     wb.save(path)
-
-# --- GŁÓWNA PĘTLA ---
 
 async def buduj_mapping_01_async():
     raw_path = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\wowhead_id_kraina_dodatek.xlsx"
@@ -167,8 +167,8 @@ async def buduj_mapping_01_async():
                 if not row_data:
                     continue
 
-                row_data["storyline"] = storyline
-                row_data["patch"] = patch
+                row_data["NAZWA_LINII_FABULARNEJ_EN"] = storyline
+                row_data["DODANO_W_PATCHU"] = patch
 
                 excel_row = []
                 for header in FINAL_HEADERS:
