@@ -3,7 +3,7 @@ import pandas as pd
 
 from moduly.db_core import utworz_engine_do_db
 
-def aktualizuj_misje_z_excela(df, silnik, chunk_size=10_000):
+def aktualizuj_misje_z_excela(df, silnik, chunk_size=1000):
     df = df.dropna(how="all").copy()
     df["NAZWA_LINII_FABULARNEJ_EN"] = df["NAZWA_LINII_FABULARNEJ_EN"].fillna("NoData")
 
@@ -52,6 +52,35 @@ def aktualizuj_misje_z_excela(df, silnik, chunk_size=10_000):
         for r in df.to_dict("records")
     ]
 
+    total = len(parametry)
+    chunks = (total + chunk_size - 1) // chunk_size
+
+    with silnik.begin() as conn:
+        for i in range(0, total, chunk_size):
+            conn.execute(u, parametry[i:i + chunk_size])
+
+    print(f"UPDATE MISJE: Excel={excel_total}, dopasowane_do_DB={match_total}, wysłane={total}, batche={chunks}")
+
+def aktualizuj_id_misji_wowhead_z_excela(df, silnik, chunk_size=1000):
+    excel_total = len(df)
+    
+    u = text("""
+        UPDATE dbo.MISJE
+        SET MISJA_ID_Z_GRY      = :misja_id_z_gry_final,
+            MISJA_URL_WOWHEAD   = :misja_url_wowhead_final
+        WHERE MISJA_ID_MOJE_PK  = :misja_id_moje_pk
+    """)
+
+    parametry = [
+        {
+            "misja_id_z_gry_final": int(r["MISJA_ID_Z_GRY_FINAL"]),
+            "misja_url_wowhead_final": r["MISJA_URL_WOWHEAD_FINAL"],
+            "misja_id_moje_pk": r["MISJA_ID_MOJE_PK"]
+        }
+        for r in df.to_dict("records")
+    ]
+
+    match_total = len(parametry)
     total = len(parametry)
     chunks = (total + chunk_size - 1) // chunk_size
 
