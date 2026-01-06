@@ -14,6 +14,7 @@ from moduly.services_persist_wynik import (
     zapisz_dialogi_statusy_do_db_z_wyniku
 )
 from scraper_wiki_async import parsuj_wiele_misji_async
+from scraper_wiki_main import parsuj_misje_z_url, dekompresuj_html
 
 
 # BAZA
@@ -26,15 +27,12 @@ kategorie = [
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_1-10",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_2",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_6-10",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_7-10",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_10"
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_6-10",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_7-10",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_10"
 ]
 silnik = utworz_engine_do_db()
 
-
-# HASHUJE MISJE Z LINKOW PONIZEJ W 'KATEGORIE' I ZAPISUJE DO ZRODLO.
-# PO DRODZE SPRAWDZA CZY MISJA JUZ ISTNIEJE
 hashuj_kategorie_i_zapisz_zrodlo(
     silnik=silnik, 
     kategorie=kategorie, 
@@ -44,6 +42,7 @@ hashuj_kategorie_i_zapisz_zrodlo(
 
 # USUWA MISJE I POWIAZANE REKORDY Z NIA W PRZYPADKU GDY NA WIKI ZOSTANIE WYKRYTA NOWA TRESC DLA TEJ MISJI
 # USUNIETA MISJA (DOKLADNIEJ JEJ URL) JEST WRZUCANY NA DBO.LINKI_DO_SCRAPOWANIA, BY POBRANO TA TRESC PONOWNIE PRZEZ KODY PONIZEJ
+# NIE SCRAPUJE OD NOWA TYLKO ODCZYTUJE ZAHASHOWANY BODY ZE STRONY
 roznice_hashe_usun_rekordy_z_db(
     silnik=silnik, 
     zrodlo_insert_url="wiki"
@@ -52,26 +51,46 @@ roznice_hashe_usun_rekordy_z_db(
 
 # SCRAPOWANIE TYLKO TE MISJE, KTORYCH NIE MA W BAZIE DANYCH
 # CZYLI BAZUJE NA TYM CO JEST W dbo.LINKI_DO_SCRAPOWANIA (TABELA PRZYGOTOWANA W SKRYPCIE WYŻEJ)
-linki = pobierz_linki_do_scrapowania(silnik)
+linki_z_kolejki = pobierz_linki_do_scrapowania(silnik)
 
-print(f"Do przerobienia: {len(linki)} misji")
+print(f"Do przerobienia: {len(linki_z_kolejki)} misji")
 
 MAX_CONCURRENCY = 4
-BATCH_SIZE = 32
+BATCH_SIZE = 48
 
 
-def chunks(lista: list[str], size: int):
+def chunks(lista, size):
     for i in range(0, len(lista), size):
         yield lista[i : i + size]
 
 przerobione = 0
 
-for batch_nr, batch in enumerate(chunks(linki, BATCH_SIZE), start=1):
+for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
     print(f"\n=== PACZKA {batch_nr} | {len(batch)} linków ===")
 
-    pary = asyncio.run(parsuj_wiele_misji_async(batch, max_concurrency=MAX_CONCURRENCY))
+    zadania_lokalne = [z for z in batch if z['html_skompresowany'] is not None]
+    zadania_sieciowe = [z for z in batch if z['html_skompresowany'] is None]
+    
+    gotowe_wyniki = []
 
-    for i, (url, wynik) in enumerate(pary, start=1):
+    for item in zadania_lokalne:
+        url = item['url']
+        try:
+            print(f" [CACHE] Przetwarzam lokalnie: {url}")
+            czysty_html = dekompresuj_html(item['html_skompresowany'])
+            wynik = parsuj_misje_z_url(url, html_content=czysty_html)
+            gotowe_wyniki.append((url, wynik))
+        except Exception as e:
+            print(f" ! Błąd cache dla {url}: {e}. Przenoszę do pobrania z sieci.")
+            zadania_sieciowe.append(item)
+
+    if zadania_sieciowe:
+        urls_only = [z['url'] for z in zadania_sieciowe]
+        print(f" [WEB] Pobieram {len(urls_only)} linków z wiki...")
+        pary_z_sieci = asyncio.run(parsuj_wiele_misji_async(urls_only, max_concurrency=MAX_CONCURRENCY))
+        gotowe_wyniki.extend(pary_z_sieci)
+
+    for i, (url, wynik) in enumerate(gotowe_wyniki, start=1):
         print(f"\n[{i}/{len(batch)}] Zapisuję: {url}")
 
         if wynik is None:
@@ -124,4 +143,4 @@ for batch_nr, batch in enumerate(chunks(linki, BATCH_SIZE), start=1):
         except Exception as e:
             print(f"BŁĄD przy zapisie {url}: {e}")
 
-print(f"\nKoniec. Przerobione OK: {przerobione}/{len(linki)}")
+print(f"\nKoniec. Przerobione OK: {przerobione}/{len(linki_z_kolejki)}")

@@ -4,6 +4,8 @@ import os
 import re
 import time
 import hashlib
+import zlib
+import base64
 from dataclasses import dataclass
 from weakref import WeakKeyDictionary
 
@@ -13,7 +15,7 @@ from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_af
 
 try:
     from requests_cache import AsyncCachedSession
-except Exception:  # pragma: no cover - optional dependency
+except Exception:
     AsyncCachedSession = None
 
 
@@ -27,8 +29,8 @@ CACHE_EXPIRE = int(os.getenv("SCRAPER_CACHE_EXPIRE", "86400"))
 WIKI_MAX_CONCURRENCY = int(os.getenv("WIKI_MAX_CONCURRENCY", "5"))
 WOWHEAD_MAX_CONCURRENCY = int(os.getenv("WOWHEAD_MAX_CONCURRENCY", "5"))
 
-WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.3"))
-WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.3"))
+WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.4"))
+WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.4"))
 
 
 class HostThrottle:
@@ -184,13 +186,11 @@ def pobierz_soup(url: str, parser: str = "html.parser", host: str | None = None)
         loop = None
 
     if loop and loop.is_running():
-        # SCENARIUSZ: JUPYTER / NOTEBOOK
         import nest_asyncio
         nest_asyncio.apply()
         
         return loop.run_until_complete(pobierz_soup_async(url, parser=parser, host=host))
     else:
-        # SCENARIUSZ: ZWYKŁY SKRYPT .PY
         runner = _get_runner()
         return runner.run(pobierz_soup_async(url, parser=parser, host=host))
 
@@ -216,10 +216,31 @@ def policz_hash_z_tekstu(tekst: str) -> str | None:
     return hashlib.sha256(tekst.encode("utf-8")).hexdigest()
 
 
+def skompresuj_html(tresc_tag) -> str | None:
+    if not tresc_tag:
+        return None
+    try:
+        html_str = str(tresc_tag)
+        skompresowane_bajty = zlib.compress(html_str.encode("utf-8"))
+        zakodowane_base64 = base64.b64encode(skompresowane_bajty).decode("utf-8")
+        return zakodowane_base64
+    except Exception as e:
+        print(f"Błąd kompresji: {e}")
+        return None
+
+def dekompresuj_html(zakodowany_string: str) -> str:
+    if not zakodowany_string:
+        return ""
+    try:
+        skompresowane_bajty = base64.b64decode(zakodowany_string)
+        html_str = zlib.decompress(skompresowane_bajty).decode("utf-8")
+        return html_str
+    except Exception as e:
+        print(f"Błąd dekompresji: {e}")
+        return ""
+
+
 def złącz_slownik_linii(slownik_linii: dict) -> str:
-    """
-    Oczekuje np. {1: "a", 2: "b"} i zwraca "a\nb" (po kluczach rosnąco).
-    """
     if not slownik_linii:
         return ""
     return "\n".join(
@@ -236,10 +257,6 @@ def złącz_cele(cele_slownik: dict) -> dict:
 
 
 def złącz_dialogi(sequence: list, typy: set[str]) -> str:
-    """
-    Skleja tylko te eventy, które mają el["typ"] w podanym zbiorze `typy`.
-    Zachowuje kolejność z oryginalnej listy.
-    """
     if not sequence:
         return ""
 
@@ -467,9 +484,15 @@ def renumeruj_id(sequence):
     return sequence
 
 
-def parsuj_misje_z_url(url: str):
-    soup = pobierz_soup(url)
-    tresc = pobierz_tresc(soup)
+def parsuj_misje_z_url(url: str, html_content: str = None):
+    if html_content:
+        soup = BeautifulSoup(html_content, "html.parser")
+        tresc = pobierz_tresc(soup)
+        html_skompresowany = skompresuj_html(tresc)
+    else:
+        soup = pobierz_soup(url)
+        tresc = pobierz_tresc(soup)
+        html_skompresowany = skompresuj_html(tresc)
 
     podsumowanie = parsuj_podsumowanie_misji(tresc)
     cele = parsuj_cele_misji(tresc)
@@ -505,7 +528,8 @@ def parsuj_misje_z_url(url: str):
 
     return {
         "Źródło": {
-            "url": url
+            "url": url,
+            "html_skompresowany": html_skompresowany 
         },
         "Misje_EN": {
             "Podsumowanie_EN": podsumowanie,

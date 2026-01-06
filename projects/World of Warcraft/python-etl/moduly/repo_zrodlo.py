@@ -21,19 +21,24 @@ def zapisz_zrodlo_do_db(
     hash_dymki = (hash_html.get("Dialogi_EN", {}) or {}).get("Dymki_EN")
     hash_gossip = (hash_html.get("Dialogi_EN", {}) or {}).get("Gossipy_EN")
 
+    zrodlo_dane = wynik.get("Źródło", {}) or {}
+    html_skompresowany = zrodlo_dane.get("html_skompresowany")
+
     q_insert = text(f"""
         INSERT INTO {tabela_zrodlo} (
             MISJA_ID_MOJE_FK, ZRODLO_NAZWA,
             HTML_HASH_GLOWNY_CEL, HTML_HASH_PODRZEDNY_CEL,
             HTML_HASH_TRESC, HTML_HASH_POSTEP, HTML_HASH_ZAKONCZENIE, HTML_HASH_NAGRODY,
-            HTML_HASH_DYMKI, HTML_HASH_GOSSIP
+            HTML_HASH_DYMKI, HTML_HASH_GOSSIP,
+            HTML_SKOMPRESOWANY
         )
         OUTPUT inserted.TECH_ID
         VALUES (
             :misja_id_fk, :zrodlo_nazwa,
             :hash_glowny_cel, :hash_podrzedny_cel,
             :hash_tresc, :hash_postep, :hash_zakonczenie, :hash_nagrody,
-            :hash_dymki, :hash_gossip
+            :hash_dymki, :hash_gossip,
+            :html_skompresowany
         );
     """)
 
@@ -50,8 +55,9 @@ def zapisz_zrodlo_do_db(
                 "hash_zakonczenie": hash_zakonczenie,
                 "hash_nagrody": hash_nagrody,
                 "hash_dymki": hash_dymki,
-                "hash_gossip": hash_gossip
+                "hash_gossip": hash_gossip,
+                "html_skompresowany": html_skompresowany
             }
         ).scalar_one()
 
-        return tech_id
+    return tech_id

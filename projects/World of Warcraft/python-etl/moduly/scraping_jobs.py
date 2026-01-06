@@ -101,7 +101,7 @@ def hashuj_kategorie_i_zapisz_zrodlo(
         silnik,
         kategorie: list[str],
         zrodlo: str,
-        sleep_s: int = 0,
+        sleep_s: float = 0.25,
         tabela_misje: str = "dbo.MISJE",
         tabela_zrodlo: str = "dbo.ZRODLO"
     ) -> None:
@@ -127,23 +127,28 @@ def hashuj_kategorie_i_zapisz_zrodlo(
 
             try:
                 wynik = parsuj_misje_z_url(url)
+
                 misja_url = wynik.get("Źródło", {}).get("url")
+                if not misja_url: 
+                    raise ValueError("Scraper nie zwrócił URL w wyniku")
 
                 with silnik.connect() as conn:
                     row = conn.execute(q_select_misja_id, {"url": misja_url}).first()
 
                 if not row:
                     print("    → brak w MISJE, dodaję do LINKI_DO_SCRAPOWANIA")
+                    html_blob = wynik.get("Źródło", {}).get("html_skompresowany")
+                    
                     zapisz_link_do_scrapowania(
                         silnik=silnik,
                         url=misja_url,
-                        zrodlo=zrodlo
+                        zrodlo=zrodlo,
+                        html_skompresowany=html_blob
                     )
                     time.sleep(sleep_s)
                     continue
 
                 misja_id = row[0]
-
                 zapisz_zrodlo_do_db(
                     silnik=silnik,
                     tabela_zrodlo=tabela_zrodlo,
@@ -151,10 +156,20 @@ def hashuj_kategorie_i_zapisz_zrodlo(
                     wynik=wynik,
                     zrodlo=zrodlo
                 )
-
                 print("    + zapisano hashe do ZRODLO")
 
             except Exception as e:
                 print(f"    ! BŁĄD: {e}")
+                print(f"    -> RATUNEK: Dodaję {url} do LINKI_DO_SCRAPOWANIA, aby spróbować później.")
+
+                try:
+                    zapisz_link_do_scrapowania(
+                        silnik=silnik,
+                        url=url,
+                        zrodlo=zrodlo,
+                        html_skompresowany=None 
+                    )
+                except Exception as save_err:
+                    print(f"    !!! KRYTYCZNE: Nie udało się nawet dodać do kolejki: {save_err}")
 
             time.sleep(sleep_s)

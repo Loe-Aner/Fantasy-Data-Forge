@@ -72,6 +72,14 @@ def roznice_hashe_usun_rekordy_z_db(
     print(f"\n▶ Łącznie misji do czyszczenia: {len(misje)}")
     print(f"▶ ID misji: {sorted(misje)}\n")
 
+    q_select_data = text("""
+        SELECT m.MISJA_URL_WIKI, z.HTML_SKOMPRESOWANY
+        FROM dbo.MISJE m
+        LEFT JOIN dbo.ZRODLO z ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+        WHERE m.MISJA_ID_MOJE_PK = :misja_id
+        ORDER BY z.DATA_WYSCRAPOWANIA DESC
+    """)
+
     for m in misje:
         print(f"=== Czyszczę MISJA_ID = {m} ===")
 
@@ -83,23 +91,28 @@ def roznice_hashe_usun_rekordy_z_db(
                     "dbo.MISJE"
                 ]
 
-        q_select_url = text("""
-            SELECT MISJA_URL_WIKI
-            FROM dbo.MISJE
-            WHERE MISJA_ID_MOJE_PK = :misja_id
-        """)
-
-        q_insert_url = text("""
-            INSERT INTO dbo.LINKI_DO_SCRAPOWANIA (URL, ZRODLO_NAZWA)
-            VALUES (:url, :zrodlo)
-        """)
-
         with silnik.begin() as conn:
-            misja_url = conn.execute(q_select_url, {"misja_id": m}).scalar_one()
-            print(f"    + wrzucam do LINKI_DO_SCRAPOWANIA: {misja_url}")
+            row = conn.execute(q_select_data, {"misja_id": m}).first()
+            if not row:
+                print(f"    ! Brak misji ID={m} w bazie, pomijam.")
+                continue
+            
+            misja_url = row[0]
+            html_blob = row[1]
 
+            print(f"    + Przenoszę do kolejki: {misja_url} (Cache: {'TAK' if html_blob else 'NIE'})")
+
+            q_insert_kolejka = text("""
+                INSERT INTO dbo.LINKI_DO_SCRAPOWANIA (URL, ZRODLO_NAZWA, HTML_SKOMPRESOWANY)
+                VALUES (:url, :zrodlo, :html)
+            """)
+            
             try:
-                conn.execute(q_insert_url, {"url": misja_url, "zrodlo": zrodlo_insert_url})
+                conn.execute(q_insert_kolejka, {
+                    "url": misja_url, 
+                    "zrodlo": zrodlo_insert_url,
+                    "html": html_blob
+                })
             except IntegrityError as e:
                 if _czy_duplikat(e):
                     print("      - już było w kolejce (duplikat)")
@@ -108,12 +121,7 @@ def roznice_hashe_usun_rekordy_z_db(
 
             for tabela in tabele_do_skanowania:
                 kolumna = "MISJA_ID_MOJE_PK" if tabela == "dbo.MISJE" else "MISJA_ID_MOJE_FK"
-
-                q_delete_id = text(f"""
-                    DELETE FROM {tabela}
-                    WHERE {kolumna} = :m
-                """)
-
+                q_delete_id = text(f"DELETE FROM {tabela} WHERE {kolumna} = :m")
                 wynik_out = conn.execute(q_delete_id, {"m": m})
                 print(f"    - {tabela}: usunięto {wynik_out.rowcount} wierszy")
 

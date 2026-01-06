@@ -9,8 +9,8 @@ import scraper_wiki_main as parser_lib
 
 USER_AGENT = "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"
 DEFAULT_TIMEOUT = 30
-WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.3"))
-WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.3"))
+WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.4"))
+WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.4"))
 
 class HostThrottle:
     def __init__(self, min_delay: float):
@@ -38,6 +38,9 @@ def cpu_bound_parsing_task(html: str, url: str) -> dict | None:
     tresc = parser_lib.pobierz_tresc(soup)
     if not tresc:
         return None
+
+    html_skompresowany = parser_lib.skompresuj_html(tresc)
+    # ===========================================================
 
     podsumowanie = parser_lib.parsuj_podsumowanie_misji(tresc)
     cele = parser_lib.parsuj_cele_misji(tresc)
@@ -73,7 +76,10 @@ def cpu_bound_parsing_task(html: str, url: str) -> dict | None:
     }
 
     return {
-        "Źródło": {"url": url},
+        "Źródło": {
+            "url": url,
+            "html_skompresowany": html_skompresowany
+        },
         "Misje_EN": {
             "Podsumowanie_EN": podsumowanie,
             "Cele_EN": cele,
