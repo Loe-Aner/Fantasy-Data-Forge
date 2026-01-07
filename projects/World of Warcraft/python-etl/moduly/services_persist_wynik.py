@@ -236,3 +236,22 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
                 status=status,
                 tresc=tresc
             )
+
+def przefiltruj_dane_misji(dane_wejsciowe):
+    sekcja_misje = dane_wejsciowe.get("Misje_EN", {})
+    
+    nowy_wynik = {
+        "Misje_EN": {
+            "Podsumowanie_EN": {
+                "Tytuł": sekcja_misje.get("Podsumowanie_EN", {}).get("Tytuł")
+            },
+            "Cele_EN": sekcja_misje.get("Cele_EN"),
+            "Treść_EN": sekcja_misje.get("Treść_EN"),
+            "Postęp_EN": sekcja_misje.get("Postęp_EN"),
+            "Zakończenie_EN": sekcja_misje.get("Zakończenie_EN"),
+            "Nagrody_EN": sekcja_misje.get("Nagrody_EN")
+        },
+        "Dialogi_EN": dane_wejsciowe.get("Dialogi_EN")
+    }
+    
+    return nowy_wynik

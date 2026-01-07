@@ -1,0 +1,20 @@
+WITH hashe AS (
+    SELECT 
+        m.MISJA_ID_MOJE_PK,
+        z.HTML_SKOMPRESOWANY,
+        ROW_NUMBER() OVER (
+            PARTITION BY z.MISJA_ID_MOJE_FK 
+            ORDER BY z.DATA_WYSCRAPOWANIA DESC
+        ) AS r
+    FROM dbo.ZRODLO AS z
+    INNER JOIN dbo.MISJE AS m
+      ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+    WHERE 1=1
+      AND m.KRAINA_EN = 'Exile''s Reach'
+      AND m.MISJA_ID_Z_GRY <> 123456789
+)
+SELECT 
+    MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY
+FROM hashe
+WHERE r = 1
+;

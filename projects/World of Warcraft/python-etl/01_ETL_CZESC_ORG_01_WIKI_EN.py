@@ -20,13 +20,13 @@ from scraper_wiki_main import parsuj_misje_z_url, dekompresuj_html
 # BAZA
 kategorie = [
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_1-10",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_2",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_1-10",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_2",
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_6-10",
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_7-10",
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_10"
@@ -56,7 +56,7 @@ linki_z_kolejki = pobierz_linki_do_scrapowania(silnik)
 print(f"Do przerobienia: {len(linki_z_kolejki)} misji")
 
 MAX_CONCURRENCY = 4
-BATCH_SIZE = 48
+BATCH_SIZE = 100
 
 
 def chunks(lista, size):
