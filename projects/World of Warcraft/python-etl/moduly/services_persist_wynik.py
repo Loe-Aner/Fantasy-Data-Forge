@@ -15,9 +15,10 @@ def zapisz_npc_i_status_do_db_z_wyniku(
         szukaj_wg: list[str],
         wyscrapowana_tresc: dict,
         zrodlo: str,
-        status: str = "0_ORYGINAŁ"
+        status: str = "0_ORYGINAŁ",
+        jezyk: str = "EN"
     ):
-    podsumowanie = wyscrapowana_tresc["Misje_EN"]["Podsumowanie_EN"]
+    podsumowanie = wyscrapowana_tresc[f"Misje_{jezyk}"][f"Podsumowanie_{jezyk}"]
 
     for klucz in szukaj_wg:
         npc = podsumowanie.get(klucz)
@@ -44,15 +45,16 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
         tabela_npc: str,
         tabela_misje: str,
         tabela_misje_statusy: str,
-        status: str = "0_ORYGINAŁ"
+        status: str = "0_ORYGINAŁ",
+        jezyk: str = "EN"
     ) -> int:
 
     mapa_segment = {
-        "Cele_EN": "CEL",
-        "Treść_EN": "TREŚĆ",
-        "Postęp_EN": "POSTĘP",
-        "Zakończenie_EN": "ZAKOŃCZENIE",
-        "Nagrody_EN": "NAGRODY"
+        f"Cele_{jezyk}": "CEL",
+        f"Treść_{jezyk}": "TREŚĆ",
+        f"Postęp_{jezyk}": "POSTĘP",
+        f"Zakończenie_{jezyk}": "ZAKOŃCZENIE",
+        f"Nagrody_{jezyk}": "NAGRODY"
     }
 
     mapa_podsegment = {
@@ -60,8 +62,8 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
         "Podrzędny": "PODRZĘDNY_CEL"
     }
 
-    misje_en = wynik.get("Misje_EN", {})
-    podsumowanie = misje_en.get("Podsumowanie_EN", {})
+    misje_en = wynik.get(f"Misje_{jezyk}", {})
+    podsumowanie = misje_en.get(f"Podsumowanie_{jezyk}", {})
 
     url = wynik.get("Źródło", {}).get("url")
     tytul = (podsumowanie.get("Tytuł") or "").strip()
@@ -96,7 +98,7 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
         npc_koniec=npc_koniec
     )
 
-    sekcje_do_statusow = ["Cele_EN", "Treść_EN", "Postęp_EN", "Zakończenie_EN", "Nagrody_EN"]
+    sekcje_do_statusow = [f"Cele_{jezyk}", f"Treść_{jezyk}", f"Postęp_{jezyk}", f"Zakończenie_{jezyk}", f"Nagrody_{jezyk}"]
 
     for segment in sekcje_do_statusow:
         segment_db = mapa_segment.get(segment)
@@ -107,7 +109,7 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
         if not isinstance(segment_dict, dict) or not segment_dict:
             continue
 
-        if segment == "Cele_EN":
+        if segment == f"Cele_{jezyk}":
             for podsegment, wartosc in segment_dict.items():
                 podsegment_db = mapa_podsegment.get(podsegment)
                 if podsegment_db is None or not isinstance(wartosc, dict):
@@ -170,7 +172,8 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
         tabela_npc_statusy: str,
         tabela_dialogi_statusy: str,
         zrodlo: str,
-        status: str = "0_ORYGINAŁ"
+        status: str = "0_ORYGINAŁ",
+        jezyk: str = "EN"
     ) -> None:
 
     mapa_segment = {
@@ -178,8 +181,8 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
         "gossip": "GOSSIP"
     }
 
-    dialogi_en = wynik.get("Dialogi_EN", {})
-    sequence = dialogi_en.get("Gossipy_Dymki_EN", [])
+    dialogi_en = wynik.get(f"Dialogi_{jezyk}", {})
+    sequence = dialogi_en.get(f"Gossipy_Dymki_{jezyk}", [])
 
     if not isinstance(sequence, list) or len(sequence) == 0:
         return
@@ -190,7 +193,7 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
         if segment_db is None:
             continue
 
-        npc_nazwa = (el.get("npc_en") or "").strip()
+        npc_nazwa = (el.get(f"npc_{jezyk.lower()}") or "").strip()
         if npc_nazwa == "":
             continue
 
@@ -209,9 +212,9 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
         except Exception:
             nr_bloku_dialogu = 1
 
-        wyp = el.get("wypowiedzi_EN") or {}
+        wyp = el.get(f"wypowiedzi_{jezyk}") or {}
         if not isinstance(wyp, dict) or len(wyp) == 0:
-            continue
+            return
 
         for nr_key, tresc in wyp.items():
             if tresc is None:
@@ -237,21 +240,21 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
                 tresc=tresc
             )
 
-def przefiltruj_dane_misji(dane_wejsciowe):
-    sekcja_misje = dane_wejsciowe.get("Misje_EN", {})
+def przefiltruj_dane_misji(dane_wejsciowe, jezyk: str = "EN"):
+    sekcja_misje = dane_wejsciowe.get(f"Misje_{jezyk}", {})
     
     nowy_wynik = {
-        "Misje_EN": {
-            "Podsumowanie_EN": {
-                "Tytuł": sekcja_misje.get("Podsumowanie_EN", {}).get("Tytuł")
+        f"Misje_{jezyk}": {
+            f"Podsumowanie_{jezyk}": {
+                "Tytuł": sekcja_misje.get(f"Podsumowanie_{jezyk}", {}).get("Tytuł")
             },
-            "Cele_EN": sekcja_misje.get("Cele_EN"),
-            "Treść_EN": sekcja_misje.get("Treść_EN"),
-            "Postęp_EN": sekcja_misje.get("Postęp_EN"),
-            "Zakończenie_EN": sekcja_misje.get("Zakończenie_EN"),
-            "Nagrody_EN": sekcja_misje.get("Nagrody_EN")
+            f"Cele_{jezyk}": sekcja_misje.get(f"Cele_{jezyk}"),
+            f"Treść_{jezyk}": sekcja_misje.get(f"Treść_{jezyk}"),
+            f"Postęp_{jezyk}": sekcja_misje.get(f"Postęp_{jezyk}"),
+            f"Zakończenie_{jezyk}": sekcja_misje.get(f"Zakończenie_{jezyk}"),
+            f"Nagrody_{jezyk}": sekcja_misje.get(f"Nagrody_{jezyk}")
         },
-        "Dialogi_EN": dane_wejsciowe.get("Dialogi_EN")
+        f"Dialogi_{jezyk}": dane_wejsciowe.get(f"Dialogi_{jezyk}")
     }
     
     return nowy_wynik

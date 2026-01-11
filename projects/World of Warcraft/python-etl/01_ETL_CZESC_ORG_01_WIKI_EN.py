@@ -36,7 +36,7 @@ silnik = utworz_engine_do_db()
 hashuj_kategorie_i_zapisz_zrodlo(
     silnik=silnik, 
     kategorie=kategorie, 
-    zrodlo='wiki'
+    zrodlo="wiki"
     )
 
 
@@ -68,16 +68,16 @@ przerobione = 0
 for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
     print(f"\n=== PACZKA {batch_nr} | {len(batch)} linków ===")
 
-    zadania_lokalne = [z for z in batch if z['html_skompresowany'] is not None]
-    zadania_sieciowe = [z for z in batch if z['html_skompresowany'] is None]
+    zadania_lokalne = [z for z in batch if z["html_skompresowany"] is not None]
+    zadania_sieciowe = [z for z in batch if z["html_skompresowany"] is None]
     
     gotowe_wyniki = []
 
     for item in zadania_lokalne:
-        url = item['url']
+        url = item["url"]
         try:
             print(f" [CACHE] Przetwarzam lokalnie: {url}")
-            czysty_html = dekompresuj_html(item['html_skompresowany'])
+            czysty_html = dekompresuj_html(item["html_skompresowany"])
             wynik = parsuj_misje_z_url(url, html_content=czysty_html)
             gotowe_wyniki.append((url, wynik))
         except Exception as e:
@@ -85,7 +85,7 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
             zadania_sieciowe.append(item)
 
     if zadania_sieciowe:
-        urls_only = [z['url'] for z in zadania_sieciowe]
+        urls_only = [z["url"] for z in zadania_sieciowe]
         print(f" [WEB] Pobieram {len(urls_only)} linków z wiki...")
         pary_z_sieci = asyncio.run(parsuj_wiele_misji_async(urls_only, max_concurrency=MAX_CONCURRENCY))
         gotowe_wyniki.extend(pary_z_sieci)
@@ -106,6 +106,7 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 wyscrapowana_tresc=wynik,
                 zrodlo="wiki",
                 status="0_ORYGINAŁ",
+                jezyk="EN"
             )
 
             misja_id = zapisz_misje_i_statusy_do_db_z_wyniku(
@@ -115,6 +116,7 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 tabela_misje="dbo.MISJE",
                 tabela_misje_statusy="dbo.MISJE_STATUSY",
                 status="0_ORYGINAŁ",
+                jezyk="EN"
             )
 
             zapisz_dialogi_statusy_do_db_z_wyniku(
@@ -126,6 +128,7 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 tabela_dialogi_statusy="dbo.DIALOGI_STATUSY",
                 zrodlo="wiki",
                 status="0_ORYGINAŁ",
+                jezyk="EN"
             )
 
             zapisz_zrodlo_do_db(
