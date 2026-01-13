@@ -46,7 +46,8 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
         tabela_misje: str,
         tabela_misje_statusy: str,
         status: str = "0_ORYGINAŁ",
-        jezyk: str = "EN"
+        jezyk: str = "EN",
+        misja_id_pl = None
     ) -> int:
 
     mapa_segment = {
@@ -84,19 +85,21 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
         lvl_digits = "".join(ch for ch in lvl_txt if ch.isdigit())[:2]
         lvl = int(lvl_digits) if lvl_digits != "" else 0
 
-
-    misja_id = zapewnij_misje_i_pobierz_id(
-        silnik=silnik,
-        tabela_npc=tabela_npc,
-        tabela_misje=tabela_misje,
-        url=url,
-        tytul=tytul,
-        nastepna_misja=nastepna_misja,
-        poprzednia_misja=poprzednia_misja,
-        lvl=lvl,
-        npc_start=npc_start,
-        npc_koniec=npc_koniec
-    )
+    if jezyk == "EN":
+        misja_id = zapewnij_misje_i_pobierz_id(
+            silnik=silnik,
+            tabela_npc=tabela_npc,
+            tabela_misje=tabela_misje,
+            url=url,
+            tytul=tytul,
+            nastepna_misja=nastepna_misja,
+            poprzednia_misja=poprzednia_misja,
+            lvl=lvl,
+            npc_start=npc_start,
+            npc_koniec=npc_koniec
+        )
+    else:
+        misja_id == misja_id_pl
 
     sekcje_do_statusow = [f"Cele_{jezyk}", f"Treść_{jezyk}", f"Postęp_{jezyk}", f"Zakończenie_{jezyk}", f"Nagrody_{jezyk}"]
 
