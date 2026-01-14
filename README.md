@@ -1,6 +1,6 @@
 # Cześć! Mam na imię Piotr (nick: Loe'Aner) 👋
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect_with_me-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/piotr-postek-616436140/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/piotr-postek-616436140/)
 
 To repozytorium to moje **miejsce do nauki**. Buduję tutaj rozwiązania **end-to-end**: od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, aż po wizualizację.
 
@@ -12,27 +12,26 @@ Prywatnie: Pracuję jako **Ekspert ds. Raportowania** w dziale BI & CRM. Dążę
 
 ### Języki & Core
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![SQL](https://img.shields.io/badge/SQL-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
-![Lua](https://img.shields.io/badge/Lua-Addon_Dev-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
+![SQL](https://img.shields.io/badge/SQL-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+![Lua](https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
 
 ### Data Engineering & Bazy Danych
-![Microsoft SQL Server](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
+![Microsoft SQL Server](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
 ![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)
 ![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
-![Polars](https://img.shields.io/badge/Polars-CD792C?style=for-the-badge&logo=polars&logoColor=white)
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-red?style=for-the-badge)
-![BeautifulSoup](https://img.shields.io/badge/BeautifulSoup-green?style=for-the-badge)
+![Polars](https://img.shields.io/badge/Polars-0075FF?style=for-the-badge&logo=polars&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white)
+![BeautifulSoup](https://img.shields.io/badge/BeautifulSoup-4E757E?style=for-the-badge&logo=python&logoColor=white)
 
 ### Business Intelligence & Analytics
-![Power BI](https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=power-bi&logoColor=black)
-![DAX](https://img.shields.io/badge/DAX-blue?style=for-the-badge)
-![Excel](https://img.shields.io/badge/Excel-217346?style=for-the-badge&logo=microsoft-excel&logoColor=white)
+![Power BI](https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)
+![DAX](https://img.shields.io/badge/DAX-007ACC?style=for-the-badge&logo=powerbi&logoColor=white)
+![Excel](https://img.shields.io/badge/Excel-217346?style=for-the-badge&logo=microsoftexcel&logoColor=white)
 
 ### Narzędzia & IDE
-![VS Code](https://img.shields.io/badge/Visual_Studio_Code-007ACC?style=for-the-badge&logo=visual-studio-code&logoColor=white)
+![VS Code](https://img.shields.io/badge/Visual_Studio_Code-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white)
 ![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
-![Git](https://img.shields.io/badge/GIT-E44C30?style=for-the-badge&logo=git&logoColor=white)
-
+![Git](https://img.shields.io/badge/GIT-F05032?style=for-the-badge&logo=git&logoColor=white)
 ---
 
 ## 🏗️ Projekty Inżynierskie & Backend
