@@ -28,20 +28,23 @@ od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, 
     </td>
   </tr>
 </table>
-
 <div align="center">
-<p>
-  <b>⚔️ Aktualna Misja:</b><br>
-  Dostarczenie polskiej społeczności funkcjonalnych rozwiązań (Wiki, Addony, Bazy Danych).<br>
-  <i>Warunek sukcesu: Gracze aktywnie korzystający z moich narzędzi w codziennej rozgrywce.</i>
-</p>
+  <p>
+    <b>⚔️ Aktualna Misja (Main Quest):</b><br>
+    Dostarczenie polskiej społeczności funkcjonalnych rozwiązań (Wiki, Addony, Bazy Danych).
+  </p>
+  
+  <p>
+    🎯 <b>Cel Priorytetowy:</b> Addon tłumaczący World of Warcraft.<br>
+    <i>Warunek sukcesu: Gracze aktywnie korzystający z moich narzędzi w codziennej rozgrywce.</i>
+  </p>
 
-<p>
-🤫 <b>Ukryta Misja:</b><br>
-<i>Protokół "Genesis": Loe'Aner projektuje architekturę własnego uniwersum. <br>
-Cel: Wypuszczenie na rynek autorskiego świata w formacie wykraczającym poza standardową książkę.<br>
-Status: [DANE UTAJNIONE]</i>
-</p>
+  <p>
+    🤫 <b>Ukryta Misja (Secret Quest):</b><br>
+    <i>Protokół "Genesis": Loe'Aner projektuje architekturę własnego uniwersum. <br>
+    Cel: Wypuszczenie na rynek autorskiego świata w formacie wykraczającym poza standardową książkę.<br>
+    Status: [DANE UTAJNIONE]</i>
+  </p>
 </div>
 
 ---
