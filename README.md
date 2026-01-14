@@ -1,64 +1,95 @@
-# Cześć, Dzień dobry :)
+# Cześć! Mam na imię Piotr (nick: Loe'Aner) 👋
 
-To repo to moja przestrzeń do **dodatkowej praktyki, nauki i eksperymentów** — od wizualizacji, przez odpowiedzi na nurtujące mnie pytania, po rozwijanie umiejętności programistycznych.  
-Pracuję jako **Ekspert ds. Raportowania** w dziale **Business Intelligence & CRM** i mega lubię się rozwijać w: SQL, DAX, Power BI, Python, modelowaniu i wizualizacji danych.
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect_with_me-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/piotr-postek-616436140/)
 
----
+To repozytorium to moje **miejsce do nauki**. Buduję tutaj rozwiązania **end-to-end**: od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, aż po wizualizację.
 
-## 🚀 O projektach
-
-Moje projekty są prowadzone **end-to-end**:  
-- 📥 **Pozyskiwanie danych** – API, Kaggle, pliki źródłowe, PDF-y, scraping 
-- 🔧 **Przygotowanie i modelowanie** – czyszczenie, transformacje, budowa modeli danych & baz danych
-- 📊 **Analiza i wizualizacja** – Power BI, SQL, Python
-
-Każdy projekt zaczyna się od **pytania biznesowego/badawczego**, dlatego rozwiązania są **unikalne i nastawione na efekt**.  
-
-Repo zawiera:  
-- 💻 kod,  
-- 📝 notatki,  
-- 📑 krótkie omówienia wyników.  
+Prywatnie: Pracuję jako **Ekspert ds. Raportowania** w dziale BI & CRM. Dążę do bycia ekspertem technicznym, który rozumie nie tylko *co* pokazują dane, ale *jak* działają pod spodem.
 
 ---
 
-## 🔍 Zawartość repozytorium
+## 🛠️ Stack Technologiczny
 
-- **Dashboards/**
-  - **Fundusze Inwestycyjne** – analiza rentowności i ryzyka, integracja danych z plików oraz PDF; wizualizacje w Power BI.  
-    `dashboards/fundusze-inwestycyjne/`
-  - **Premier League – Top 6** – najważniejsze informacje i statystyki klubów na bazie datasetu z Kaggle; przykłady składów, formacji i metryk meczowych.  
-    `dashboards/premier-league-stats/`
-  - **Sales Report - OnePager** – prosty raporcik, w którym przedstawiam najważniejsze mierniki z ewolucją geograficzną oraz okresową.  
-    `dashboards/one-pager-report-sales/`  
+### Języki & Core
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![SQL](https://img.shields.io/badge/SQL-Generic-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
+![Lua](https://img.shields.io/badge/Lua-Addon_Dev-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
 
-- **Code Challenges/**
-  - **Python** – krótkie zadania/ćwiczenia, algorytmy. (czekam na premierę pewnej książki; wrócę do nich w przyszłości :) )  
-    `code-challenges/python/`
-  - **SQL** – analizy i zapytania (strony typu datalemur, codewars, hackerrank, inne platformy).  
-    `code-challenges/sql/`
+### Data Engineering & Bazy Danych
+![Microsoft SQL Server](https://img.shields.io/badge/Microsoft%20SQL%20Server-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
+![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)
+![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
+![Polars](https://img.shields.io/badge/Polars-Fast_Data-CD792C?style=for-the-badge&logo=polars&logoColor=white)
+![SQLAlchemy](https://img.shields.io/badge/ORM-SQLAlchemy-red?style=for-the-badge)
+![BeautifulSoup](https://img.shields.io/badge/Scraping-BeautifulSoup-green?style=for-the-badge)
 
-- **DAX/** – przykładowe miary wykorzystywane w dashboardach (znajdziesz je w każdym raporcie, w folderze o nazwie:
-  `x. Przykładowe miary w DAX/`)
+### Business Intelligence & Analytics
+![Power BI](https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=power-bi&logoColor=black)
+![DAX](https://img.shields.io/badge/DAX-Analysis-blue?style=for-the-badge)
+![Excel](https://img.shields.io/badge/Excel-Advanced-217346?style=for-the-badge&logo=microsoft-excel&logoColor=white)
 
----
-
-## 🧰 Technologie
-
-**Języki**: 🗃️ SQL + DuckDB + ew. T-SQL, 🐍 Python   
-**BI & Wizualizacja**: 📊 Power BI + DAX + PowerQuery (M)   
-**Obsługa danych**: 🐼 pandas, CSV/XLSX, czasem PDF (parsowanie)  
-**Kontrola wersji**: 🌿 Git + GitHub  
+### Narzędzia & IDE
+![VS Code](https://img.shields.io/badge/Visual_Studio_Code-007ACC?style=for-the-badge&logo=visual-studio-code&logoColor=white)
+![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
+![Git](https://img.shields.io/badge/GIT-E44C30?style=for-the-badge&logo=git&logoColor=white)
 
 ---
 
-## 📎 Źródła danych (wybrane)
+## 🏗️ Projekty Inżynierskie & Backend
 
-- Premier League Top 6: dataset z Kaggle (szczegóły i link w README projektu).  
-- Fundusze: pliki CSV/XLSX + informacje z kart funduszu (PDF) — opis w README projektu.
+Tutaj dzieje się magia "pod maską". Skrypty, automatyzacja, bazy danych.
+
+### ⚔️ World of Warcraft Knowledge Base (Work in Progress)
+Zaawansowany projekt backendowy mający na celu agregację danych o grze.
+* **Cel:** Zbudowanie własnej, strukturalnej bazy danych NPC, questów i przedmiotów.
+* **Technologia:** Python (Asyncio), SQL Server, BeautifulSoup.
+* **Highlight:** Zastosowanie **Incremental Load** opartego na hashowaniu (MD5) w celu optymalizacji wydajności i unikania redundancji danych. Asynchroniczny scraper pobierający dane z Wiki. Komplet danych przy tłumaczeniu, by nie gubić kontekstu.
+* **🚀 Roadmap (Next Steps):**
+    * Stworzenie **Addonu w języku LUA**, który będzie "wstrzykiwał" przetłumaczone dane bezpośrednio do interfejsu gry ( okna questów, bubbles, gossipy).
+    * Budowa **Dashboardu operacyjnego w Power BI**, monitorującego postęp prac (status tłumaczeń, statystyki bazy danych, pokrycie contentu).
+    * Całość zostanie opublikowana w formie bezpłatnego addonu.
+* 📂 `projects/World of Warcraft/`
+
+### 🔮 Future R&D: Lord of the Rings Online (LOTRO)
+Planuję podjąć wyzwanie stworzenia tłumaczenia dla klasycznego MMO w świecie Tolkiena.
+* **Status:** *Research & Development*. Obecnie startuję od zera - nie posiadam jeszcze wiedzy o strukturze plików tej gry ani gotowych narzędzi, ale jako "mini fan" tego uniwersum, fajnie byłoby to przenieść na język Polski.
+* **Wyzwanie:** Rozgryzienie API, formatów danych i stworzenie własnego potoku ETL (Python/SQL) dla gry z innej epoki technologicznej niż WoW.
 
 ---
 
-## 🙌 Kontakt
+## 📊 Dashboards & Business Intelligence
 
-Jeśli masz uwagi, pytania albo chcesz podrzucić ciekawy pomysł - śmiało otwórz **Issue** lub napisz komentarz w dyskusji. Ja sam tam coś powrzucam, by nie zapomnieć :)  
-Dzięki za odwiedziny i miłego przeglądania!
+Rozwiązania analityczne nastawione na odpowiedź na konkretne pytania.
+
+### 💰 Fundusze Inwestycyjne
+Kompleksowa analiza rentowności i ryzyka funduszy.
+* **Zakres:** Integracja danych z plików CSV/XLSX oraz parsowanie kart funduszy (PDF).
+* **Wynik:** Interaktywny raport Power BI pokazujący stopy zwrotu i wskaźniki ryzyka.
+* 📂 `dashboards/fundusze-inwestycyjne/`
+
+### ⚽ Premier League – Top 6 Analysis
+Analiza statystyczna czołowych klubów angielskiej ligi.
+* **Dane:** Kaggle Dataset.
+* **Analiza:** Metryki meczowe, formacje, składy.
+* 📂 `dashboards/premier-league-stats/`
+
+### 📈 Sales Report - OnePager
+Syntetyczny raport sprzedaży typu "Executive Summary". Bardzo prosty, zrobiony w formie eksperymentu :)
+* **Focus:** Kluczowe mierniki (KPI), ewolucja geograficzna i okresowa (YTD, YoY).
+* 📂 `dashboards/one-pager-report-sales/`
+
+---
+
+## 🧩 Code Challenges & Nauka
+
+Tutaj eksperymentuje na platformach e-learningowych - rozwiązuję zadania algorytmiczne i zapytania SQL.
+
+* **Python:** Algorytmy, struktury danych (w przyszłości powrócę do tego).
+* **SQL:** Rozwiązania zadań z platform typu DataLemur, HackerRank.
+
+---
+
+## 📫 Kontakt
+
+Wszelkie uwagi co do kodu, może jakiś wspólny projekt związany z grami?
+Śmiało uderzaj na LinkedIn (link na górze) lub otwórz **Issue** w tym repozytorium. 👋

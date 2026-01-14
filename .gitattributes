@@ -1,5 +1,9 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Ustawienia dla SQL
 *.sql linguist-detectable=true
-*.sql linguist-language=TSQL
+*.sql linguist-language=SQL
+
+# Ustawienia dla Jupyter Notebooks
 *.ipynb linguist-generated=true
