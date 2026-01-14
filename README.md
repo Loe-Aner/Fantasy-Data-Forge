@@ -1,4 +1,4 @@
-### 🧪 Mój mały świat
+## 🧪 Mój mały świat
 
 Repozytorium służy mi jako miejsce do projektów i nauki. Buduję tutaj rozwiązania **end-to-end**:  
 od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, aż po wizualizację.
