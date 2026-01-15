@@ -93,11 +93,11 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 * 📂 **Lokalizacja:** `projects/World of Warcraft/`
 
 #### 🔄 Workflow & Architektura:
-1.  **Database:** Projekt relacyjnej struktury danych (NPC, Questy, Item).
-2.  **ETL:** Zescrapowanie danych (Wiki/Wowhead), czyszczenie, transformacja i zapis do SQL Server.
-3.  **Mappings:** Słowniki i mapowanie nazw własnych (NPC, Lokacje) w celu zachowania absolutnej spójności ze światem gry.
-4.  **Content Management:** Proces tłumaczenia, redagowania i zatwierdzania tekstów (QA).
-5.  **Game Integration (Addon):** Stworzenie addonu w LUA, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
+1.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **Database:** Projekt relacyjnej struktury danych (NPC, Questy, Item).
+2.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **ETL:** Zescrapowanie danych (Wiki/Wowhead), czyszczenie, transformacja i zapis do SQL Server.
+3.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **Mappings:** Słowniki i mapowanie nazw własnych (NPC, Lokacje) w celu zachowania absolutnej spójności ze światem gry.
+4.  ![In Progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Content Management:** Proces tłumaczenia, redagowania i zatwierdzania tekstów.
+5.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-lightgrey?style=flat-square) **Game Integration (Addon):** Stworzenie addonu w LUA, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
 <br>
 
 ### 🔮 Przyszłe R&D: Lord of the Rings Online (LOTRO)
