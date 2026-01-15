@@ -2,10 +2,10 @@
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/piotr-postek-616436140/)
 
-To repozytorium to mój poligon doświadczalny. Buduję tutaj rozwiązania **end-to-end**:  
+Buduję tutaj rozwiązania **end-to-end**:  
 od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, aż po wizualizację.
 
-Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Dlatego nie znajdziesz tu typowego biogramu. Jako fanatyk RPG i osoba zafascynowana danymi, postanowiłem połączyć te dwa światy. Poniżej znajdziesz nieco więcej info.
+Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fanatyk RPG i osoba zafascynowana danymi, postanowiłem połączyć te dwa światy. Poniżej znajdziesz nieco więcej info.
 
 ---
 ## 📜 Karta Postaci: Piotr "Loe'Aner"
@@ -77,6 +77,7 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Dlatego 
 
 ### ⚙️ Narzędzia & IDE
 ![VS Code](https://img.shields.io/badge/Visual_Studio_Code-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white)
+![SSMS](https://img.shields.io/badge/SQL_Server_Management_Studio-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
 ![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
 ![Git](https://img.shields.io/badge/GIT-F05032?style=for-the-badge&logo=git&logoColor=white)
 
