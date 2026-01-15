@@ -1,4 +1,4 @@
-## 🧪 Laboratorium: Gdzie kod spotyka magię
+## 🧪 Mój mały świat
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/piotr-postek-616436140/)
 
