@@ -98,6 +98,7 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 3.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **Mappings:** Słowniki i mapowanie nazw własnych (NPC, Lokacje) w celu zachowania absolutnej spójności ze światem gry.
 4.  ![In Progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Content Management:** Proces tłumaczenia, redagowania i zatwierdzania tekstów.
 5.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-lightgrey?style=flat-square) **Game Integration (Addon):** Stworzenie addonu w LUA, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
+6.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-lightgrey?style=flat-square) **BI Reporting:** Stworzenie raportowania statusu tłumaczeń oraz kondycji bazy danych w Power BI.
 <br>
 
 ### 🔮 Przyszłe R&D: Lord of the Rings Online (LOTRO)
