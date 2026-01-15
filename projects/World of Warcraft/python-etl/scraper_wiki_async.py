@@ -40,7 +40,6 @@ def cpu_bound_parsing_task(html: str, url: str) -> dict | None:
         return None
 
     html_skompresowany = parser_lib.skompresuj_html(tresc)
-    # ===========================================================
 
     podsumowanie = parser_lib.parsuj_podsumowanie_misji(tresc)
     cele = parser_lib.parsuj_cele_misji(tresc)
@@ -157,7 +156,7 @@ class WoWScraperService:
 
 async def parsuj_wiele_misji_async(quest_urls: list[str], max_concurrency: int = 5):
     """
-    Wrapper dla kompatybilności wstecznej z Twoim skryptem ETL.
+    Wrapper dla kompatybilności wstecznej ze skryptem ETL.
     Tworzy instancję serwisu, wykonuje robotę i sprząta po sobie.
     """
     service = WoWScraperService(concurrency=max_concurrency)

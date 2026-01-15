@@ -1,16 +1,21 @@
-## 🧪 Mój mały świat
+## 🧪 Laboratorium: Gdzie kod spotyka magię
 
-Repozytorium służy mi jako miejsce do projektów i nauki. Buduję tutaj rozwiązania **end-to-end**:  
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/piotr-postek-616436140/)
+
+To repozytorium to mój poligon doświadczalny. Buduję tutaj rozwiązania **end-to-end**:  
 od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, aż po wizualizację.
 
-## 📜 Karta Postaci: Strażnik Danych
+Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Dlatego nie znajdziesz tu typowego biogramu. Jako fanatyk RPG i osoba zafascynowana danymi, postanowiłem połączyć te dwa światy. Poniżej znajdziesz nieco więcej info.
+
+---
+## 📜 Karta Postaci: Piotr "Loe'Aner"
 
 <table>
   <tr>
     <td width="50%" valign="top">
       <h3>🛡️ Specjalizacja</h3>
-      <p><b>Imię:</b> Piotr (Loe'Aner)</p>
-      <p><b>Rola:</b> Ekspert ds. Raportowania (BI & CRM)</p>
+      <p><b>Imię:</b> Piotr</p>
+      <p><b>Praca:</b> Ekspert ds. Raportowania (BI & CRM)</p>
       <p><b>Umiejętność Pasywna:</b> <i>"Pod Maską"</i> - naturalna potrzeba zrozumienia technicznej natury danych, a nie tylko ich fasady.</p>
       <p>Dla mnie <b>Backend</b> i <b>Lore</b> to to samo: w obu przypadkach chodzi o łączenie faktów, szukanie zależności i odkrywanie historii ukrytej pod powierzchnią.</p>
     </td>
@@ -28,6 +33,7 @@ od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, 
     </td>
   </tr>
 </table>
+
 <div align="center">
   <p>
     <b>⚔️ Aktualna Misja (Main Quest):</b><br>
@@ -36,14 +42,13 @@ od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, 
   
   <p>
     🎯 <b>Cel Priorytetowy:</b> Addon tłumaczący World of Warcraft.<br>
-    <i>Warunek sukcesu: Gracze aktywnie korzystający z moich narzędzi w codziennej rozgrywce.</i>
+    <i>Warunek sukcesu: Zburzenie bariery językowej i otwarcie bram tego uniwersum dla graczy, których wcześniej odstraszał brak polskiej wersji.</i>
   </p>
 
   <p>
-    🤫 <b>Ukryta Misja (Secret Quest):</b><br>
+    🤫 <b>Misja Poboczna:</b><br>
     <i>Protokół "Genesis": Loe'Aner projektuje architekturę własnego uniwersum. <br>
-    Cel: Wypuszczenie na rynek autorskiego świata w formacie wykraczającym poza standardową książkę.<br>
-    Status: [DANE UTAJNIONE]</i>
+    Cel: Wypuszczenie na rynek autorskiego świata w formacie wykraczającym poza standardową książkę.<br></i>
   </p>
 </div>
 
@@ -84,17 +89,15 @@ od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, 
 ### ⚔️ World of Warcraft `Work in Progress`
 Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy WoW.
 
-* **Technologia:** `Python (Asyncio)` `SQL Server` `BeautifulSoup` `LUA`
-* **Highlight:** Zastosowanie **Incremental Load** w ETL oraz integracja Backend-to-Game.
+* ⚙️ **Technologia:** `Python (Asyncio)` `SQL Server` `BeautifulSoup` `LUA`
 * 📂 **Lokalizacja:** `projects/World of Warcraft/`
 
 #### 🔄 Workflow & Architektura:
-1.  **Database:** Projekt relacyjnej struktury danych (np. NPC, Questy, Item).
+1.  **Database:** Projekt relacyjnej struktury danych (NPC, Questy, Item).
 2.  **ETL:** Zescrapowanie danych (Wiki/Wowhead), czyszczenie, transformacja i zapis do SQL Server.
-3.  **Mappings:** Słowa kluczowe, nazwy NPC-ów -> tego jest mnóstwo, wszystko po to by zachować spójność.
-4.  **Content Management:** Proces tłumaczenia, redagowania i zatwierdzania tekstów.
+3.  **Mappings:** Słowniki i mapowanie nazw własnych (NPC, Lokacje) w celu zachowania absolutnej spójności ze światem gry.
+4.  **Content Management:** Proces tłumaczenia, redagowania i zatwierdzania tekstów (QA).
 5.  **Game Integration (Addon):** Stworzenie addonu w LUA, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
-
 <br>
 
 ### 🔮 Przyszłe R&D: Lord of the Rings Online (LOTRO)
@@ -117,10 +120,9 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 
 ## 🧩 Code Challenges & Nauka
 
-Tutaj eksperymentuje na platformach e-learningowych.
+Tutaj eksperymentuje na platformach e-learningowych np. DataLemur, HackerRank, Codewars.
 * **Python:** Algorytmy, struktury danych.
-* **SQL:** Rozwiązania zadań z platform typu DataLemur, HackerRank.
-
+* **SQL:** Rozwiązania zadań.
 <br>
 
 ### 📫 Kontakt
