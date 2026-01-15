@@ -21,7 +21,7 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Dlatego 
     </td>
     <td width="50%" valign="top">
       <h3>📚 Fascynacja Lore</h3>
-      <p>UWIELBIAM High Fantasy. Czerpię inspiracje z:</p>
+      <p>UWIELBIAM High Fantasy:</p>
       <ul>
         <li>⚔️ <i>World of Warcraft</i> (Główne Uniwersum)</li>
         <li>🔨 <i>Warhammer Fantasy</i></li>
