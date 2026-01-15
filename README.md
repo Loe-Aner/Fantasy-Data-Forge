@@ -20,7 +20,7 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Dlatego 
       <p>Dla mnie <b>Backend</b> i <b>Lore</b> to to samo: w obu przypadkach chodzi o łączenie faktów, szukanie zależności i odkrywanie historii ukrytej pod powierzchnią.</p>
     </td>
     <td width="50%" valign="top">
-      <h3>📚 Biegłość w Lore</h3>
+      <h3>📚 Fascynacja Lore</h3>
       <p>UWIELBIAM High Fantasy. Czerpię inspiracje z:</p>
       <ul>
         <li>⚔️ <i>World of Warcraft</i> (Główne Uniwersum)</li>
@@ -37,7 +37,7 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Dlatego 
 <div align="center">
   <p>
     <b>⚔️ Aktualna Misja (Main Quest):</b><br>
-    Dostarczenie polskiej społeczności funkcjonalnych rozwiązań (Wiki, Addony, Bazy Danych).
+    Dostarczenie polskiej społeczności funkcjonalnych rozwiązań (Addony, Bazy Danych, Wiki).
   </p>
   
   <p>
