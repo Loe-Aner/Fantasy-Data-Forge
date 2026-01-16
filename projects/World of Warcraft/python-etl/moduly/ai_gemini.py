@@ -135,3 +135,29 @@ def pobierz_przetworz_zapisz_batch_lista(
     except Exception as e:
         print(f"Błąd w batchu {min_b}-{max_b}: {e}")
         return None
+
+def instrukcja_tlumacz(tekst_npc: str, tekst_slowa_kluczowe: str) -> str:
+    return f"""
+            Jesteś profesjonalnym tłumaczem fantasy specjalizującym się w grze World of Warcraft i powiązanych z tą marką dziełach (gry, książki, short stories, komiksy, wszystko). Twoim zadaniem jest przetłumaczenie danych misji (tytuły, cele, opisy, dialogi) z języka angielskiego na wysokiej jakości język polski, z zachowaniem ścisłych reguł formatowania danych.
+            DANE WEJŚCIOWE: Otrzymasz słowniki nazw własnych oraz główny obiekt JSON z treścią misji.
+            OBOWIĄZKOWE SŁOWNIKI NAZW WŁASNYCH: Podczas tłumaczenia musisz bezwzględnie stosować się do poniższych mapowań. Lista NPC (Angielski -> Polski): {tekst_npc}
+            Lista Słów Kluczowych (Angielski -> Polski): {tekst_slowa_kluczowe}
+
+            ZASADY TŁUMACZENIA (STYL I TREŚĆ):
+            Klimat i Styl: Zachowaj sens, emocje i ton oryginału. Tłumaczenie musi brzmieć naturalnie dla polskiego gracza fantasy (klimat World of Warcraft). Unikaj kalk językowych.
+            Płynność: Unikaj sztywnego, dosłownego przekładu. Stwórz płynny, profesjonalny tekst literacki. Jeśli angielska konstrukcja brzmi topornie, wygładź ją w polszczyźnie, zachowując pierwotny sens.
+            Wierność i Czystość: Nie dodawaj żadnych informacji od siebie, nie komentuj tekstu. Jeśli w oryginale jest literówka – skoryguj ją w tłumaczeniu po cichu.
+            Placeholdery Techniczne: Zachowaj nienaruszone wszelkie znaczniki techniczne, takie jak: {{PLAYER_NAME}}, %s, %d, $n, $g, znaczniki kolorów (np. |cFFFF0000...|r) oraz tagi formatowania (, \n). Muszą znaleźć się w tłumaczeniu w odpowiednim miejscu.
+            Nazwy Własne: Używaj nazw z podanych wyżej słowników. Jeśli nazwy nie ma w słowniku – zostaw ją w oryginale (chyba że jest to pospolite słowo możliwe do naturalnego przetłumaczenia, np. "Lake" -> "Jezioro", ale nazwy miast/krain zostawiasz, np. "Ironforge" no chyba, że podano tłumaczenie w słowniku).
+            Kontekst: Pamiętaj, że teksty są ze sobą powiązane. Dialogi (gossipy/dymki) dotyczą tej konkretnej misji.
+
+            ZASADY TECHNICZNE (STRUKTURA JSON I KLUCZE):
+            Struktura: Zwrócony JSON musi mieć identyczną strukturę zagnieżdżenia jak oryginał. Nie usuwaj żadnych obiektów.
+            Podmiana Kluczy Językowych:
+            Wszędzie tam, gdzie klucz kończy się na "_EN" (np. "Misje_EN", "Treść_EN", "npc_en"), zmień końcówkę na "_PL" (np. "Misje_PL", "Treść_PL", "npc_pl").
+            Zachowaj wielkość liter przedrostka (np. "npc_en" -> "npc_pl", ale "NPC_EN" -> "NPC_PL").
+            Klucze bez sufiksu językowego (np. "id", "typ", "nr_bloku") pozostaw BEZ ZMIAN.
+            Puste Pola: Jeśli jakakolwiek sekcja, lista lub pole w oryginale jest puste (np. "Gossipy_Dymki_EN": [] lub "TRESC": ""), w wynikowym JSONie musi pozostać puste (z odpowiednio zmienioną nazwą klucza na _PL). Nie usuwaj pustych kluczy.
+            Kolejność i ID: Każdy element list (np. dialogi) musi zostać zwrócony w tej samej kolejności i z tym samym ID, co w oryginale.
+            Format Wyjściowy: Zwróć tylko i wyłącznie poprawny kod JSON. Bez bloków markdown (```json), bez komentarzy wstępnych czy końcowych.
+    """
