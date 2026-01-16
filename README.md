@@ -17,7 +17,7 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
       <p><b>Imię:</b> Piotr</p>
       <p><b>Praca:</b> Ekspert ds. Raportowania (BI & CRM)</p>
       <p><b>Umiejętność Pasywna:</b> <i>"Pod Maską"</i> - naturalna potrzeba zrozumienia technicznej natury danych, a nie tylko ich fasady.</p>
-      <p>Dla mnie <b>Backend</b> i <b>Lore</b> to to samo: w obu przypadkach chodzi o łączenie faktów, szukanie zależności i odkrywanie historii ukrytej pod powierzchnią.</p>
+      <p><b>Backend</b> i <b>Lore</b> mają dużo wspólnego: w obu przypadkach chodzi o łączenie faktów, szukanie zależności i odkrywanie historii ukrytej pod powierzchnią.</p>
     </td>
     <td width="50%" valign="top">
       <h3>📚 Fascynacja Lore</h3>
@@ -36,19 +36,19 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
 
 <div align="center">
   <p>
-    <b>⚔️ Aktualna Misja (Main Quest):</b><br>
+    <b>⚔️ Aktualna Misja:</b><br>
     Dostarczenie polskiej społeczności funkcjonalnych rozwiązań (Addony, Bazy Danych, Wiki).
   </p>
   
   <p>
     🎯 <b>Cel Priorytetowy:</b> Addon tłumaczący World of Warcraft.<br>
-    <i>Warunek sukcesu: Zburzenie bariery językowej i otwarcie bram tego uniwersum dla graczy, których wcześniej odstraszał brak polskiej wersji.</i>
+    <i><b>Warunek sukcesu</b>: Zburzenie bariery językowej i otwarcie bram tego uniwersum dla graczy, których wcześniej odstraszał brak polskiej wersji.</i>
   </p>
 
   <p>
     🤫 <b>Misja Poboczna:</b><br>
-    <i>Protokół "Genesis": Loe'Aner projektuje architekturę własnego uniwersum. <br>
-    Cel: Wypuszczenie na rynek autorskiego świata w formacie wykraczającym poza standardową książkę.<br></i>
+    <b>Cel</b>: Wypuszczenie na rynek autorskiego świata w formacie wykraczającym poza standardową książkę.<br>
+    <b>Kiedy:</b> Nie chciałbym stworzyć prostego gniota. Od ponad roku zbieram sukcesywnie pomysły na historie i świat, ale jeszcze daleka droga. Myślę, że zapisanie wziąłbym się za kilka lat, na razie mocno mnie ciągnie do projektów jw.</i>
   </p>
 </div>
 
@@ -88,19 +88,18 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
 > *Tutaj dzieje się magia "pod maską". Skrypty, automatyzacja, bazy danych.*
 
 ### ⚔️ World of Warcraft `Work in Progress`
-Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy WoW.
+Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy WoW'a.
 
-* ⚙️ **Technologia:** `Python (Asyncio)` `SQL Server` `BeautifulSoup` `LUA`
+* ⚙️ **Technologia:** `Python` `SQL Server` `LUA`
 * 📂 **Lokalizacja:** `projects/World of Warcraft/`
 
 #### 🔄 Workflow & Architektura:
-1.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **Database:** Projekt relacyjnej struktury danych (NPC, Questy, Item).
+1.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **Database:** Projekt relacyjnej struktury danych (NPC, Questy, Wypowiedzi, Słowa Kluczowe).
 2.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **ETL:** Zescrapowanie danych (Wiki/Wowhead), czyszczenie, transformacja i zapis do SQL Server.
-3.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **Mappings:** Słowniki i mapowanie nazw własnych (NPC, Lokacje) w celu zachowania absolutnej spójności ze światem gry.
+3.  ![Done](https://img.shields.io/badge/%20%20%20%20%20%20%20DONE%20%20%20%20%20%20%20-2ea44f?style=flat-square) **Mappings:** Słowniki i mapowanie nazw własnych (NPC, Lokacje) w celu zachowania absolutnej spójności ze światem gry. Exceli nie publikuję.
 4.  ![In Progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Content Management:** Proces tłumaczenia, redagowania i zatwierdzania tekstów.
 5.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-lightgrey?style=flat-square) **Game Integration (Addon):** Stworzenie addonu w LUA, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
 6.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-lightgrey?style=flat-square) **BI Reporting:** Stworzenie raportowania statusu tłumaczeń oraz kondycji bazy danych w Power BI.
-<br>
 
 ### 🔮 Przyszłe R&D: Lord of the Rings Online (LOTRO)
 * **Status:** `NIE ZACZĘTO`
@@ -114,9 +113,9 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 
 | Projekt | Opis | Tech |
 | :--- | :--- | :--- |
-| **💰 Fundusze Inwestycyjne** | Analiza rentowności i ryzyka. Parsowanie PDF, integracja CSV/XLSX. | `Power BI` `Python` |
-| **⚽ Premier League** | Analiza statystyczna Top 6 klubów (metryki meczowe, formacje). | `Kaggle` `Data Viz` |
-| **📈 Sales OnePager** | Syntetyczny raport sprzedaży typu "Executive Summary" (YTD, YoY). | `Power BI` `KPI` |
+| **💰 Fundusze Inwestycyjne** | Analiza rentowności i ryzyka. | `Power BI` `Python` |
+| **⚽ Premier League** | Analiza statystyczna Top 6 klubów. | `Kaggle` `Data Viz` |
+| **📈 Sales OnePager** | Syntetyczny raport sprzedaży typu "Executive Summary". | `Power BI` `KPI` |
 
 ---
 
