@@ -2,8 +2,8 @@ SELECT 'MISJE', *
 FROM dbo.MISJE
 WHERE 1=1
   --AND MISJA_ID_MOJE_PK = 911
-  AND KRAINA_EN = 'Exile''s Reach'
-  AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
+  --AND KRAINA_EN = 'Exile''s Reach'
+  AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/Champions_of_Quel%27Danas'
 ;
 
 SELECT 'MISJE_STATUSY', ms.*
@@ -11,7 +11,8 @@ FROM dbo.MISJE_STATUSY AS ms
 INNER JOIN dbo.MISJE AS m
   ON ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
 WHERE 1=1
-  AND m.KRAINA_EN = 'Exile''s Reach'
+  AND m.MISJA_ID_MOJE_PK = 31
+  --AND m.KRAINA_EN = 'Exile''s Reach'
 ;
 
 SELECT 'NPC', *
@@ -28,12 +29,13 @@ FROM dbo.DIALOGI_STATUSY AS ds
 INNER JOIN dbo.MISJE AS m
   ON ds.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
 WHERE 1=1
-  AND m.KRAINA_EN = 'Exile''s Reach'
-  AND m.MISJA_ID_MOJE_PK = 8
+  --AND m.KRAINA_EN = 'Exile''s Reach'
+  AND m.MISJA_ID_MOJE_PK = 31
 ;
 
 SELECT 'ZRODLO', *
 FROM dbo.ZRODLO
+WHERE MISJA_ID_MOJE_FK = 31
 ;
 
 SELECT 'URLE', *

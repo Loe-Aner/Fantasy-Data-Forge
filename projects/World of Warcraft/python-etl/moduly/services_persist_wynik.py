@@ -1,3 +1,6 @@
+from sqlalchemy import text
+import sys
+
 from moduly.repo_NPC import (
     zapisz_npc_i_status_do_db,
     zapewnij_npc_i_pobierz_id
@@ -261,3 +264,90 @@ def przefiltruj_dane_misji(dane_wejsciowe, jezyk: str = "EN"):
     }
     
     return nowy_wynik
+
+def zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, status):
+    print(f"\n--- [START] Zapis misji ID: {misja_id} | Status: {status} ---")
+    
+    if status not in ("1_PRZETŁUMACZONO", "2_ZREDAGOWANO"):
+        print(f"!!! BŁĄD: Nieprawidłowy status: {status}")
+        return
+
+    q_select_npc = text("SELECT NPC_ID_FK FROM dbo.NPC_STATUSY WHERE NAZWA = :nazwa AND STATUS = '3_ZATWIERDZONO'")
+    q_update_tytul = text("UPDATE dbo.MISJE SET MISJA_TYTUL_PL = :tytul_pl WHERE MISJA_ID_MOJE_PK = :misja_id")
+    
+    q_insert_misje = text("""
+        INSERT INTO dbo.MISJE_STATUSY (MISJA_ID_MOJE_FK, SEGMENT, PODSEGMENT, STATUS, NR, TRESC)
+        VALUES (:misja_id, :segment, :podsegment, :status, :nr, :tresc)
+    """)
+    
+    q_insert_dialogi = text("""
+        INSERT INTO dbo.DIALOGI_STATUSY (MISJA_ID_MOJE_FK, SEGMENT, STATUS, NR_BLOKU_DIALOGU, NR_WYPOWIEDZI, NPC_ID_FK, TRESC)
+        VALUES (:misja_id, :segment, :status, :nr_bloku, :nr_wypowiedzi, :npc_id, :tresc)
+    """)
+
+    wszystkie_wiersze_misje = []
+    wszystkie_wiersze_dialogi = []
+    
+    tytul_pl = przetlumaczone["Misje_PL"]["Podsumowanie_PL"].get("Tytuł")
+    
+    try:
+        cele_g = przetlumaczone["Misje_PL"]["Cele_PL"]["Główny"]
+        for nr, tresc in cele_g.items():
+            wszystkie_wiersze_misje.append({"misja_id": misja_id, "segment": "CEL", "podsegment": "GŁÓWNY_CEL", "status": status, "nr": int(nr), "tresc": tresc})
+
+        cele_p = przetlumaczone["Misje_PL"]["Cele_PL"]["Podrzędny"]
+        for nr, tresc in cele_p.items():
+            wszystkie_wiersze_misje.append({"misja_id": misja_id, "segment": "CEL", "podsegment": "PODRZĘDNY_CEL", "status": status, "nr": int(nr), "tresc": tresc})
+
+        sekcje = ["Treść_PL", "Postęp_PL", "Zakończenie_PL", "Nagrody_PL"]
+        mapa_sekcji = {"Treść_PL": "TREŚĆ", "Postęp_PL": "POSTĘP", "Zakończenie_PL": "ZAKOŃCZENIE", "Nagrody_PL": "NAGRODY"}
+        
+        for klucz in sekcje:
+            slownik = przetlumaczone["Misje_PL"].get(klucz)
+            if slownik:
+                for nr, tresc in slownik.items():
+                    wszystkie_wiersze_misje.append({"misja_id": misja_id, "segment": mapa_sekcji[klucz], "podsegment": None, "status": status, "nr": int(nr), "tresc": tresc})
+        
+        print(f"-> Przygotowano danych misji: {len(wszystkie_wiersze_misje)} wierszy.")
+
+    except Exception as e:
+        print(f"!!! BŁĄD podczas parsowania słownika misji: {e}")
+        return
+
+    try:
+        with silnik.begin() as conn:
+            if tytul_pl:
+                conn.execute(q_update_tytul, {"tytul_pl": tytul_pl, "misja_id": misja_id})
+                print(f"-> Zaktualizowano tytuł na: '{tytul_pl}'")
+
+            if "Dialogi_PL" in przetlumaczone and przetlumaczone["Dialogi_PL"]["Gossipy_Dymki_PL"]:
+                print("-> Rozpoczynam mapowanie NPC w dialogach...")
+                for blok in przetlumaczone["Dialogi_PL"]["Gossipy_Dymki_PL"]:
+                    npc_nazwa = blok.get("npc_pl")
+                    npc_id = conn.execute(q_select_npc, {"nazwa": npc_nazwa}).scalar()
+
+                    if npc_id is not None:
+                        for nr_wyp, tekst in blok["wypowiedzi_PL"].items():
+                            wszystkie_wiersze_dialogi.append({
+                                "misja_id": misja_id, "segment": blok["typ"].upper(), "status": status,
+                                "nr_bloku": int(blok["id"]), "nr_wypowiedzi": int(nr_wyp), 
+                                "npc_id": int(npc_id), "tresc": tekst
+                            })
+                    else:
+                        print(f"   [WARN] POMINIĘTO dialogi dla NPC: '{npc_nazwa}' (Brak ID w bazie lub niezatwierdzony)")
+
+            print(f"-> Przygotowano dialogów: {len(wszystkie_wiersze_dialogi)} wierszy.")
+
+            if wszystkie_wiersze_misje:
+                conn.execute(q_insert_misje, wszystkie_wiersze_misje)
+            
+            if wszystkie_wiersze_dialogi:
+                conn.execute(q_insert_dialogi, wszystkie_wiersze_dialogi)
+            
+            print("-> COMMIT: Dane zostały wysłane do bazy.")
+
+    except Exception as e:
+        print(f"\n!!! BŁĄD KRYTYCZNY PODCZAS ZAPISU DO BAZY:\n{e}")
+        raise e
+
+    print(f"--- [KONIEC] Sukces dla misji ID: {misja_id} ---\n")
