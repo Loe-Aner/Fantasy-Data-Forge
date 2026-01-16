@@ -156,6 +156,7 @@ async def _fetch_html(url: str, host: str) -> str:
 
     try:
         async for attempt in AsyncRetrying(
+            sleep=asyncio.sleep,
             stop=stop_after_attempt(6),
             wait=wait_exponential(multiplier=1, min=2, max=60),
             retry=retry_if_exception_type(httpx.HTTPError),

@@ -25,11 +25,11 @@ kategorie = [
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
     #"https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_1-10",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_2",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_1-10",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_2",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_6-10",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_7-10",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_10"
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_7-10",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_10"
 ]
 silnik = utworz_engine_do_db()
 
