@@ -48,7 +48,7 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
   <p>
     🤫 <b>Misja Poboczna:</b><br>
     <b>Cel</b>: Wypuszczenie na rynek autorskiego świata w formacie wykraczającym poza standardową książkę.<br>
-    <b>Kiedy:</b> Nie chciałbym stworzyć prostego gniota. Od ponad roku zbieram sukcesywnie pomysły na historie i świat, ale jeszcze daleka droga. Myślę, że zapisanie wziąłbym się za kilka lat, na razie mocno mnie ciągnie do projektów jw.</i>
+    <b>Kiedy:</b> Nie chciałbym stworzyć prostego gniota. Od ponad roku zbieram sukcesywnie pomysły na historie i świat, ale jeszcze daleka droga. Myślę, że za pisanie wziąłbym się za kilka lat, na razie mocno mnie ciągnie do projektów jw.</i>
   </p>
 </div>
 
