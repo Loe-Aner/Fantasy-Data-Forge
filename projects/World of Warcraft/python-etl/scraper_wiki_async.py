@@ -9,8 +9,8 @@ import scraper_wiki_main as parser_lib
 
 USER_AGENT = "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"
 DEFAULT_TIMEOUT = 30
-WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.4"))
-WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.4"))
+WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.5"))
+WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.5"))
 
 class HostThrottle:
     def __init__(self, min_delay: float):

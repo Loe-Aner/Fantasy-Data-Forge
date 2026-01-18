@@ -102,7 +102,7 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
             npc_koniec=npc_koniec
         )
     else:
-        misja_id == misja_id_pl
+        misja_id = misja_id_pl
 
     sekcje_do_statusow = [f"Cele_{jezyk}", f"Treść_{jezyk}", f"Postęp_{jezyk}", f"Zakończenie_{jezyk}", f"Nagrody_{jezyk}"]
 
@@ -201,7 +201,7 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
 
         npc_nazwa = (el.get(f"npc_{jezyk.lower()}") or "").strip()
         if npc_nazwa == "":
-            continue
+            npc_nazwa = "Brak Danych"
 
         npc_id_fk = zapewnij_npc_i_pobierz_id(
             silnik=silnik,

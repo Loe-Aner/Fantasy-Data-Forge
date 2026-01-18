@@ -17,7 +17,7 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
       <p><b>Imię:</b> Piotr</p>
       <p><b>Praca:</b> Ekspert ds. Raportowania (BI & CRM)</p>
       <p><b>Umiejętność Pasywna:</b> <i>"Pod Maską"</i> - naturalna potrzeba zrozumienia technicznej natury danych, a nie tylko ich fasady.</p>
-      <p><b>Backend</b> i <b>Lore</b> mają dużo wspólnego: w obu przypadkach chodzi o łączenie faktów, szukanie zależności i odkrywanie historii ukrytej pod powierzchnią.</p>
+      <p><b>Backend</b> i <b>Lore</b> mają dużo wspólnego ze sobą: w obu przypadkach chodzi o łączenie faktów, szukanie zależności i odkrywanie historii ukrytej pod powierzchnią.</p>
     </td>
     <td width="50%" valign="top">
       <h3>📚 Fascynacja Lore</h3>

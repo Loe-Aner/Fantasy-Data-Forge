@@ -6,7 +6,8 @@ def wyscrapuj_linki_z_kategorii_wiki(tresc) -> list[str]:
         return []
 
     baza_url = "https://warcraft.wiki.gg"
-    kontener = tresc.select_one("div.mw-category")
+    # albo kraina albo przedzialy poziomow
+    kontener = tresc.select_one("div.mw-category-columns") or tresc.select_one("div.mw-category")
     if not kontener:
         return []
 
