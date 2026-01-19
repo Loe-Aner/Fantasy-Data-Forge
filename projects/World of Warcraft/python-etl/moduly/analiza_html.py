@@ -18,6 +18,8 @@ def wyscrapuj_linki_z_kategorii_wiki(tresc) -> list[str]:
             continue
         if not href.startswith("/wiki/"):
             continue
+        if href.lower().endswith("_storyline"): # aby nie brać pierdół
+            continue
 
         wynik.append(f"{baza_url}{href}")
 

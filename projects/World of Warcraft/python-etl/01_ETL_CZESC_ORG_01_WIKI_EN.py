@@ -140,6 +140,8 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 zrodlo="wiki",
             )
 
+            #MIEJSCE NA WOWHEAD LINKI I ID Z GRY WG ZAHASHOWANEGO BODY
+
             print(f"OK - zapisano MISJA_ID = {misja_id}")
             usun_link_z_kolejki(silnik, url)
             przerobione += 1
