@@ -485,7 +485,7 @@ def renumeruj_id(sequence):
     return sequence
 
 
-def parsuj_misje_z_url(url: str, html_content: str = None):
+def parsuj_misje_z_url(url: str, html_content: str = None) -> dict:
     if html_content:
         soup = BeautifulSoup(html_content, "html.parser")
         tresc = pobierz_tresc(soup)
@@ -494,6 +494,21 @@ def parsuj_misje_z_url(url: str, html_content: str = None):
         soup = pobierz_soup(url)
         tresc = pobierz_tresc(soup)
         html_skompresowany = skompresuj_html(tresc)
+
+    wowhead_id = None
+    wowhead_url = None
+
+    linki_wh = soup.select("a[href*='wowhead.com']")
+    for link in linki_wh:
+        href = link.get("href", "")
+        if "/quest=" in href or "quest=" in href:
+            try:
+                raw_id = href.split("quest=")[-1].split("&")[0].split("#")[0]
+                wowhead_id = int(raw_id)
+                wowhead_url = href
+                break
+            except ValueError:
+                continue
 
     podsumowanie = parsuj_podsumowanie_misji(tresc)
     cele = parsuj_cele_misji(tresc)
@@ -543,5 +558,7 @@ def parsuj_misje_z_url(url: str, html_content: str = None):
         "Dialogi_EN": {
             "Gossipy_Dymki_EN": sequence
         },
-        "Hash_HTML": hash_sekcji
+        "Hash_HTML": hash_sekcji,
+        "wowhead_id": wowhead_id,
+        "wowhead_url": wowhead_url
     }

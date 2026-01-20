@@ -1,4 +1,5 @@
 import asyncio
+from sqlalchemy import text
 
 from moduly.db_core import utworz_engine_do_db
 from moduly.repo_kolejka_linkow import (
@@ -11,6 +12,7 @@ from moduly.maintenance_hashe import roznice_hashe_usun_rekordy_z_db
 from moduly.services_persist_wynik import (
     zapisz_npc_i_status_do_db_z_wyniku,
     zapisz_misje_i_statusy_do_db_z_wyniku,
+    zaktualizuj_misje_z_wowhead_w_db_z_wyniku,
     zapisz_dialogi_statusy_do_db_z_wyniku
 )
 from scraper_wiki_async import parsuj_wiele_misji_async
@@ -120,6 +122,13 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 jezyk="EN"
             )
 
+            zaktualizuj_misje_z_wowhead_w_db_z_wyniku(
+                silnik=silnik,
+                wynik=wynik,
+                misja_id=misja_id,
+                tabela_misje="dbo.MISJE"
+            )
+
             zapisz_dialogi_statusy_do_db_z_wyniku(
                 silnik=silnik,
                 wynik=wynik,
@@ -139,8 +148,6 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 wynik=wynik,
                 zrodlo="wiki",
             )
-
-            #MIEJSCE NA WOWHEAD LINKI I ID Z GRY WG ZAHASHOWANEGO BODY
 
             print(f"OK - zapisano MISJA_ID = {misja_id}")
             usun_link_z_kolejki(silnik, url)

@@ -169,6 +169,31 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
 
     return misja_id
 
+def zaktualizuj_misje_z_wowhead_w_db_z_wyniku(
+        silnik,
+        wynik: dict,
+        misja_id: int,
+        tabela_misje: str = "dbo.MISJE"
+    ) -> None:
+    
+    wh_id = wynik.get("wowhead_id")
+    wh_url = wynik.get("wowhead_url")
+
+    if not wh_id:
+        return
+
+    q_update = text(f"""
+        UPDATE {tabela_misje}
+        SET MISJA_ID_Z_GRY = :id_gra, MISJA_URL_WOWHEAD = :url
+        WHERE MISJA_ID_MOJE_PK = :misja_id
+    """)
+
+    with silnik.begin() as conn:
+        conn.execute(q_update, {
+            "id_gra": wh_id,
+            "url": wh_url,
+            "misja_id": misja_id
+        })
 
 def zapisz_dialogi_statusy_do_db_z_wyniku(
         silnik,
