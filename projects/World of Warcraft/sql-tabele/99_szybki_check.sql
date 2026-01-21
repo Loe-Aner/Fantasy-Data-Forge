@@ -3,7 +3,8 @@ FROM dbo.MISJE
 WHERE 1=1
   --AND MISJA_ID_MOJE_PK = 8
   --AND KRAINA_EN = 'Exile''s Reach'
-  AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
+  --AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
+  AND MISJA_TYTUL_EN = 'The Divine''s Shield'
 ;
 
 SELECT 'MISJE_STATUSY', ms.*

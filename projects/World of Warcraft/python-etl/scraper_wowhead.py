@@ -4,7 +4,11 @@ import re
 import pandas as pd
 from openpyxl import Workbook, load_workbook
 from bs4 import BeautifulSoup
+from sqlalchemy import text
 from scraper_wiki_async import WoWScraperService
+
+# --- IMPORT O KTÓRY PROSIŁEŚ ---
+from moduly.db_core import utworz_engine_do_db 
 
 def wyciagnij_patch_final(soup: BeautifulSoup) -> str:
     element_tekstowy = soup.find(string=re.compile("Added in patch"))
@@ -38,9 +42,44 @@ def wyciagnij_storyline_final(soup: BeautifulSoup) -> str:
     
     return ""
 
-def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str]:
+def wyciagnij_kraine_ze_skryptu(html_text: str) -> str:
+    if not html_text:
+        return ""
+        
+    dopasowanie = re.search(r'"zone":"([^"]+)"', html_text)
+    
+    if dopasowanie:
+        return dopasowanie.group(1)
+        
+    return ""
+
+def okresl_dodatek_na_podstawie_patcha(patch: str) -> str:
+    if not patch:
+        return ""
+    
+    glowna_wersja = patch.split('.')[0]
+    
+    mapping = {
+        "1": "Vanilla / Classic",
+        "2": "The Burning Crusade",
+        "3": "Wrath of the Lich King",
+        "4": "Cataclysm",
+        "5": "Mists of Pandaria",
+        "6": "Warlords of Draenor",
+        "7": "Legion",
+        "8": "Battle for Azeroth",
+        "9": "Shadowlands",
+        "10": "Dragonflight",
+        "11": "The War Within",
+        "12": "Midnight",
+        "13": "The Last Titan"
+    }
+    
+    return mapping.get(glowna_wersja, "Brak Dodatku")
+
+def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str, str, str]:
     if not html:
-        return url, "", "", "Brak HTML"
+        return url, "", "", "", "", "Brak HTML"
 
     try:
         soup = BeautifulSoup(html, "lxml")
@@ -50,14 +89,17 @@ def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str]:
     linia_fabularna = wyciagnij_storyline_final(soup)
     patch = wyciagnij_patch_final(soup)
     
-    return url, linia_fabularna, patch, ""
+    kraina = wyciagnij_kraine_ze_skryptu(html)
+    dodatek = okresl_dodatek_na_podstawie_patcha(patch)
+    
+    return url, linia_fabularna, patch, dodatek, kraina, ""
 
 class WowheadScraper(WoWScraperService):
     async def process_url(self, url: str):
         html = await self._fetch_html(url)
         
         if not html:
-            return url, "", "", "Błąd pobierania (HTTP)"
+            return url, "", "", "", "", "Błąd pobierania (HTTP)"
 
         loop = asyncio.get_running_loop()
         wynik = await loop.run_in_executor(None, parsuj_wowhead_html, html, url)
@@ -77,10 +119,7 @@ def zapisz_excel_w_tle(wb: Workbook, path: str):
     wb.save(path)
 
 async def buduj_mapping_01_async():
-    raw_path = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\wowhead_id_kraina_dodatek.xlsx"
     out_path = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\mapping_01.xlsx"
-
-    input_sheet = "prawie_gotowe_dane"
     output_sheet = "mapping_01"
     url_col = "MISJA_URL_WOWHEAD"
 
@@ -97,15 +136,28 @@ async def buduj_mapping_01_async():
     MAX_CONCURRENCY = 8
     BATCH_SIZE = 48
 
-    print(f"Wczytuję dane z: {raw_path}")
-    df_raw = pd.read_excel(raw_path, sheet_name=input_sheet)
+    print("Łączę z bazą danych SQL...")
     
-    if url_col not in df_raw.columns:
-        raise ValueError(f"Brak kolumny {url_col}")
+    zapytanie_sql = """
+        SELECT 
+            KRAINA_EN,
+            MISJA_ID_Z_GRY,
+            MISJA_TYTUL_EN,
+            DODATEK_EN,
+            MISJA_URL_WOWHEAD
+        FROM dbo.MISJE
+        WHERE MISJA_URL_WOWHEAD IS NOT NULL 
+          AND MISJA_URL_WOWHEAD != ''
+    """
+
+    silnik = utworz_engine_do_db()
+    with silnik.connect() as polaczenie:
+        df_raw = pd.read_sql(text(zapytanie_sql), polaczenie)
+
+    print(f"Pobrano {len(df_raw)} wierszy z bazy danych.")
 
     df_raw[url_col] = df_raw[url_col].astype(str).str.strip()
-    df_raw = df_raw[df_raw[url_col].notna() & (df_raw[url_col] != "")].copy()
-
+    
     if not os.path.exists(out_path):
         wb = Workbook()
         ws = wb.active
@@ -114,9 +166,14 @@ async def buduj_mapping_01_async():
         wb.save(out_path)
         print("Utworzono nowy plik mapping_01.xlsx")
     else:
-        df_check = pd.read_excel(out_path, sheet_name=output_sheet, nrows=0)
+        try:
+            pd.read_excel(out_path, sheet_name=output_sheet, nrows=0)
+        except Exception as e:
+            print(f"Błąd odczytu pliku wyjściowego: {e}")
+            return
 
     df_out = pd.read_excel(out_path, sheet_name=output_sheet)
+    
     if url_col in df_out.columns:
         existing_urls = set(df_out[url_col].dropna().astype(str).str.strip().tolist())
     else:
@@ -157,7 +214,7 @@ async def buduj_mapping_01_async():
 
             bufor = []
             
-            for link, storyline, patch, err in wyniki:
+            for link, storyline, patch, dodatek_wh, kraina_wh, err in wyniki:
                 if err:
                     bledy += 1
                     print(f" [FAIL] {link} -> {err}")
@@ -169,6 +226,12 @@ async def buduj_mapping_01_async():
 
                 row_data["NAZWA_LINII_FABULARNEJ_EN"] = storyline
                 row_data["DODANO_W_PATCHU"] = patch
+                
+                if dodatek_wh:
+                    row_data["DODATEK_EN"] = dodatek_wh
+                
+                if kraina_wh:
+                    row_data["KRAINA_EN"] = kraina_wh
 
                 excel_row = []
                 for header in FINAL_HEADERS:
@@ -176,7 +239,7 @@ async def buduj_mapping_01_async():
                     excel_row.append(normalize_cell(val))
 
                 bufor.append(excel_row)
-                print(f" [OK] {link} (Patch: {patch})")
+                print(f" [OK] {link} (P: {patch} | D: {dodatek_wh} | K: {kraina_wh})")
 
             if bufor:
                 for r in bufor:

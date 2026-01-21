@@ -5,24 +5,34 @@ from moduly.db_core import utworz_engine_do_db
 
 def aktualizuj_misje_z_excela(df, silnik, chunk_size=1000):
     df = df.dropna(how="all").copy()
-    df["NAZWA_LINII_FABULARNEJ_EN"] = df["NAZWA_LINII_FABULARNEJ_EN"].fillna("NoData")
+    
+    if "NAZWA_LINII_FABULARNEJ_EN" in df.columns:
+        df["NAZWA_LINII_FABULARNEJ_EN"] = df["NAZWA_LINII_FABULARNEJ_EN"].fillna("NoData")
 
-    q = text("SELECT MISJA_TYTUL_EN FROM dbo.MISJE;")
+    q = text("SELECT MISJA_ID_Z_GRY FROM dbo.MISJE WHERE MISJA_ID_Z_GRY IS NOT NULL")
     with silnik.connect() as conn:
-        tytuly_db = {row[0] for row in conn.execute(q).all()}
+        ids_db = {row[0] for row in conn.execute(q).all()}
 
     excel_total = len(df)
-    df = df[df["MISJA_TYTUL_EN"].isin(tytuly_db)]
+    
+    if "MISJA_ID_Z_GRY" not in df.columns:
+        print("Brak kolumny MISJA_ID_Z_GRY w danych wejściowych.")
+        return
+
+    df["MISJA_ID_Z_GRY"] = pd.to_numeric(df["MISJA_ID_Z_GRY"], errors='coerce')
+    df = df.dropna(subset=["MISJA_ID_Z_GRY"])
+    df["MISJA_ID_Z_GRY"] = df["MISJA_ID_Z_GRY"].astype(int)
+
+    df = df[df["MISJA_ID_Z_GRY"].isin(ids_db)]
     match_total = len(df)
 
     if match_total == 0:
-        print(f"UPDATE MISJE: 0 dopasowań (Excel={excel_total}, DB={len(tytuly_db)})")
+        print(f"UPDATE MISJE: 0 dopasowań (Excel={excel_total}, DB={len(ids_db)})")
         return
 
     u = text("""
     UPDATE dbo.MISJE
-    SET MISJA_ID_Z_GRY            = :misja_id_z_gry,
-        MISJA_URL_WOWHEAD         = :misja_url_wowhead,
+    SET 
         NAZWA_LINII_FABULARNEJ_EN = :nazwa_linii_fabularnej_en,
         KONTYNENT_EN              = :kontynent_en,
         KRAINA_EN                 = :kraina_en,
@@ -33,24 +43,30 @@ def aktualizuj_misje_z_excela(df, silnik, chunk_size=1000):
         DODANO_W_PATCHU           = :dodano_w_patchu,
         DATA_UPDATE               = SYSDATETIME()
     WHERE MISJA_TYTUL_EN = :misja_tytul_en
+      AND MISJA_ID_Z_GRY = :misja_id_gra
     """)
 
-    parametry = [
-        {
-            "misja_id_z_gry": int(r["MISJA_ID_Z_GRY"]) if pd.notna(r["MISJA_ID_Z_GRY"]) else None,
-            "misja_url_wowhead": r["MISJA_URL_WOWHEAD"],
-            "nazwa_linii_fabularnej_en": r["NAZWA_LINII_FABULARNEJ_EN"],
-            "kontynent_en": r["KONTYNENT_EN"],
-            "kraina_en": r["KRAINA_EN_FINAL"],
-            "dodatek_en": r["DODATEK_EN"],
-            "kontynent_pl": r["KONTYNENT_PL"],
-            "kraina_pl": r["KRAINA_PL"],
-            "dodatek_pl": r["DODATEK_PL"],
-            "dodano_w_patchu": r["DODANO_W_PATCHU"],
-            "misja_tytul_en": r["MISJA_TYTUL_EN"],
-        }
-        for r in df.to_dict("records")
-    ]
+    parametry = []
+    for r in df.to_dict("records"):
+        def wez_wartosc(klucz):
+            val = r.get(klucz)
+            if pd.isna(val) or val == "":
+                return None
+            return val
+
+        parametry.append({
+            "misja_id_gra": int(r["MISJA_ID_Z_GRY"]),
+            "misja_tytul_en": r.get("MISJA_TYTUL_EN"),
+            "misja_url_wowhead": r.get("MISJA_URL_WOWHEAD"),
+            "nazwa_linii_fabularnej_en": wez_wartosc("NAZWA_LINII_FABULARNEJ_EN"),
+            "kontynent_en": wez_wartosc("KONTYNENT_EN"),
+            "kraina_en": wez_wartosc("KRAINA_EN_FINAL"), 
+            "dodatek_en": wez_wartosc("DODATEK_EN"),
+            "kontynent_pl": wez_wartosc("KONTYNENT_PL"),
+            "kraina_pl": wez_wartosc("KRAINA_PL"),
+            "dodatek_pl": wez_wartosc("DODATEK_PL"),
+            "dodano_w_patchu": wez_wartosc("DODANO_W_PATCHU"),
+        })
 
     total = len(parametry)
     chunks = (total + chunk_size - 1) // chunk_size
@@ -59,8 +75,8 @@ def aktualizuj_misje_z_excela(df, silnik, chunk_size=1000):
         for i in range(0, total, chunk_size):
             conn.execute(u, parametry[i:i + chunk_size])
 
-    print(f"UPDATE MISJE: Excel={excel_total}, dopasowane_do_DB={match_total}, wysłane={total}, batche={chunks}")
-
+    print(f"UPDATE MISJE: Excel={excel_total}, dopasowane_do_DB_po_ID={match_total}, wysłane={total}, batche={chunks}")
+    
 def aktualizuj_id_misji_wowhead_z_excela(df, silnik, chunk_size=1000):
     excel_total = len(df)
     
