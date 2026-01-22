@@ -9,6 +9,7 @@ from moduly.ai_gemini import pobierz_przetworz_zapisz_batch_lista
 # TUTAJ GENEROWANE SA PACZKI CSV'EK - NUMERY W NAZWIE OZNACZAJA PRZEDZIALY ID PRZYPISANE PRZEZE MNIE W DB
 # PRZED WYGENEROWANIEM, KOD SPRAWDZA W ARKUSZU 'do_tabeli_misje_slowa_kluczowe' CZY MISJE JUŻ SĄ - JAK TAK TO ICH NIE PRZERABIA
 # PACZKI TE POTEM SA LACZONE W POWER QUERY W EXCELU
+# OSTATNIE REVIEW: 22.01.2026 -> brak zmian
 
 silnik = utworz_engine_do_db()
 

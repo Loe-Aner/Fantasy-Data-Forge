@@ -8,6 +8,13 @@ from google import genai
 from sqlalchemy import text, bindparam
 import pandas as pd
 
+from moduly.services_persist_wynik import przefiltruj_dane_misji, zapisz_misje_dialogi_ai_do_db
+from scraper_wiki_main import parsuj_misje_z_url
+from moduly.ai_gemini import zaladuj_api_i_klienta, instrukcja_tlumacz
+import json
+import zlib
+import base64
+
 def zaladuj_api_i_klienta(
         nazwa_api: str
     ):
@@ -161,3 +168,166 @@ def instrukcja_tlumacz(tekst_npc: str, tekst_slowa_kluczowe: str) -> str:
             Kolejność i ID: Każdy element list (np. dialogi) musi zostać zwrócony w tej samej kolejności i z tym samym ID, co w oryginale.
             Format Wyjściowy: Zwróć tylko i wyłącznie poprawny kod JSON. Bez bloków markdown (```json), bez komentarzy wstępnych czy końcowych.
     """
+
+def misje_dialogi_po_polsku_zapisz_do_db(
+        silnik, kraina: str | None = None, fabula: str | None = None, id_misji: int | None = None
+    ):
+    """
+    Tłumaczy a następnie redaguje misje z podanej krainy & linii fabularnej LUB konkretną misję po ID.
+    Sprawdza, czy misja nie została już przetłumaczona.
+    Zapisuje treści do bazy danych.
+    """
+
+    q_select_tresc = text(f"""
+    WITH hashe AS (
+        SELECT 
+            m.MISJA_ID_MOJE_PK,
+            z.HTML_SKOMPRESOWANY,
+            ROW_NUMBER() OVER (
+                PARTITION BY z.MISJA_ID_MOJE_FK 
+                ORDER BY z.DATA_WYSCRAPOWANIA DESC
+            ) AS r
+        FROM dbo.ZRODLO AS z
+        INNER JOIN dbo.MISJE AS m
+        ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+        WHERE 1=1
+        AND m.MISJA_ID_Z_GRY IS NOT NULL
+        AND m.MISJA_ID_Z_GRY <> 123456789
+                          
+        {
+            "AND m.MISJA_ID_MOJE_PK = :id_misji"
+            if (kraina is None or fabula is None)
+            else "AND m.KRAINA_EN = :kraina_en \
+                  AND m.NAZWA_LINII_FABULARNEJ_EN = :fabula_en"
+        }
+                          
+        AND NOT EXISTS (
+            SELECT 1
+            FROM dbo.MISJE_STATUSY AS ms
+            WHERE ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+            AND ms.STATUS = N'1_PRZETŁUMACZONO'
+        )
+    )
+    SELECT 
+        MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY
+    FROM hashe
+    WHERE r = 1
+    ORDER BY MISJA_ID_MOJE_PK
+    ;
+    """)
+
+    q_select_npc = text("""
+    WITH wszystkie_idki AS (
+        SELECT
+            tabela_wartosci.ID_NPC
+        FROM dbo.MISJE AS m
+        CROSS APPLY (
+            VALUES
+                (m.NPC_START_ID),
+                (m.NPC_KONIEC_ID)
+        ) AS tabela_wartosci (ID_NPC)
+        WHERE m.MISJA_ID_MOJE_PK = :misja_id
+
+        UNION
+
+        SELECT
+            ds.NPC_ID_FK
+        FROM dbo.DIALOGI_STATUSY AS ds
+        WHERE ds.MISJA_ID_MOJE_FK = :misja_id
+    ),
+
+    oczyszczone_dane AS (
+        SELECT
+            wi.ID_NPC,
+            ns.STATUS,
+            CASE
+                WHEN CHARINDEX('[', ns.NAZWA) > 0
+                THEN RTRIM(LEFT(ns.NAZWA, CHARINDEX('[', ns.NAZWA) - 1))
+                ELSE ns.NAZWA
+            END AS CZYSTA_NAZWA
+        FROM wszystkie_idki AS wi
+        INNER JOIN dbo.NPC_STATUSY AS ns
+            ON wi.ID_NPC = ns.NPC_ID_FK
+    )
+
+    SELECT DISTINCT
+        pvt.[0_ORYGINAŁ],
+        pvt.[3_ZATWIERDZONO]
+    FROM oczyszczone_dane
+    PIVOT (
+        MAX(CZYSTA_NAZWA)
+        FOR STATUS IN ([0_ORYGINAŁ], [3_ZATWIERDZONO])
+    ) AS pvt
+    ;
+    """)
+
+    q_select_slowa_kluczowe = text("""
+        SELECT 
+            sk.SLOWO_EN,
+            sk.SLOWO_PL
+        FROM dbo.MISJE_SLOWA_KLUCZOWE AS msk
+        INNER JOIN dbo.SLOWA_KLUCZOWE AS sk
+        ON msk.SLOWO_ID = sk.SLOWO_ID_PK
+        WHERE msk.MISJA_ID_MOJE_FK = :misja_id
+    """)
+
+    parametry = {"kraina_en": kraina, "fabula_en": fabula, "id_misji": id_misji}
+
+    with silnik.connect() as conn:
+        wyniki_z_bazy = conn.execute(q_select_tresc, parametry).mappings().all()
+
+        print(f"Znaleziono rekordów: {len(wyniki_z_bazy)}\n")
+        
+        for wiersz in wyniki_z_bazy:
+            misja_id = wiersz["MISJA_ID_MOJE_PK"]
+            zakodowane_dane = wiersz["HTML_SKOMPRESOWANY"]
+
+            npc_z_bazy = conn.execute(q_select_npc, {"misja_id": misja_id}).all()
+            slowa_kluczowe_z_bazy = conn.execute(q_select_slowa_kluczowe, {"misja_id": misja_id}).all()
+
+            if not zakodowane_dane:
+                print(f"SKIP [ID: {misja_id}] - Brak skompresowanego HTML w bazie.")
+                continue
+
+            try:
+                skompresowane_bajty = base64.b64decode(zakodowane_dane)
+                tekst_html = zlib.decompress(skompresowane_bajty).decode("utf-8")
+
+                surowe_dane = parsuj_misje_z_url(None, html_content=tekst_html)
+                #print(surowe_dane)
+                
+                przetworzone_dane = przefiltruj_dane_misji(surowe_dane, jezyk="EN")
+
+                wsad_dla_geminisia_npc = set(npc for npc in npc_z_bazy)
+                wsad_dla_geminisia_sk = set(slowo for slowo in slowa_kluczowe_z_bazy)
+
+                wsad_dla_geminisia_cialo = json.dumps(przetworzone_dane, indent=4, ensure_ascii=False)
+
+                npc_tekst = "\n".join([f"- {n[0]} -> {n[1]}" for n in wsad_dla_geminisia_npc if n[0] and n[1]])
+                sk_tekst = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_dla_geminisia_sk if k[0] and k[1]])
+                #print(lista_sk_tekst)
+
+                try:
+                    odpowiedz = klient.models.generate_content(
+                        model="gemini-3-pro-preview",
+                        contents=wsad_dla_geminisia_cialo,
+                        config={
+                            "system_instruction": instrukcja_tlumacz(npc_tekst, sk_tekst),
+                            "response_mime_type": "application/json"
+                        }
+                    )
+
+                    przetlumaczone = json.loads(odpowiedz.text)
+                    
+                    zapisz_misje_dialogi_ai_do_db(
+                        silnik=silnik, 
+                        misja_id=misja_id, 
+                        przetlumaczone=przetlumaczone, 
+                        status="1_PRZETŁUMACZONO"
+                    )
+
+                except Exception as er:
+                    print(f"BŁĄD w tłumaczeniu/zapisie misji: {misja_id} --> {er}")
+
+            except Exception as e:
+                print(f"BŁĄD ogólny przy ID {misja_id}: {e}")

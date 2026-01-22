@@ -4,4 +4,5 @@ from moduly.etl_excel import slowa_kluczowe_do_db
 # DODAJE TYLKO TE KTORYCH NIE ZNAJDZIE
 # W PRZYPADKU WYKRYTYCH ZMIAN W TLUMACZENIACH, ROBI UPDATE
 # NAJPIERW PRZYGOTOWAĆ EXCELA 
+# OSTATNIE REVIEW: 22.01.2026 -> brak zmian
 slowa_kluczowe_do_db()
