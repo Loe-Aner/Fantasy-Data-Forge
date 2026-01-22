@@ -1,5 +1,5 @@
 from sqlalchemy import text
-import sys
+import re
 
 from moduly.repo_NPC import (
     zapisz_npc_i_status_do_db,
@@ -27,11 +27,14 @@ def zapisz_npc_i_status_do_db_z_wyniku(
         npc = podsumowanie.get(klucz)
 
         if npc is None:
-            continue
+            npc = ""
+        else:
+            npc = str(npc)
 
-        npc = str(npc).strip()
+        npc = re.sub(r"\[.*?\]", "", npc).strip()
+
         if npc == "":
-            continue
+            npc = "Brak Nazwy"
 
         zapisz_npc_i_status_do_db(
             silnik=silnik,

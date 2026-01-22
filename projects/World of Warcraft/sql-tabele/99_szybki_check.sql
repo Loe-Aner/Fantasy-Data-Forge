@@ -1,10 +1,11 @@
 SELECT 'MISJE', *
 FROM dbo.MISJE
 WHERE 1=1
-  --AND MISJA_ID_MOJE_PK = 8
+  AND MISJA_ID_MOJE_PK IN (129, 130, 131)
   --AND KRAINA_EN = 'Exile''s Reach'
   --AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
-  AND MISJA_TYTUL_EN = 'The Divine''s Shield'
+  --AND MISJA_TYTUL_EN = 'The Divine''s Shield'
+  AND NPC_KONIEC_ID = 658
 ;
 
 SELECT 'MISJE_STATUSY', ms.*
@@ -18,6 +19,7 @@ WHERE 1=1
 
 SELECT 'NPC', *
 FROM dbo.NPC
+ORDER BY NAZWA DESC
 ;
 
 SELECT 'NPC_STATUSY', *
