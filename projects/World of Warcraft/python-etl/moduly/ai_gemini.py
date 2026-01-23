@@ -10,7 +10,7 @@ import pandas as pd
 
 from moduly.services_persist_wynik import przefiltruj_dane_misji, zapisz_misje_dialogi_ai_do_db
 from scraper_wiki_main import parsuj_misje_z_url
-from moduly.ai_gemini import zaladuj_api_i_klienta, instrukcja_tlumacz
+
 import json
 import zlib
 import base64

@@ -6,7 +6,6 @@ from moduly.repo_kolejka_linkow import (
     pobierz_linki_do_scrapowania, 
     usun_link_z_kolejki
 )
-from moduly.repo_misje import ustaw_id_misji_duble_123456789
 from moduly.repo_zrodlo import zapisz_zrodlo_do_db
 from moduly.scraping_jobs import hashuj_kategorie_i_zapisz_zrodlo
 from moduly.maintenance_hashe import roznice_hashe_usun_rekordy_z_db
@@ -36,6 +35,8 @@ kategorie = [
     "https://warcraft.wiki.gg/wiki/Category:Exile%27s_Reach_quests"
 ]
 silnik = utworz_engine_do_db()
+
+# OSTATNIE REVIEW: 20.01.2026
 
 hashuj_kategorie_i_zapisz_zrodlo(
     silnik=silnik, 
@@ -156,7 +157,5 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
 
         except Exception as e:
             print(f"BŁĄD przy zapisie {url}: {e}")
-
-ustaw_id_misji_duble_123456789(silnik)
 
 print(f"\nKoniec. Przerobione OK: {przerobione}/{len(linki_z_kolejki)}")

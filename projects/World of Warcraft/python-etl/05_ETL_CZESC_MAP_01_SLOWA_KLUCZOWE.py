@@ -4,20 +4,19 @@ from moduly.db_core import utworz_engine_do_db
 from moduly.repo_misje import pobierz_liste_id_dla_dodatku
 from moduly.ai_gemini import pobierz_przetworz_zapisz_batch_lista
 
-
+# OSTATNIE REVIEW: 22.01.2026 -> brak zmian
 
 # TUTAJ GENEROWANE SA PACZKI CSV'EK - NUMERY W NAZWIE OZNACZAJA PRZEDZIALY ID PRZYPISANE PRZEZE MNIE W DB
 # PRZED WYGENEROWANIEM, KOD SPRAWDZA W ARKUSZU 'do_tabeli_misje_slowa_kluczowe' CZY MISJE JUŻ SĄ - JAK TAK TO ICH NIE PRZERABIA
 # PACZKI TE POTEM SA LACZONE W POWER QUERY W EXCELU
-# OSTATNIE REVIEW: 22.01.2026 -> brak zmian
 
 silnik = utworz_engine_do_db()
 
-NAZWA_DODATKU = 'Shadowlands'
+NAZWA_DODATKU = 'The War Within'
 BATCH_SIZE = 100
 SCIEZKA_EXCEL = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx"
 
-
+# TUTAJ NIE WYRZUCAM ID = 1..9, PONIEWAŻ POZWOLI TO MI MIEĆ WIĘCEJ SŁÓW KLUCZOWYCH
 wszystkie_id_sql = pobierz_liste_id_dla_dodatku(silnik, NAZWA_DODATKU)
 
 try:
