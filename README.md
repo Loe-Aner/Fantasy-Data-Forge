@@ -1,6 +1,8 @@
-## 🧪 Mój mały świat
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/piotr-postek-616436140/)
+<div align="center">
+<a href="https://git.io/typing-svg">
+<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=700&size=45&duration=3000&pause=1000&color=2196F3&center=true&vCenter=true&width=750&height=70&lines=MÓJ+MAŁY+ŚWIAT;FANTASY+DATA+FORGE" alt="Typing SVG" />
+</a>
+</div>
 
 Buduję tutaj rozwiązania **end-to-end**:  
 od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, aż po wizualizację.
@@ -8,8 +10,10 @@ od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, 
 Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fanatyk RPG i osoba zafascynowana danymi, postanowiłem połączyć te dwa światy. Poniżej znajdziesz nieco więcej info.
 
 ---
+
 ## 📜 Karta Postaci: Piotr "Loe'Aner"
 
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/piotr-postek-616436140/)
 <table>
   <tr>
     <td width="50%" valign="top">
@@ -58,7 +62,7 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
 
 ### 💻 Języki & Core
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![SQL](https://img.shields.io/badge/SQL-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+![SQL](https://img.shields.io/badge/SQL-CC2927?style=for-the-badge&logo=sql&logoColor=white)
 ![Lua](https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
 
 ### 🛢️ Data Engineering & Bazy Danych
@@ -68,16 +72,16 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
 ![Polars](https://img.shields.io/badge/Polars-0075FF?style=for-the-badge&logo=polars&logoColor=white)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white)
 ![BeautifulSoup](https://img.shields.io/badge/BeautifulSoup-4E757E?style=for-the-badge&logo=python&logoColor=white)
-![REST API](https://img.shields.io/badge/REST%20API-005571?style=for-the-badge&logo=postman&logoColor=white)
+![REST API](https://img.shields.io/badge/REST%20API-FF6C37?style=for-the-badge&logo=postman&logoColor=white)
 
 ### 📊 Business Intelligence & Analytics
 ![Power BI](https://img.shields.io/badge/Power_BI-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)
-![DAX](https://img.shields.io/badge/DAX-007ACC?style=for-the-badge&logo=powerbi&logoColor=white)
+![DAX](https://img.shields.io/badge/DAX-F2C811?style=for-the-badge&logo=powerbi&logoColor=black)
 ![Microsoft Excel](https://img.shields.io/badge/Microsoft_Excel-217346?style=for-the-badge&logo=microsoft-excel&logoColor=white)
 
 ### ⚙️ Narzędzia & IDE
 ![VS Code](https://img.shields.io/badge/Visual_Studio_Code-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white)
-![SSMS](https://img.shields.io/badge/SQL_Server_Management_Studio-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
+![SSMS](https://img.shields.io/badge/SSMS-1135A5?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
 ![Jupyter](https://img.shields.io/badge/Jupyter-F37626?style=for-the-badge&logo=jupyter&logoColor=white)
 ![Git](https://img.shields.io/badge/GIT-F05032?style=for-the-badge&logo=git&logoColor=white)
 
@@ -103,7 +107,6 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 7.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **BI Reporting:** Stworzenie raportowania statusu tłumaczeń oraz kondycji bazy danych w Power BI.
 8.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **Final Review:** Planuję przejść przez wszystkie procesy po przetłumaczeniu kilku dodatków, tak aby nazbierało się tego trochę po drodze.
 9.  ![Planned](https://img.shields.io/badge/PLANNED-lightgrey?style=flat-square) **Cloud Automation (Fabric/Azure):** Migracja lokalnych skryptów do chmury. **Cel**: pełna automatyzacja procesu tłumaczenia (nowy patch -> lecą skrypty po kolei) oraz udostępnienie raportów Power BI ze statusami.
-
 
 ### 🔮 Przyszłe R&D: Lord of the Rings Online (LOTRO)
 * **Status:** `NIE ZACZĘTO`
