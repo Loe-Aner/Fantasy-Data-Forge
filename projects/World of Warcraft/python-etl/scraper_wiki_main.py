@@ -26,11 +26,11 @@ ENABLE_CACHE = os.getenv("SCRAPER_CACHE_ENABLED", "0").lower() in {"1", "true", 
 CACHE_NAME = os.getenv("SCRAPER_CACHE_NAME", "wow_scraper_cache")
 CACHE_EXPIRE = int(os.getenv("SCRAPER_CACHE_EXPIRE", "86400"))
 
-WIKI_MAX_CONCURRENCY = int(os.getenv("WIKI_MAX_CONCURRENCY", "4"))
-WOWHEAD_MAX_CONCURRENCY = int(os.getenv("WOWHEAD_MAX_CONCURRENCY", "4"))
+WIKI_MAX_CONCURRENCY = int(os.getenv("WIKI_MAX_CONCURRENCY", "5"))
+WOWHEAD_MAX_CONCURRENCY = int(os.getenv("WOWHEAD_MAX_CONCURRENCY", "5"))
 
-WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.5"))
-WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.5"))
+WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.65"))
+WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.65"))
 
 
 class HostThrottle:

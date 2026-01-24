@@ -12,7 +12,7 @@ from moduly.ai_gemini import pobierz_przetworz_zapisz_batch_lista
 
 silnik = utworz_engine_do_db()
 
-NAZWA_DODATKU = 'The War Within'
+NAZWA_DODATKU = 'Shadowlands'
 BATCH_SIZE = 100
 SCIEZKA_EXCEL = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx"
 

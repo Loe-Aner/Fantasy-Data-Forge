@@ -186,3 +186,32 @@ def ustaw_id_misji_duble_123456789(silnik):
             print(f"Zaktualizowano: {wynik.rowcount} wierszy.")
         else:
             print("Brak danych do dodania.")
+
+def ujednolic_tytuly_misji(silnik):
+    q_update = text("""
+        WITH do_poprawy AS (
+            SELECT 
+                MISJA_ID_MOJE_PK,
+                MISJA_TYTUL_PL,
+                FIRST_VALUE(MISJA_TYTUL_PL) OVER (
+                    PARTITION BY MISJA_TYTUL_EN 
+                    ORDER BY MISJA_ID_MOJE_PK ASC
+                ) AS WZORCOWY_TYTUL
+            FROM dbo.MISJE
+            WHERE 1=1
+              AND MISJA_ID_Z_GRY != 123456789
+              AND MISJA_TYTUL_PL IS NOT NULL
+        )
+        UPDATE do_poprawy
+        SET MISJA_TYTUL_PL = WZORCOWY_TYTUL
+        WHERE MISJA_TYTUL_PL <> WZORCOWY_TYTUL;
+    """)
+
+    try:
+        print("Rozpoczynam ujednolicanie tytułów...")
+        with silnik.begin() as conn:
+            wynik = conn.execute(q_update)
+            print(f"Sukces. Zaktualizowano tytułów: {wynik.rowcount}")
+            
+    except Exception as e:
+        print(f"Wystąpił błąd podczas aktualizacji: {e}")

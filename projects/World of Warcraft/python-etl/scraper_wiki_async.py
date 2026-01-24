@@ -4,13 +4,14 @@ import os
 import httpx
 from bs4 import BeautifulSoup
 from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_after_attempt, wait_exponential
+import random
 
 import scraper_wiki_main as parser_lib
 
 USER_AGENT = "WoW_PolishTranslationProject -> (reachable on your Discord: Loe'Aner)"
 DEFAULT_TIMEOUT = 30
-WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.5"))
-WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.5"))
+WIKI_DELAY = float(os.getenv("WIKI_DELAY_SECONDS", "0.65"))
+WOWHEAD_DELAY = float(os.getenv("WOWHEAD_DELAY_SECONDS", "0.65"))
 
 class HostThrottle:
     def __init__(self, min_delay: float):
@@ -21,9 +22,14 @@ class HostThrottle:
     async def wait(self) -> None:
         async with self._lock:
             elapsed = time.monotonic() - self._last_call
-            remaining = self.min_delay - elapsed
+            jitter = random.uniform(0, self.min_delay * 0.5) 
+            target_delay = self.min_delay + jitter
+            
+            remaining = target_delay - elapsed
+            
             if remaining > 0:
                 await asyncio.sleep(remaining)
+            
             self._last_call = time.monotonic()
 
 def cpu_bound_parsing_task(html: str, url: str) -> dict | None:
@@ -93,11 +99,19 @@ def cpu_bound_parsing_task(html: str, url: str) -> dict | None:
 
 class WoWScraperService:
     def __init__(self, concurrency: int = 5):
+        browser_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,pl;q=0.8",
+            "Referer": "https://www.google.com/",
+            "X-Bot-Contact": "Discord: Loe'Aner (WoW Translation Project)" 
+        }
         self.client = httpx.AsyncClient(
-            headers={"User-Agent": USER_AGENT},
+            headers=browser_headers,
             timeout=DEFAULT_TIMEOUT,
             follow_redirects=True,
-            limits=httpx.Limits(max_keepalive_connections=20, max_connections=20)
+            limits=httpx.Limits(max_keepalive_connections=10, max_connections=10),
+            http2=False 
         )
         self.throttles = {
             "wiki": HostThrottle(WIKI_DELAY),
@@ -154,23 +168,31 @@ class WoWScraperService:
         tasks = [self.process_url(u) for u in urls]
         return await asyncio.gather(*tasks)
 
-async def parsuj_wiele_misji_async(quest_urls: list[str], max_concurrency: int = 5):
+async def parsuj_wiele_misji_async(quest_urls: list[str], max_concurrency: int = 5, batch_size: int = 20):
     """
-    Wrapper dla kompatybilności wstecznej ze skryptem ETL.
-    Tworzy instancję serwisu, wykonuje robotę i sprząta po sobie.
+    Przetwarza URL-e partiami (chunks), aby uniknąć zapchania pamięci 
+    i blokowania się na jednym "wiszącym" requeście.
     """
     service = WoWScraperService(concurrency=max_concurrency)
+    output = []
+    
+    print(f"Rozpoczynam scrapowanie {len(quest_urls)} adresów w paczkach po {batch_size}...")
+
     try:
-        results = await service.run_batch(quest_urls)
-        output = []
-        for i, res in enumerate(results):
-            url = quest_urls[i]
-            output.append((url, res))
+        chunks = [quest_urls[i:i + batch_size] for i in range(0, len(quest_urls), batch_size)]
+        
+        for i, chunk in enumerate(chunks, 1):
+            print(f"--- Przetwarzanie paczki {i}/{len(chunks)} ({len(chunk)} elementów) ---")
             
+            results = await service.run_batch(chunk)
+            
+            for url, res in zip(chunk, results):
+                if res:
+                    output.append((url, res))
+
+            await asyncio.sleep(2) 
+
         return output
 
     finally:
         await service.close()
-
-if __name__ == "__main__":
-    pass

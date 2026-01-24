@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import concurrent.futures
 
 from dotenv import load_dotenv
 from google import genai
@@ -112,7 +113,7 @@ def pobierz_przetworz_zapisz_batch_lista(
 
     try:
         odpowiedz = klient.models.generate_content(
-            model="gemini-3-flash-preview",
+            model="gemini-3-pro-preview",
             contents=json.dumps(wsad_dla_geminisia),
             config={
                 "system_instruction": instrukcja,
@@ -147,7 +148,8 @@ def instrukcja_tlumacz(tekst_npc: str, tekst_slowa_kluczowe: str) -> str:
     return f"""
             Jesteś profesjonalnym tłumaczem fantasy specjalizującym się w grze World of Warcraft i powiązanych z tą marką dziełach (gry, książki, short stories, komiksy, wszystko). Twoim zadaniem jest przetłumaczenie danych misji (tytuły, cele, opisy, dialogi) z języka angielskiego na wysokiej jakości język polski, z zachowaniem ścisłych reguł formatowania danych.
             DANE WEJŚCIOWE: Otrzymasz słowniki nazw własnych oraz główny obiekt JSON z treścią misji.
-            OBOWIĄZKOWE SŁOWNIKI NAZW WŁASNYCH: Podczas tłumaczenia musisz bezwzględnie stosować się do poniższych mapowań. Lista NPC (Angielski -> Polski): {tekst_npc}
+            OBOWIĄZKOWE SŁOWNIKI NAZW WŁASNYCH: Podczas tłumaczenia musisz bezwzględnie stosować się do poniższych mapowań. Czasami NPC może mieć tytuł "Brak Danych" - w takim przypadku zwróć dokładnie ten sam tytuł, nazwa "Brak Danych" jest zabiegiem technicznym i uznajmy że to też faktyczny NPC. W drugą stronę to samo: jeżeli npc_en będzie równy '', to zamiast '' w npc_pl daj 'Brak Danych'.
+            Lista NPC (Angielski -> Polski): {tekst_npc}
             Lista Słów Kluczowych (Angielski -> Polski): {tekst_slowa_kluczowe}
 
             ZASADY TŁUMACZENIA (STYL I TREŚĆ):
@@ -169,165 +171,188 @@ def instrukcja_tlumacz(tekst_npc: str, tekst_slowa_kluczowe: str) -> str:
             Format Wyjściowy: Zwróć tylko i wyłącznie poprawny kod JSON. Bez bloków markdown (```json), bez komentarzy wstępnych czy końcowych.
     """
 
-def misje_dialogi_po_polsku_zapisz_do_db(
-        silnik, kraina: str | None = None, fabula: str | None = None, id_misji: int | None = None
+
+def instrukcja_redaktor(tekst_oryginalny: str, tekst_npc: str, tekst_slowa_kluczowe: str) -> str:
+    return f"""
+### ROLA:
+Jesteś Głównym Redaktorem (Lead Editor) polskiej lokalizacji gry AAA z gatunku High Fantasy (World of Warcraft).
+Twoim zadaniem NIE JEST tłumaczenie, lecz REDAKCJA I SZLIFOWANIE istniejącego tekstu roboczego. Masz uczynić go barwnym, epickim i naturalnym.
+
+### DANE KONTEKSTOWE:
+1. Oryginalny tekst misji (dla kontekstu fabularnego): {tekst_oryginalny}
+2. Obowiązujące nazwy NPC: {tekst_npc}
+3. Słowa kluczowe: {tekst_slowa_kluczowe}
+
+### ZASADY STYLU (POLSKI LANGUAGE GUIDE):
+Twój cel to styl "Literackie Fantasy", a nie "Techniczne Tłumaczenie".
+1. **Unikaj "Zaimkozy":** W języku polskim podmiot jest domyślny. Zamiast "On poszedł do lasu" pisz "Ruszył do lasu". Zamiast "Ja ci dziękuję" pisz "Dziękuję".
+2. **Szyk zdania:** Unikaj szyku angielskiego (Podmiot-Orzeczenie-Dopełnienie). Wersja polska ma być elastyczna.
+3. **Słownictwo:** Używaj słownictwa budującego klimat (np. zamiast "duży" użyj "ogromny", "potężny", "zwalisty" w zależności od kontekstu).
+4. **Dynamika:** W opisach walki i zagrożenia zdania mają być krótkie i mocne. W opisach lore – bardziej kwieciste.
+5. **NPC Voice (Dopasowanie do postaci):**
+   Rozpoznaj charakter mówiącego po kontekście i stylu oryginału. Pamiętaj, że poniższe to tylko przykłady – każda rasa ma swoją specyfikę:
+   - **Ork/Wojownik:** Prosty, żołnierski język, zgrubienia, honor, siła. Krótko i na temat.
+   - **Elf/Mag:** Język wyrafinowany, pełne zdania, lekka archaizacja, dystans, czasami wyższość.
+   - **Krasnolud:** Styl rubaszny, serdeczny, głośny. Odniesienia do brody, piwa, gór, kamienia i przodków.
+   - **Goblin:** Cwaniacki, szybki, kupiecki żargon, slang uliczny. Nastawienie na zysk, wybuchy i "interesy" ("Czas to pieniądz, przyjacielu!").
+
+### ZADANIA TECHNICZNE:
+1. Otrzymasz JSON z parami: `Tekst_EN` (oryginał) oraz `Tekst_PL` (wersja robocza).
+2. **MODYFIKUJESZ TYLKO `Tekst_PL`.** `Tekst_EN` służy tylko do weryfikacji sensu.
+3. Zachowaj wierność merytoryczną oryginałowi (nie zmieniaj faktów, liczb, imion).
+4. **Placeholder Security:** BEZWZGLĘDNIE zachowaj nienaruszone tagi: {{PLAYER_NAME}}, $n, $g, |c...|r, \n. Muszą być w tekście wynikowym dokładnie tam, gdzie wymaga tego logika zdania.
+5. Nie usuwaj pustych pól. Zachowaj strukturę JSON i ID.
+
+### OUTPUT:
+Zwróć wyłącznie JSON o identycznej strukturze jak wejściowy, z poprawionymi polami `_PL`.
+"""
+
+def przetworz_pojedyncza_misje(wiersz, silnik, klient):
+    """
+    Ta funkcja wykonuje całą pracę dla JEDNEJ misji.
+    Będzie uruchamiana równolegle w wielu wątkach.
+    """
+    misja_id = wiersz["MISJA_ID_MOJE_PK"]
+    zakodowane_dane = wiersz["HTML_SKOMPRESOWANY"]
+    
+    with silnik.connect() as conn:
+        try:
+            q_select_npc = text("""
+            WITH wszystkie_idki AS (
+                SELECT tabela_wartosci.ID_NPC FROM dbo.MISJE AS m
+                CROSS APPLY (VALUES (m.NPC_START_ID), (m.NPC_KONIEC_ID)) AS tabela_wartosci (ID_NPC)
+                WHERE m.MISJA_ID_MOJE_PK = :misja_id
+                UNION
+                SELECT ds.NPC_ID_FK FROM dbo.DIALOGI_STATUSY AS ds WHERE ds.MISJA_ID_MOJE_FK = :misja_id
+            ),
+            oczyszczone_dane AS (
+                SELECT wi.ID_NPC, ns.STATUS,
+                CASE WHEN CHARINDEX('[', ns.NAZWA) > 0 THEN RTRIM(LEFT(ns.NAZWA, CHARINDEX('[', ns.NAZWA) - 1)) ELSE ns.NAZWA END AS CZYSTA_NAZWA
+                FROM wszystkie_idki AS wi
+                INNER JOIN dbo.NPC_STATUSY AS ns ON wi.ID_NPC = ns.NPC_ID_FK
+            )
+            SELECT DISTINCT pvt.[0_ORYGINAŁ], pvt.[3_ZATWIERDZONO]
+            FROM oczyszczone_dane
+            PIVOT (MAX(CZYSTA_NAZWA) FOR STATUS IN ([0_ORYGINAŁ], [3_ZATWIERDZONO])) AS pvt;
+            """)
+
+            q_select_sk = text("""
+                SELECT sk.SLOWO_EN, sk.SLOWO_PL FROM dbo.MISJE_SLOWA_KLUCZOWE AS msk
+                INNER JOIN dbo.SLOWA_KLUCZOWE AS sk ON msk.SLOWO_ID = sk.SLOWO_ID_PK
+                WHERE msk.MISJA_ID_MOJE_FK = :misja_id
+            """)
+
+            npc_z_bazy = conn.execute(q_select_npc, {"misja_id": misja_id}).all()
+            slowa_kluczowe_z_bazy = conn.execute(q_select_sk, {"misja_id": misja_id}).all()
+
+            if not zakodowane_dane:
+                print(f"SKIP [ID: {misja_id}] - Brak danych.")
+                return
+
+            skompresowane_bajty = base64.b64decode(zakodowane_dane)
+            tekst_html = zlib.decompress(skompresowane_bajty).decode("utf-8")
+            surowe_dane = parsuj_misje_z_url(None, html_content=tekst_html)
+            przetworzone_dane = przefiltruj_dane_misji(surowe_dane, jezyk="EN")
+
+            wsad_npc = set(n for n in npc_z_bazy)
+            wsad_sk = set(s for s in slowa_kluczowe_z_bazy)
+            wsad_json = json.dumps(przetworzone_dane, indent=4, ensure_ascii=False)
+            
+            txt_npc = "\n".join([f"- {n[0]} -> {n[1]}" for n in wsad_npc if n[0] and n[1]])
+            txt_sk = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_sk if k[0] and k[1]])
+
+            # 4. ETAP 1: TŁUMACZENIE
+            print(f"--- [ID: {misja_id}] Start Tłumaczenia... ---")
+            odp_tlumacz = klient.models.generate_content(
+                model="gemini-3-pro-preview",
+                contents=wsad_json,
+                config={"system_instruction": instrukcja_tlumacz(txt_npc, txt_sk), "response_mime_type": "application/json"}
+            )
+            przetlumaczone = json.loads(odp_tlumacz.text)
+            
+            # Zapis Etapu 1
+            zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
+
+            # 5. ETAP 2: REDAKCJA
+            print(f"--- [ID: {misja_id}] Start Redakcji... ---")
+            wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
+            odp_redaktor = klient.models.generate_content(
+                model="gemini-3-pro-preview",
+                contents=wsad_redakcja,
+                config={"system_instruction": instrukcja_redaktor(wsad_json, txt_npc, txt_sk), "response_mime_type": "application/json"}
+            )
+            zredagowane = json.loads(odp_redaktor.text)
+
+            # Zapis Etapu 2
+            zapisz_misje_dialogi_ai_do_db(silnik, misja_id, zredagowane, "2_ZREDAGOWANO")
+            
+            print(f"+++ [ID: {misja_id}] GOTOWE (Tłumaczenie + Redakcja) +++")
+
+        except Exception as e:
+            print(f"!!! BŁĄD przy misji {misja_id}: {e}")
+
+def misje_dialogi_po_polsku_zapisz_do_db_multithread(
+        silnik, kraina: str | None = None, fabula: str | None = None, id_misji: int | None = None, liczba_watkow: int = 5
     ):
-    """
-    Tłumaczy a następnie redaguje misje z podanej krainy & linii fabularnej LUB konkretną misję po ID.
-    Sprawdza, czy misja nie została już przetłumaczona.
-    Zapisuje treści do bazy danych.
-    """
+    
+    klient = zaladuj_api_i_klienta("API_TLUMACZENIE")
+    
+    warunki_sql = ""
+    
+    if id_misji is not None:
+        warunki_sql = "AND m.MISJA_ID_MOJE_PK = :id_misji"
+    
+    else:
+        czesci_warunku = []
+        
+        if kraina is not None:
+            czesci_warunku.append("AND m.KRAINA_EN = :kraina_en")
+            
+        if fabula is not None:
+            czesci_warunku.append("AND m.NAZWA_LINII_FABULARNEJ_EN = :fabula_en")
+        
+        if czesci_warunku:
+            warunki_sql = " ".join(czesci_warunku)
+        else:
+            print("BŁĄD: Nie podano żadnych parametrów filtrowania (ID, Kraina lub Fabuła). Przerywam, żeby nie pobrać całej bazy.")
+            return
 
     q_select_tresc = text(f"""
     WITH hashe AS (
-        SELECT 
-            m.MISJA_ID_MOJE_PK,
-            z.HTML_SKOMPRESOWANY,
-            ROW_NUMBER() OVER (
-                PARTITION BY z.MISJA_ID_MOJE_FK 
-                ORDER BY z.DATA_WYSCRAPOWANIA DESC
-            ) AS r
+        SELECT m.MISJA_ID_MOJE_PK, z.HTML_SKOMPRESOWANY,
+            ROW_NUMBER() OVER (PARTITION BY z.MISJA_ID_MOJE_FK ORDER BY z.DATA_WYSCRAPOWANIA DESC) AS r
         FROM dbo.ZRODLO AS z
-        INNER JOIN dbo.MISJE AS m
-        ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
-        WHERE 1=1
-        AND m.MISJA_ID_Z_GRY IS NOT NULL
-        AND m.MISJA_ID_Z_GRY <> 123456789
-                          
-        {
-            "AND m.MISJA_ID_MOJE_PK = :id_misji"
-            if (kraina is None or fabula is None)
-            else "AND m.KRAINA_EN = :kraina_en \
-                  AND m.NAZWA_LINII_FABULARNEJ_EN = :fabula_en"
-        }
-                          
-        AND NOT EXISTS (
-            SELECT 1
-            FROM dbo.MISJE_STATUSY AS ms
-            WHERE ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
-            AND ms.STATUS = N'1_PRZETŁUMACZONO'
-        )
+        INNER JOIN dbo.MISJE AS m ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+        WHERE 1=1 AND m.MISJA_ID_Z_GRY IS NOT NULL AND m.MISJA_ID_Z_GRY <> 123456789
+        
+        {warunki_sql}  /* <--- Tutaj wstawiają się dynamiczne filtry */
+        
+        AND NOT EXISTS (SELECT 1 FROM dbo.MISJE_STATUSY AS ms WHERE ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK AND ms.STATUS = N'1_PRZETŁUMACZONO')
     )
-    SELECT 
-        MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY
-    FROM hashe
-    WHERE r = 1
-    ORDER BY MISJA_ID_MOJE_PK
-    ;
-    """)
-
-    q_select_npc = text("""
-    WITH wszystkie_idki AS (
-        SELECT
-            tabela_wartosci.ID_NPC
-        FROM dbo.MISJE AS m
-        CROSS APPLY (
-            VALUES
-                (m.NPC_START_ID),
-                (m.NPC_KONIEC_ID)
-        ) AS tabela_wartosci (ID_NPC)
-        WHERE m.MISJA_ID_MOJE_PK = :misja_id
-
-        UNION
-
-        SELECT
-            ds.NPC_ID_FK
-        FROM dbo.DIALOGI_STATUSY AS ds
-        WHERE ds.MISJA_ID_MOJE_FK = :misja_id
-    ),
-
-    oczyszczone_dane AS (
-        SELECT
-            wi.ID_NPC,
-            ns.STATUS,
-            CASE
-                WHEN CHARINDEX('[', ns.NAZWA) > 0
-                THEN RTRIM(LEFT(ns.NAZWA, CHARINDEX('[', ns.NAZWA) - 1))
-                ELSE ns.NAZWA
-            END AS CZYSTA_NAZWA
-        FROM wszystkie_idki AS wi
-        INNER JOIN dbo.NPC_STATUSY AS ns
-            ON wi.ID_NPC = ns.NPC_ID_FK
-    )
-
-    SELECT DISTINCT
-        pvt.[0_ORYGINAŁ],
-        pvt.[3_ZATWIERDZONO]
-    FROM oczyszczone_dane
-    PIVOT (
-        MAX(CZYSTA_NAZWA)
-        FOR STATUS IN ([0_ORYGINAŁ], [3_ZATWIERDZONO])
-    ) AS pvt
-    ;
-    """)
-
-    q_select_slowa_kluczowe = text("""
-        SELECT 
-            sk.SLOWO_EN,
-            sk.SLOWO_PL
-        FROM dbo.MISJE_SLOWA_KLUCZOWE AS msk
-        INNER JOIN dbo.SLOWA_KLUCZOWE AS sk
-        ON msk.SLOWO_ID = sk.SLOWO_ID_PK
-        WHERE msk.MISJA_ID_MOJE_FK = :misja_id
+    SELECT MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY FROM hashe WHERE r = 1 ORDER BY MISJA_ID_MOJE_PK;
     """)
 
     parametry = {"kraina_en": kraina, "fabula_en": fabula, "id_misji": id_misji}
 
+    print("Pobieranie listy misji do przetworzenia...")
     with silnik.connect() as conn:
-        wyniki_z_bazy = conn.execute(q_select_tresc, parametry).mappings().all()
+        lista_zadan = conn.execute(q_select_tresc, parametry).mappings().all()
 
-        print(f"Znaleziono rekordów: {len(wyniki_z_bazy)}\n")
+    liczba_zadan = len(lista_zadan)
+    
+    if liczba_zadan == 0:
+        print("Nie znaleziono żadnych misji pasujących do kryteriów.")
+        return
+
+    print(f"Znaleziono {liczba_zadan} misji do przetworzenia. Uruchamiam {liczba_watkow} wątków...")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
+        futures = []
+        for wiersz in lista_zadan:
+            future = executor.submit(przetworz_pojedyncza_misje, wiersz, silnik, klient)
+            futures.append(future)
         
-        for wiersz in wyniki_z_bazy:
-            misja_id = wiersz["MISJA_ID_MOJE_PK"]
-            zakodowane_dane = wiersz["HTML_SKOMPRESOWANY"]
+        for future in concurrent.futures.as_completed(futures):
+            pass
 
-            npc_z_bazy = conn.execute(q_select_npc, {"misja_id": misja_id}).all()
-            slowa_kluczowe_z_bazy = conn.execute(q_select_slowa_kluczowe, {"misja_id": misja_id}).all()
-
-            if not zakodowane_dane:
-                print(f"SKIP [ID: {misja_id}] - Brak skompresowanego HTML w bazie.")
-                continue
-
-            try:
-                skompresowane_bajty = base64.b64decode(zakodowane_dane)
-                tekst_html = zlib.decompress(skompresowane_bajty).decode("utf-8")
-
-                surowe_dane = parsuj_misje_z_url(None, html_content=tekst_html)
-                #print(surowe_dane)
-                
-                przetworzone_dane = przefiltruj_dane_misji(surowe_dane, jezyk="EN")
-
-                wsad_dla_geminisia_npc = set(npc for npc in npc_z_bazy)
-                wsad_dla_geminisia_sk = set(slowo for slowo in slowa_kluczowe_z_bazy)
-
-                wsad_dla_geminisia_cialo = json.dumps(przetworzone_dane, indent=4, ensure_ascii=False)
-
-                npc_tekst = "\n".join([f"- {n[0]} -> {n[1]}" for n in wsad_dla_geminisia_npc if n[0] and n[1]])
-                sk_tekst = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_dla_geminisia_sk if k[0] and k[1]])
-                #print(lista_sk_tekst)
-
-                try:
-                    odpowiedz = klient.models.generate_content(
-                        model="gemini-3-pro-preview",
-                        contents=wsad_dla_geminisia_cialo,
-                        config={
-                            "system_instruction": instrukcja_tlumacz(npc_tekst, sk_tekst),
-                            "response_mime_type": "application/json"
-                        }
-                    )
-
-                    przetlumaczone = json.loads(odpowiedz.text)
-                    
-                    zapisz_misje_dialogi_ai_do_db(
-                        silnik=silnik, 
-                        misja_id=misja_id, 
-                        przetlumaczone=przetlumaczone, 
-                        status="1_PRZETŁUMACZONO"
-                    )
-
-                except Exception as er:
-                    print(f"BŁĄD w tłumaczeniu/zapisie misji: {misja_id} --> {er}")
-
-            except Exception as e:
-                print(f"BŁĄD ogólny przy ID {misja_id}: {e}")
+    print("\n--- ZAKOŃCZONO PRZETWARZANIE WIELOWĄTKOWE ---")

@@ -6,8 +6,6 @@ from openpyxl import Workbook, load_workbook
 from bs4 import BeautifulSoup
 from sqlalchemy import text
 from scraper_wiki_async import WoWScraperService
-
-# --- IMPORT O KTÓRY PROSIŁEŚ ---
 from moduly.db_core import utworz_engine_do_db 
 
 def wyciagnij_patch_final(soup: BeautifulSoup) -> str:
