@@ -1,10 +1,10 @@
 import asyncio
 import time
 import os
-import httpx
-from bs4 import BeautifulSoup
-from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_after_attempt, wait_exponential
 import random
+from bs4 import BeautifulSoup
+from curl_cffi.requests import AsyncSession, RequestsError
+from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 import scraper_wiki_main as parser_lib
 
@@ -33,7 +33,6 @@ class HostThrottle:
             self._last_call = time.monotonic()
 
 def cpu_bound_parsing_task(html: str, url: str) -> dict | None:
-    """Parsowanie w osobnym wątku."""
     if not html:
         return None
     try:
@@ -99,20 +98,21 @@ def cpu_bound_parsing_task(html: str, url: str) -> dict | None:
 
 class WoWScraperService:
     def __init__(self, concurrency: int = 5):
-        browser_headers = {
+        naglowki_przegladarki = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9,pl;q=0.8",
             "Referer": "https://www.google.com/",
             "X-Bot-Contact": "Discord: Loe'Aner (WoW Translation Project)" 
         }
-        self.client = httpx.AsyncClient(
-            headers=browser_headers,
+        
+        self.client = AsyncSession(
+            headers=naglowki_przegladarki,
             timeout=DEFAULT_TIMEOUT,
-            follow_redirects=True,
-            limits=httpx.Limits(max_keepalive_connections=10, max_connections=10),
-            http2=False 
+            impersonate="chrome120",
+            allow_redirects=True
         )
+        
         self.throttles = {
             "wiki": HostThrottle(WIKI_DELAY),
             "wowhead": HostThrottle(WOWHEAD_DELAY),
@@ -123,31 +123,37 @@ class WoWScraperService:
         }
 
     async def close(self):
-        await self.client.aclose()
+        self.client.close()
 
     async def _fetch_html(self, url: str) -> str | None:
         host = "wowhead" if "wowhead" in url else "wiki"
-        throttle = self.throttles[host]
-        semaphore = self.semaphores[host]
+        dlawik = self.throttles[host]
+        semafor = self.semaphores[host]
 
         try:
-            async for attempt in AsyncRetrying(
+            async for proba in AsyncRetrying(
                 stop=stop_after_attempt(6),
                 wait=wait_exponential(multiplier=1, min=2, max=60),
-                retry=retry_if_exception_type(httpx.HTTPError),
+                retry=retry_if_exception_type(RequestsError),
                 reraise=True,
             ):
-                with attempt:
-                    async with semaphore:
-                        await throttle.wait()
-                        response = await self.client.get(url)
+                with proba:
+                    async with semafor:
+                        await dlawik.wait()
+                        odpowiedz = await self.client.get(url)
                     
-                    if response.status_code in (429, 502, 503):
-                        raise httpx.HTTPStatusError(
-                            f"{response.status_code} THROTTLE", request=response.request, response=response
+                    if odpowiedz.status_code in (429, 502, 503):
+                        raise RequestsError(
+                            f"{odpowiedz.status_code} THROTTLE", response=odpowiedz
                         )
-                    response.raise_for_status()
-                    return response.text
+                    
+                    if odpowiedz.status_code == 403:
+                        print(f"CRITICAL: 403 Forbidden na {url} - WoWhead nadal blokuje mimo impersonate.")
+                        return None
+
+                    odpowiedz.raise_for_status()
+                    return odpowiedz.text
+
         except RetryError as exc:
             print(f"SKIP: Błąd pobierania {url}: {exc}")
             return None
@@ -165,34 +171,30 @@ class WoWScraperService:
         return result
 
     async def run_batch(self, urls: list[str]):
-        tasks = [self.process_url(u) for u in urls]
-        return await asyncio.gather(*tasks)
+        zadania = [self.process_url(u) for u in urls]
+        return await asyncio.gather(*zadania)
 
 async def parsuj_wiele_misji_async(quest_urls: list[str], max_concurrency: int = 5, batch_size: int = 20):
-    """
-    Przetwarza URL-e partiami (chunks), aby uniknąć zapchania pamięci 
-    i blokowania się na jednym "wiszącym" requeście.
-    """
     service = WoWScraperService(concurrency=max_concurrency)
-    output = []
+    wynik_lista = []
     
     print(f"Rozpoczynam scrapowanie {len(quest_urls)} adresów w paczkach po {batch_size}...")
 
     try:
-        chunks = [quest_urls[i:i + batch_size] for i in range(0, len(quest_urls), batch_size)]
+        paczki = [quest_urls[i:i + batch_size] for i in range(0, len(quest_urls), batch_size)]
         
-        for i, chunk in enumerate(chunks, 1):
-            print(f"--- Przetwarzanie paczki {i}/{len(chunks)} ({len(chunk)} elementów) ---")
+        for i, paczka in enumerate(paczki, 1):
+            print(f"--- Przetwarzanie paczki {i}/{len(paczki)} ({len(paczka)} elementów) ---")
             
-            results = await service.run_batch(chunk)
+            rezultaty = await service.run_batch(paczka)
             
-            for url, res in zip(chunk, results):
+            for url, res in zip(paczka, rezultaty):
                 if res:
-                    output.append((url, res))
+                    wynik_lista.append((url, res))
 
             await asyncio.sleep(2) 
 
-        return output
+        return wynik_lista
 
     finally:
         await service.close()

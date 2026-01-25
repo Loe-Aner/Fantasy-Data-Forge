@@ -51,6 +51,18 @@ def wyciagnij_kraine_ze_skryptu(html_text: str) -> str:
         
     return ""
 
+def wyciagnij_kraine_z_breadcrumb(soup: BeautifulSoup) -> str:
+    nav = soup.select_one("nav.breadcrumb")
+    if not nav:
+        return ""
+
+    linki = nav.select("a")
+    
+    if linki:
+        return linki[-1].get_text(strip=True)
+            
+    return ""
+
 def okresl_dodatek_na_podstawie_patcha(patch: str) -> str:
     if not patch:
         return ""
@@ -86,10 +98,12 @@ def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str, str, s
 
     linia_fabularna = wyciagnij_storyline_final(soup)
     patch = wyciagnij_patch_final(soup)
-    
-    kraina = wyciagnij_kraine_ze_skryptu(html)
     dodatek = okresl_dodatek_na_podstawie_patcha(patch)
+    kraina = wyciagnij_kraine_ze_skryptu(html)
     
+    if not kraina:
+        kraina = wyciagnij_kraine_z_breadcrumb(soup)
+
     return url, linia_fabularna, patch, dodatek, kraina, ""
 
 class WowheadScraper(WoWScraperService):
@@ -131,8 +145,10 @@ async def buduj_mapping_01_async():
         "DODANO_W_PATCHU"
     ]
 
-    MAX_CONCURRENCY = 8
-    BATCH_SIZE = 48
+    MAX_CONCURRENCY = 3
+    BATCH_SIZE = 30
+    PROG_PAUZY_MISJE = 120
+    CZAS_PRZERWY_SEKUNDY = 300
 
     print("Łączę z bazą danych SQL...")
     
@@ -204,6 +220,11 @@ async def buduj_mapping_01_async():
         print(f"Start scrapowania {len(urls_to_process)} misji...")
         
         for start in range(0, len(urls_to_process), BATCH_SIZE):
+            if start > 0 and start % PROG_PAUZY_MISJE == 0:
+                print(f"\n [PAUZA] Zrobiono już {start} misji (4 paczki).")
+                print(f" [PAUZA] Czekam {CZAS_PRZERWY_SEKUNDY // 60} minut na reset limitów...")
+                await asyncio.sleep(CZAS_PRZERWY_SEKUNDY)
+
             batch_urls = urls_to_process[start : start + BATCH_SIZE]
             print(f"\nBatch {start + 1}-{start + len(batch_urls)} / {len(urls_to_process)}")
 
