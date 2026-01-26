@@ -21,18 +21,21 @@ from scraper_wiki_main import parsuj_misje_z_url, dekompresuj_html
 
 # BAZA
 kategorie = [
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_1-10",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_2",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_6-10",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_7-10",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_10",
-    #"https://warcraft.wiki.gg/wiki/Category:Exile%27s_Reach_quests"
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_88-90",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_70",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_70-73",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_70-80",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_73-75",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_75-78",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_78-80",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_60",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_68-70",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_68-80"
 ]
 silnik = utworz_engine_do_db()
 
