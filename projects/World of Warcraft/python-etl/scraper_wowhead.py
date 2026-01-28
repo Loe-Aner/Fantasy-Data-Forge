@@ -51,16 +51,46 @@ def wyciagnij_kraine_ze_skryptu(html_text: str) -> str:
         
     return ""
 
-def wyciagnij_kraine_z_breadcrumb(soup: BeautifulSoup) -> str:
-    nav = soup.select_one("nav.breadcrumb")
-    if not nav:
+# Czasami kraina na wowheadzie ukrywa się pod klasą quick facts storyline...
+def wyciagnij_kraine_z_storyline(soup):
+    link_storyline = soup.find("a", class_="quick-facts-storyline-title")
+    
+    if link_storyline:
+        pelny_tekst = link_storyline.get_text(strip=True)
+
+        if " - " in pelny_tekst:
+            strefa = pelny_tekst.split(" - ")[0]
+            return strefa
+        
+        return pelny_tekst
+        
+    return ""
+
+# A czasami siedzi w meta opisach...
+def wyciagnij_kraine_z_meta_opisow(soup: BeautifulSoup) -> str:
+    tagi_do_sprawdzenia = [
+        {"name": "description"},
+        {"property": "og:description"},
+        {"property": "twitter:description"}
+    ]
+    
+    tekst_opisu = ""
+    
+    for atrybuty in tagi_do_sprawdzenia:
+        meta = soup.find("meta", attrs=atrybuty)
+        if meta:
+            tekst_opisu = meta.get("content", "")
+            if tekst_opisu:
+                break
+    
+    if not tekst_opisu:
         return ""
 
-    linki = nav.select("a")
+    match = re.search(r"A level \d+ (.+?) Quest", tekst_opisu)
     
-    if linki:
-        return linki[-1].get_text(strip=True)
-            
+    if match:
+        return match.group(1).strip()
+        
     return ""
 
 def okresl_dodatek_na_podstawie_patcha(patch: str) -> str:
@@ -87,6 +117,10 @@ def okresl_dodatek_na_podstawie_patcha(patch: str) -> str:
     
     return mapping.get(glowna_wersja, "Brak Dodatku")
 
+def wyciagnij_tytul_wowhead(soup: BeautifulSoup) -> str:
+    tytul = soup.find("h1", class_="heading-size-1")
+    return tytul.get_text(strip=True) if tytul else ""
+
 def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str, str, str]:
     if not html:
         return url, "", "", "", "", "Brak HTML"
@@ -96,13 +130,30 @@ def parsuj_wowhead_html(html: str, url: str) -> tuple[str, str, str, str, str, s
     except Exception:
         soup = BeautifulSoup(html, "html.parser")
 
+    nazwa = wyciagnij_tytul_wowhead(soup) 
+    
     linia_fabularna = wyciagnij_storyline_final(soup)
     patch = wyciagnij_patch_final(soup)
     dodatek = okresl_dodatek_na_podstawie_patcha(patch)
+
     kraina = wyciagnij_kraine_ze_skryptu(html)
     
     if not kraina:
-        kraina = wyciagnij_kraine_z_breadcrumb(soup)
+        kraina = wyciagnij_kraine_z_meta_opisow(soup)
+        
+    if not kraina:
+        kraina = wyciagnij_kraine_z_storyline(soup)
+
+    if kraina:
+        kraina_norm = kraina.strip().lower()
+        nazwa_norm = nazwa.strip().lower()
+        linia_norm = linia_fabularna.strip().lower()
+
+        if kraina_norm == nazwa_norm:
+            kraina = ""
+            
+        elif kraina_norm == linia_norm:
+            kraina = ""
 
     return url, linia_fabularna, patch, dodatek, kraina, ""
 

@@ -31,7 +31,8 @@ def zapisz_npc_i_status_do_db_z_wyniku(
         else:
             npc = str(npc)
 
-        npc = re.sub(r"\[.*?\]", "", npc).strip()
+        npc = re.sub(r"\[.*?\]|\(.*?\)", "", npc)
+        npc = re.sub(r"\s+", " ", npc).strip()
 
         if npc == "":
             npc = "Brak Nazwy"
