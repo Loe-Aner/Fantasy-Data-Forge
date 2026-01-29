@@ -2,6 +2,7 @@ import json
 import os
 import time
 import concurrent.futures
+from datetime import datetime
 
 from dotenv import load_dotenv
 from google import genai
@@ -356,3 +357,202 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
             pass
 
     print("\n--- ZAKOŃCZONO PRZETWARZANIE WIELOWĄTKOWE ---")
+
+
+def tych_npcow_nie_tlumacz(silnik, klient):
+    sciezka = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx"
+    sciezka_zapis = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\npc_nie_do_tlumaczenia"
+    zakladka = "surowe"
+
+    print(f"--- START ---")
+    print(f"1. Wczytuję dane z pliku: {sciezka}")
+    df = pd.read_excel(sciezka, sheet_name=zakladka, usecols=["NPC_ID_MOJE_PK", "NAZWA", "NAZWA_PL_FINAL"], index_col="NPC_ID_MOJE_PK")
+    
+    df = df.loc[df["NAZWA_PL_FINAL"].isna()]
+    liczba_wierszy = len(df)
+    
+    dzisiejsza_data = datetime.now().strftime("%d_%m_%Y")
+    print(f"2. Data dla plików: {dzisiejsza_data}")
+    print(f"3. Liczba NPC do sprawdzenia (puste NAZWA_PL_FINAL): {liczba_wierszy}")
+
+    co_ile = 100
+    licznik_batchy = 1
+    total_batchy = (liczba_wierszy + co_ile - 1) // co_ile
+
+    for i in range(0, liczba_wierszy, co_ile):
+        start = i
+        koniec = i + co_ile
+        
+        print(f"\n[Batch {licznik_batchy}/{total_batchy}] Przetwarzanie wierszy od {start} do {koniec}...")
+        
+        batch_seria = df["NAZWA"].iloc[start:koniec]
+        dfj = batch_seria.to_json(force_ascii=False)
+
+        instrukcja = """
+            Jesteś ekspertem od uniwersum World of Warcraft. 
+            Analizujesz listę NPC (ID: NAZWA_ANGIELSKA). 
+            Twoim jedynym zadaniem jest zwrócenie JSONa zawierającego WYŁĄCZNIE te wpisy, których NIE NALEŻY tłumaczyć na język polski.
+
+            Kryteria pozostawienia w oryginale:
+            1. Pojedyncze imiona własne (np. Agatha, Om'sirik, Orwenya).
+            
+            Kogo NIE zwracaj (tych będę tłumaczył):
+            1. Pełnych imion i nazwisk (np. Jaina Proudmoore, Corithras Moonrage).
+            2. Nazw z tytułami, przydomkami lub nazwami pospolitymi (np. Sergeant Willem, Jack the Hammer, Stormwind Guard). 
+
+            Zwróć wyłącznie poprawny JSON w tej samej strukturze (ID: NAZWA). 
+            Jeśli w danej paczce wszyscy NPC wymagają tłumaczenia, zwróć pusty słownik {}.
+        """
+
+        print(f"   -> Wysyłam zapytanie do API (rozmiar JSON: {len(dfj)} znaków)...")
+        start_czas = time.time()
+        
+        odpowiedz = klient.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=dfj,
+            config={
+                "system_instruction": instrukcja, 
+                "response_mime_type": "application/json"
+            }
+        )
+        
+        czas_trwania = time.time() - start_czas
+        print(f"   <- Otrzymano odpowiedź w {czas_trwania:.2f} sek.")
+        
+        zaladowane = json.loads(odpowiedz.text)
+        liczba_znalezionych = len(zaladowane)
+
+        if zaladowane:
+            df_wynikowy = pd.DataFrame.from_dict(zaladowane, orient="index", columns=["NAZWA"])
+            nazwa_pliku = f"{dzisiejsza_data}_odrzuty_batch_{start}_{koniec}.csv"
+            sciezka_kompletna = os.path.join(sciezka_zapis, nazwa_pliku)
+            df_wynikowy.to_csv(sciezka_kompletna, sep=";", encoding="utf-8-sig", index_label="NPC_ID_MOJE_PK")
+            print(f"   -> SUKCES: Znaleziono {liczba_znalezionych} wpisów nie do tłumaczenia. Zapisano plik: {nazwa_pliku}")
+        else:
+            print(f"   -> INFO: Brak wpisów nie do tłumaczenia w tej paczce (wszystkie do tłumaczenia). Plik nie został utworzony.")
+        
+        licznik_batchy += 1
+
+    print(f"\n--- KONIEC PROCESU ---")
+
+
+def przetlumacz_nazwy_npc(silnik, klient):
+    sciezka = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx"
+    sciezka_zapis = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\propozycja_tlumaczen_npc"
+    zakladka = "surowe"
+
+    print(f"--- START TŁUMACZENIA (Z WYSZUKIWARKĄ GOOGLE) ---")
+    print(f"1. Wczytuję dane z pliku: {sciezka}")
+    df = pd.read_excel(sciezka, sheet_name=zakladka, usecols=["NPC_ID_MOJE_PK", "NAZWA", "NAZWA_PL_FINAL"], index_col="NPC_ID_MOJE_PK")
+    
+    df = df.loc[df["NAZWA_PL_FINAL"].isna()]
+    liczba_wierszy = len(df)
+    
+    dzisiejsza_data = datetime.now().strftime("%d_%m_%Y")
+    print(f"2. Data dla plików: {dzisiejsza_data}")
+    print(f"3. Liczba NPC do przetłumaczenia: {liczba_wierszy}")
+
+    co_ile = 100
+    licznik_batchy = 1
+    total_batchy = (liczba_wierszy + co_ile - 1) // co_ile
+
+    for i in range(0, liczba_wierszy, co_ile):
+        start = i
+        koniec = i + co_ile
+        
+        print(f"\n[Batch {licznik_batchy}/{total_batchy}] Tłumaczenie wierszy od {start} do {koniec}...")
+        
+        batch_seria = df["NAZWA"].iloc[start:koniec]
+        dfj = batch_seria.to_json(force_ascii=False)
+
+        instrukcja = """
+        Jesteś Głównym Specjalistą ds. Lokalizacji (Lead Localization Expert) uniwersum World of Warcraft na rynek polski. 
+        Twoim zadaniem jest przetłumaczenie listy nazw NPC z języka angielskiego na polski, zachowując oficjalną nomenklaturę Blizzarda (tzw. "Canon") oraz klimat High Fantasy.
+
+        KONTEKST:
+        Otrzymujesz surowy obiekt JSON w formacie {ID: "English Name"}. Musisz zwrócić identyczną strukturę JSON {ID: "Polska Nazwa"}.
+
+        NARZĘDZIA:
+        Masz dostęp do wyszukiwarki Google. ZANIM przetłumaczysz nazwę, która wygląda na unikalną lub specyficzną dla lore (np. nazwiska bohaterów, nazwy frakcji), UŻYJ WYSZUKIWARKI, aby sprawdzić oficjalne polskie tłumaczenie na stronach takich jak Wowhead (pl) lub WoW Wiki.
+
+        ZASADY LOKALIZACJI (STYLE GUIDE):
+
+        1. WIERNOŚĆ LORE (CANON):
+        - Nazwy miast i krain muszą być zgodne z polską wersją gry (np. Stormwind -> Wichrogród, Ironforge -> Żelazna Kuźnia, Undercity -> Podmiasto).
+        - Znane nazwiska tłumaczymy zgodnie z oficjalną wersją (np. Hellscream -> Piekłorycz, Stormrage -> Burzogniewny). Jeśli postać nie ma spolszczonego nazwiska w grze (np. Jaina Proudmoore), pozostaw je w oryginale.
+
+        2. GRAMATYKA I SKŁADNIA:
+        - Konstrukcje "X of Y": Zawsze używaj dopełniacza, nigdy przyimka "z" (chyba że to konieczne geograficznie).
+            * ŹLE: Strażnik z Wichrogrodu.
+            * DOBRZE: Strażnik Wichrogrodu.
+        - Konstrukcje "The [Noun]": W języku polskim pomijamy przedimki lub stosujemy inwersję, by brzmiało to naturalnie.
+            * The Butcher -> Rzeźnik (nie "Ten Rzeźnik").
+            * The Lich King -> Król Licz.
+
+        3. TYTUŁY I RANGI:
+        - Tłumacz stopnie wojskowe i dworskie na polskie odpowiedniki (Sergeant -> Sierżant, Captain -> Kapitan, Squire -> Giermek, Lady -> Lady/Dama - zależnie od kontekstu, Peon -> Robotnik).
+
+        4. POTWORY I ZWIERZĘTA (WIELKIE VS MAŁE LITERY):
+        - W języku angielskim nazwy mobów są pisane Title Case (np. "Rabid Wolf"). W języku polskim nazwy pospolite piszemy małą literą, chyba że to nazwa własna.
+            * Angry Boar -> Wściekły dzik (nie "Wściekły Dzik").
+            * Defias Thug -> Zbir Nieskalanych (Nieskalani to nazwa własna organizacji).
+
+        5. PRZYDOMKI:
+        - Tłumacz przydomki tak, by oddawały charakter postaci.
+            * Gruul the Dragonkiller -> Gruul Zabójca Smoków.
+            * Scarred Visage -> Bliznowaty.
+
+        6. NAZWY NIEPRZETŁUMACZALNE:
+        - Jeśli nazwa jest imieniem własnym bez znaczenia (np. "Zargh", "Om'riggor"), pozostaw ją bez zmian.
+
+        INSTRUKCJA TECHNICZNA:
+        - Nie dodawaj żadnych wyjaśnień, wstępów ani znaczników markdown (```json).
+        - Zwróć czysty, poprawny syntaktycznie obiekt JSON.
+        """
+
+        print(f"   -> Wysyłam dane do API (rozmiar JSON: {len(dfj)} znaków)...")
+        start_czas = time.time()
+        
+        try:
+            odpowiedz = klient.models.generate_content(
+                model="gemini-3-pro-preview",
+                contents=dfj,
+                config={
+                    "system_instruction": instrukcja, 
+                    "response_mime_type": "application/json",
+                    "tools": [{"google_search": {}}]
+                }
+            )
+            
+            czas_trwania = time.time() - start_czas
+            print(f"   <- Otrzymano odpowiedź w {czas_trwania:.2f} sek.")
+            
+            zaladowane = json.loads(odpowiedz.text)
+            
+            if isinstance(zaladowane, list):
+                print(f"   -> INFO: API zwróciło listę zamiast słownika. Próbuję przekonwertować...")
+                nowy_slownik = {}
+                for item in zaladowane:
+                    if isinstance(item, dict):
+                        nowy_slownik.update(item)
+                zaladowane = nowy_slownik
+
+            liczba_przetlumaczonych = len(zaladowane)
+
+            if zaladowane:
+                df_wynikowy = pd.DataFrame.from_dict(zaladowane, orient="index", columns=["NAZWA_PL_PROPOZYCJA"])
+                nazwa_pliku = f"{dzisiejsza_data}_tlumaczenia_batch_{start}_{koniec}.csv"
+                sciezka_kompletna = os.path.join(sciezka_zapis, nazwa_pliku)
+                df_wynikowy.to_csv(sciezka_kompletna, sep=";", encoding="utf-8-sig", index_label="NPC_ID_MOJE_PK")
+                print(f"   -> SUKCES: Zapisano plik: {nazwa_pliku} ({liczba_przetlumaczonych} rekordów)")
+            else:
+                print(f"   -> WARNING: Pusty wynik (słownik) dla tego batcha.")
+
+        except Exception as e:
+            print(f"   !!! BŁĄD w batchu {start}-{koniec}: {e}")
+            if 'odpowiedz' in locals() and hasattr(odpowiedz, 'text'):
+                print(f"   !!! Fragment otrzymanego JSONa: {odpowiedz.text[:500]}...")
+        
+        licznik_batchy += 1
+
+    print(f"\n--- KONIEC PROCESU ---")

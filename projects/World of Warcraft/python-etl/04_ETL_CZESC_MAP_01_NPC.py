@@ -1,11 +1,13 @@
-from moduly.etl_excel import zapisz_npc_i_status_przetlumaczony_do_db 
+from moduly.ai_gemini import tych_npcow_nie_tlumacz, zaladuj_api_i_klienta
 from moduly.db_core import utworz_engine_do_db
 
-# OSTATNIE REVIEW: 22.01.2026
+silnik = utworz_engine_do_db()
+klient = zaladuj_api_i_klienta("API_TLUMACZENIE")
 
-# TO ZAPISUJE PRZETLUMACZONEG NPC'A DO DB (JEGO NAZWE) TYLKO TYCH KTORYCH NIE MA W DB
-# ROBI TEZ UPDATE PARAMETROW (CALOSC ZA KAZDYM RAZEM) W dbo.NPC (CZYLI PLEC, RASA, ITP)
-# NAJPIERW PRZETŁUMACZYĆ NPCE
-zapisz_npc_i_status_przetlumaczony_do_db(
-    silnik=utworz_engine_do_db()
+# WYRZUCA DO CSV TYLKO TYCH NPCOW, KTORYCH NIE POWINNO SIE TLUMACZYC - ZGODNIE Z PROMPTEM W FUNKCJI
+# CHCE MIEC NAD TLUMACZENIAMI I JAKOSCIA MAKSYMALNA KONTROLE
+# NAJPIERW ODSWIEZYC PLIK A POTEM WYJSC
+tych_npcow_nie_tlumacz(
+    silnik=silnik, 
+    klient=klient
     )
