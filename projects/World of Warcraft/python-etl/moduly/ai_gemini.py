@@ -38,7 +38,9 @@ def pobierz_przetworz_zapisz_batch_lista(
     
     min_b = min(lista_id_batch)
     max_b = max(lista_id_batch)
-    nazwa_pliku = f"batch_{min_b}_{max_b}.csv"
+    
+    safe_dodatek = nazwa_dodatku.replace(" ", "_").replace(":", "").replace("'", "")
+    nazwa_pliku = f"batch_{min_b}_{max_b}_{safe_dodatek}.csv"
     pelna_sciezka = os.path.join(folder_zapisz, nazwa_pliku)
 
     klient = zaladuj_api_i_klienta("API_SŁOWA_KLUCZOWE")
@@ -114,13 +116,14 @@ def pobierz_przetworz_zapisz_batch_lista(
 
     try:
         odpowiedz = klient.models.generate_content(
-            model="gemini-3-pro-preview",
-            contents=json.dumps(wsad_dla_geminisia),
-            config={
-                "system_instruction": instrukcja,
-                "response_mime_type": "application/json"
-            }
-        )
+                    model="gemini-3-pro-preview",
+                    contents=json.dumps(wsad_dla_geminisia),
+                    config={
+                        "system_instruction": instrukcja,
+                        "response_mime_type": "application/json",
+                        "tools": [{"google_search": {}}] 
+                    }
+                )
         
         wynik_lista = json.loads(odpowiedz.text)
 
@@ -452,7 +455,7 @@ def przetlumacz_nazwy_npc(silnik, klient):
     print(f"2. Data dla plików: {dzisiejsza_data}")
     print(f"3. Liczba NPC do przetłumaczenia: {liczba_wierszy}")
 
-    co_ile = 100
+    co_ile = 200
     licznik_batchy = 1
     total_batchy = (liczba_wierszy + co_ile - 1) // co_ile
 
@@ -466,48 +469,57 @@ def przetlumacz_nazwy_npc(silnik, klient):
         dfj = batch_seria.to_json(force_ascii=False)
 
         instrukcja = """
-        Jesteś Głównym Specjalistą ds. Lokalizacji (Lead Localization Expert) uniwersum World of Warcraft na rynek polski. 
-        Twoim zadaniem jest przetłumaczenie listy nazw NPC z języka angielskiego na polski, zachowując oficjalną nomenklaturę Blizzarda (tzw. "Canon") oraz klimat High Fantasy.
+            Jesteś Głównym Specjalistą ds. Lokalizacji (Lead Localization Expert) uniwersum World of Warcraft na rynek polski. 
+            Twoim zadaniem jest przetłumaczenie listy nazw NPC z języka angielskiego na polski, zachowując klimat High Fantasy, ale stosując hybrydowe podejście do nazewnictwa.
 
-        KONTEKST:
-        Otrzymujesz surowy obiekt JSON w formacie {ID: "English Name"}. Musisz zwrócić identyczną strukturę JSON {ID: "Polska Nazwa"}.
+            KONTEKST:
+            Otrzymujesz surowy obiekt JSON w formacie {ID: "English Name"}. Musisz zwrócić identyczną strukturę JSON {ID: "Polska Nazwa"}.
 
-        NARZĘDZIA:
-        Masz dostęp do wyszukiwarki Google. ZANIM przetłumaczysz nazwę, która wygląda na unikalną lub specyficzną dla lore (np. nazwiska bohaterów, nazwy frakcji), UŻYJ WYSZUKIWARKI, aby sprawdzić oficjalne polskie tłumaczenie na stronach takich jak Wowhead (pl) lub WoW Wiki.
+            NARZĘDZIA:
+            Masz dostęp do wyszukiwarki Google. Używaj jej głównie do weryfikacji nazw geograficznych lub specyficznych tytułów, ale pamiętaj o nadrzędnej zasadzie nietłumaczenia nazwisk.
 
-        ZASADY LOKALIZACJI (STYLE GUIDE):
+            ZASADY LOKALIZACJI (STYLE GUIDE):
 
-        1. WIERNOŚĆ LORE (CANON):
-        - Nazwy miast i krain muszą być zgodne z polską wersją gry (np. Stormwind -> Wichrogród, Ironforge -> Żelazna Kuźnia, Undercity -> Podmiasto).
-        - Znane nazwiska tłumaczymy zgodnie z oficjalną wersją (np. Hellscream -> Piekłorycz, Stormrage -> Burzogniewny). Jeśli postać nie ma spolszczonego nazwiska w grze (np. Jaina Proudmoore), pozostaw je w oryginale.
+            1. NAZWISKA I IMIONA (BEZWZGLĘDNY ZAKAZ TŁUMACZENIA):
+            - Nazwiska (Surnames) i imiona własne pozostawiamy ZAWSZE w oryginale angielskim. Nie stosuj spolszczeń Blizzarda dla nazwisk.
+                * ŹLE: Garrosh Piekłorycz, Jaina Proudmoore (jeśli spolszczone), Malfurion Burzogniewny.
+                * DOBRZE: Garrosh Hellscream, Jaina Proudmoore, Malfurion Stormrage.
+            - Dotyczy to również nazwisk znaczących (np. Whisperwind, Shadowsong) – one też zostają po angielsku.
 
-        2. GRAMATYKA I SKŁADNIA:
-        - Konstrukcje "X of Y": Zawsze używaj dopełniacza, nigdy przyimka "z" (chyba że to konieczne geograficznie).
-            * ŹLE: Strażnik z Wichrogrodu.
-            * DOBRZE: Strażnik Wichrogrodu.
-        - Konstrukcje "The [Noun]": W języku polskim pomijamy przedimki lub stosujemy inwersję, by brzmiało to naturalnie.
-            * The Butcher -> Rzeźnik (nie "Ten Rzeźnik").
-            * The Lich King -> Król Licz.
+            2. NAZWY GEOGRAFICZNE (MIASTA I KRAINY):
+            - Nazwy miast, krain i lokacji muszą być zgodne z polską wersją gry (pełne spolszczenie).
+                * Stormwind -> Wichrogród.
+                * Ironforge -> Żelazna Kuźnia.
+                * Undercity -> Podmiasto.
 
-        3. TYTUŁY I RANGI:
-        - Tłumacz stopnie wojskowe i dworskie na polskie odpowiedniki (Sergeant -> Sierżant, Captain -> Kapitan, Squire -> Giermek, Lady -> Lady/Dama - zależnie od kontekstu, Peon -> Robotnik).
+            3. TYTUŁY, RANGI I ZAWODY:
+            - Tłumacz stopnie wojskowe, dworskie i funkcje na polskie odpowiedniki. Tytuł stoi przed nietłumaczonym nazwiskiem.
+                * Sergeant -> Sierżant.
+                * Captain -> Kapitan.
+                * Lady -> Lady.
+                * King Varian Wrynn -> Król Varian Wrynn.
 
-        4. POTWORY I ZWIERZĘTA (WIELKIE VS MAŁE LITERY):
-        - W języku angielskim nazwy mobów są pisane Title Case (np. "Rabid Wolf"). W języku polskim nazwy pospolite piszemy małą literą, chyba że to nazwa własna.
-            * Angry Boar -> Wściekły dzik (nie "Wściekły Dzik").
-            * Defias Thug -> Zbir Nieskalanych (Nieskalani to nazwa własna organizacji).
+            4. GRAMATYKA I SKŁADNIA:
+            - Konstrukcje "X of Y": Zawsze używaj dopełniacza.
+                * Guard of Stormwind -> Strażnik Wichrogrodu.
+            - Konstrukcje "The [Noun]": Tłumaczymy na polski (chyba że jest to część nazwiska, patrz pkt 1).
+                * The Lich King -> Król Licz.
+                * The Butcher -> Rzeźnik.
 
-        5. PRZYDOMKI:
-        - Tłumacz przydomki tak, by oddawały charakter postaci.
-            * Gruul the Dragonkiller -> Gruul Zabójca Smoków.
-            * Scarred Visage -> Bliznowaty.
+            5. POTWORY I ZWIERZĘTA (WIELKIE VS MAŁE LITERY):
+            - W języku polskim nazwy pospolite piszemy małą literą.
+                * Angry Boar -> Wściekły dzik.
+                * Defias Thug -> Zbir Nieskalanych (Nieskalani to nazwa własna organizacji, więc dużą, Zbir to funkcja, więc małą - chyba że to nazwa wyświetlana nad głową NPC, wtedy traktujemy jako Nazwę Własną Mob'a -> Wściekły Dzik). Przyjmij konwencję Title Case dla nazw własnych NPC, a Sentence case dla generycznych mobów w opisach. Jeśli to nazwa nad głową: Wściekły Dzik.
 
-        6. NAZWY NIEPRZETŁUMACZALNE:
-        - Jeśli nazwa jest imieniem własnym bez znaczenia (np. "Zargh", "Om'riggor"), pozostaw ją bez zmian.
+            6. PRZYDOMKI OPISOWE (EPITETY):
+            - Jeśli postać ma przydomek, który nie jest nazwiskiem rodowym, a opisem funkcji/cechy, przetłumacz go.
+                * Gruul the Dragonkiller -> Gruul Zabójca Smoków.
+                * Scarred Visage -> Bliznowaty.
+            - UWAGA: Jeśli przydomek stał się nazwiskiem rodowym (jak Hellscream), patrz punkt 1 (zostaje Hellscream).
 
-        INSTRUKCJA TECHNICZNA:
-        - Nie dodawaj żadnych wyjaśnień, wstępów ani znaczników markdown (```json).
-        - Zwróć czysty, poprawny syntaktycznie obiekt JSON.
+            INSTRUKCJA TECHNICZNA:
+            - Nie dodawaj żadnych wyjaśnień, wstępów ani znaczników markdown.
+            - Zwróć czysty, poprawny syntaktycznie obiekt JSON.
         """
 
         print(f"   -> Wysyłam dane do API (rozmiar JSON: {len(dfj)} znaków)...")

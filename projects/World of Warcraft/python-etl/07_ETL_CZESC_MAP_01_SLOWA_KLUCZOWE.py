@@ -1,5 +1,6 @@
 import pandas as pd
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from moduly.db_core import utworz_engine_do_db
 from moduly.repo_misje import pobierz_liste_id_dla_dodatku
 from moduly.ai_gemini import pobierz_przetworz_zapisz_batch_lista
@@ -12,11 +13,11 @@ from moduly.ai_gemini import pobierz_przetworz_zapisz_batch_lista
 
 silnik = utworz_engine_do_db()
 
-NAZWA_DODATKU = 'Shadowlands'
+NAZWA_DODATKU = 'The War Within'
 BATCH_SIZE = 100
+MAX_WORKERS = 4
 SCIEZKA_EXCEL = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx"
 
-# TUTAJ NIE WYRZUCAM ID = 1..9, PONIEWAŻ POZWOLI TO MI MIEĆ WIĘCEJ SŁÓW KLUCZOWYCH
 wszystkie_id_sql = pobierz_liste_id_dla_dodatku(silnik, NAZWA_DODATKU)
 
 try:
@@ -40,25 +41,37 @@ id_do_przerobienia = sorted(list(set(wszystkie_id_sql) - zrobione_id))
 
 liczba_misji = len(id_do_przerobienia)
 
+def zadanie_dla_watku(paczka_id, indeks_startowy):
+    try:
+        pobierz_przetworz_zapisz_batch_lista(
+            silnik=silnik,
+            lista_id_batch=paczka_id,
+            nazwa_dodatku=NAZWA_DODATKU
+        )
+        return f"✅ Zakończono paczkę od ID {paczka_id[0]} (rozmiar: {len(paczka_id)})"
+    except Exception as e:
+        return f"❌ Błąd w paczce od indeksu {indeks_startowy}: {e}"
+
 if liczba_misji == 0:
     print(f"🎉 Wszystkie misje dla dodatku '{NAZWA_DODATKU}' są już w Excelu!")
 else:
     print(f"--- START ZADANIA ---")
     print(f"Dodatek: {NAZWA_DODATKU}")
     print(f"W bazie łącznie: {len(wszystkie_id_sql)}")
-    print(f"Już w Excelu: {len(zrobione_id)}")
     print(f"Pozostało do zrobienia: {liczba_misji}")
-    print(f"Planowane paczki: {(liczba_misji // BATCH_SIZE) + 1}")
+    print(f"Wielkość paczki: {BATCH_SIZE}")
+    print(f"Liczba wątków: {MAX_WORKERS}")
     print("---------------------")
 
-    for i in range(0, liczba_misji, BATCH_SIZE):   
-        paczka_id = id_do_przerobienia[i : i + BATCH_SIZE]
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        lista_zadan = []
         
-        print(f"Przetwarzam misje {i+1} do {min(i+BATCH_SIZE, liczba_misji)} (z puli {liczba_misji})...")
+        for i in range(0, liczba_misji, BATCH_SIZE):
+            paczka_id = id_do_przerobienia[i : i + BATCH_SIZE]
+            zadanie = executor.submit(zadanie_dla_watku, paczka_id, i)
+            lista_zadan.append(zadanie)
         
-        pobierz_przetworz_zapisz_batch_lista(
-            silnik=silnik,
-            lista_id_batch=paczka_id,
-            nazwa_dodatku=NAZWA_DODATKU
-        )
+        for ukonczone_zadanie in as_completed(lista_zadan):
+            print(ukonczone_zadanie.result())
+
     print("--- KONIEC ---")
