@@ -117,6 +117,8 @@ def slowa_kluczowe_do_db(
         usecols=["SLOWO_EN", "SLOWO_PL", "KATEGORIA"]
     )
     
+    plik_slowa_kluczowe = plik_slowa_kluczowe.dropna(subset=["SLOWO_EN"])
+
     with silnik.begin() as conn:
         q_select_sk = text("SELECT SLOWO_EN, SLOWO_PL FROM dbo.SLOWA_KLUCZOWE")
         
@@ -134,21 +136,36 @@ def slowa_kluczowe_do_db(
         db_records = conn.execute(q_select_sk).all()
         
         mapa_db = {row[0]: row[1] for row in db_records}
-        zestaw_en_db = set(mapa_db.keys())
+        zestaw_en_db_normalized = {str(k).strip().lower() for k in mapa_db.keys()}
+        
+        widziane_w_pliku_normalized = set()
 
         lista_do_wstawienia = []
         lista_do_aktualizacji = []
 
         for slowo_en, slowo_pl, kategoria in plik_slowa_kluczowe.values:
-            if slowo_en not in zestaw_en_db:
+            
+            if not isinstance(slowo_en, str):
+                continue
+
+            slowo_en_clean = slowo_en.strip()
+            slowo_en_check = slowo_en_clean.lower()
+
+            if slowo_en_check in widziane_w_pliku_normalized:
+                continue
+            
+            widziane_w_pliku_normalized.add(slowo_en_check)
+
+            if slowo_en_check not in zestaw_en_db_normalized:
                 lista_do_wstawienia.append({
-                    "slowo_en": slowo_en, 
+                    "slowo_en": slowo_en_clean, 
                     "slowo_pl": slowo_pl, 
                     "kategoria": kategoria
                 })
-            elif mapa_db[slowo_en] != slowo_pl:
-                lista_do_aktualizacji.append({
-                    "slowo_en": slowo_en, 
+
+            elif slowo_en_clean in mapa_db and mapa_db[slowo_en_clean] != slowo_pl:
+                 lista_do_aktualizacji.append({
+                    "slowo_en": slowo_en_clean, 
                     "slowo_pl": slowo_pl
                 })
 
@@ -165,6 +182,7 @@ def slowa_kluczowe_do_db(
             print("Zakończono aktualizację.")
         else:
             print("Brak tłumaczeń wymagających aktualizacji.")
+
 
 def mapowanie_misji_do_db(
     plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",

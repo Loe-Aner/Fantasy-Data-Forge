@@ -135,5 +135,6 @@ Tutaj eksperymentuje na platformach e-learningowych np. DataLemur, HackerRank, C
 
 ### 📫 Kontakt
 Masz uwagi do kodu lub pomysł na wspólny projekt z gier?  
-Śmiało uderzaj na LinkedIn (link na górze) lub otwórz **Issue**. 😊
+Śmiało uderzaj na LinkedIn (link na górze) lub na discordzie (link w moim profilu). 😊
+
 ![Tak ta kuźnia wygląda...😊](images/main.png)
