@@ -265,7 +265,7 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
             txt_npc = "\n".join([f"- {n[0]} -> {n[1]}" for n in wsad_npc if n[0] and n[1]])
             txt_sk = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_sk if k[0] and k[1]])
 
-            # 4. ETAP 1: TŁUMACZENIE
+            # ETAP 1: TŁUMACZENIE
             print(f"--- [ID: {misja_id}] Start Tłumaczenia... ---")
             odp_tlumacz = klient.models.generate_content(
                 model="gemini-3-pro-preview",
@@ -277,7 +277,7 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
             # Zapis Etapu 1
             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
 
-            # 5. ETAP 2: REDAKCJA
+            # ETAP 2: REDAKCJA
             print(f"--- [ID: {misja_id}] Start Redakcji... ---")
             wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
             odp_redaktor = klient.models.generate_content(
@@ -296,8 +296,13 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
             print(f"!!! BŁĄD przy misji {misja_id}: {e}")
 
 def misje_dialogi_po_polsku_zapisz_do_db_multithread(
-        silnik, kraina: str | None = None, fabula: str | None = None, id_misji: int | None = None, liczba_watkow: int = 5
-    ):
+    silnik, 
+    kraina: str | None = None, 
+    fabula: str | None = None, 
+    dodatek: str | None = None,
+    id_misji: int | None = None, 
+    liczba_watkow: int = 5
+):
     
     klient = zaladuj_api_i_klienta("API_TLUMACZENIE")
     
@@ -314,11 +319,14 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
             
         if fabula is not None:
             czesci_warunku.append("AND m.NAZWA_LINII_FABULARNEJ_EN = :fabula_en")
+
+        if dodatek is not None:
+            czesci_warunku.append("AND m.DODATEK_EN = :dodatek_en")
         
         if czesci_warunku:
-            warunki_sql = " ".join(czesci_warunku)
+            warunki_sql = "\n        ".join(czesci_warunku)
         else:
-            print("BŁĄD: Nie podano żadnych parametrów filtrowania (ID, Kraina lub Fabuła). Przerywam, żeby nie pobrać całej bazy.")
+            print("BŁĄD: Nie podano żadnych parametrów filtrowania (ID, Kraina, Fabuła lub Dodatek).")
             return
 
     q_select_tresc = text(f"""
@@ -329,14 +337,19 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
         INNER JOIN dbo.MISJE AS m ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
         WHERE 1=1 AND m.MISJA_ID_Z_GRY IS NOT NULL AND m.MISJA_ID_Z_GRY <> 123456789
         
-        {warunki_sql}  /* <--- Tutaj wstawiają się dynamiczne filtry */
+        {warunki_sql}
         
         AND NOT EXISTS (SELECT 1 FROM dbo.MISJE_STATUSY AS ms WHERE ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK AND ms.STATUS = N'1_PRZETŁUMACZONO')
     )
     SELECT MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY FROM hashe WHERE r = 1 ORDER BY MISJA_ID_MOJE_PK;
     """)
 
-    parametry = {"kraina_en": kraina, "fabula_en": fabula, "id_misji": id_misji}
+    parametry = {
+        "kraina_en": kraina, 
+        "fabula_en": fabula, 
+        "dodatek_en": dodatek,
+        "id_misji": id_misji
+    }
 
     print("Pobieranie listy misji do przetworzenia...")
     with silnik.connect() as conn:

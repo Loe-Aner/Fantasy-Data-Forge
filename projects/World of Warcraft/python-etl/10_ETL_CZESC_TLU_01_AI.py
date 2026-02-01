@@ -6,7 +6,10 @@ silnik = utworz_engine_do_db()
 
 # TŁUMACZY A POTEM REDAGUJE, ZAPISUJĄC DO BAZY DANYCH Z ODPOWIEDNIMI STATUSAMI
 # MOŻNA PODAĆ DOWOLNIE KTORY PARAMETR
-misje_dialogi_po_polsku_zapisz_do_db_multithread(silnik, fabula="The Dragon Isles")
+misje_dialogi_po_polsku_zapisz_do_db_multithread(silnik, dodatek="Midnight")
 
 # KOREKTA MISJI - JEŻELI NP. DWIE MISJE O ID 37, 38 MAJĄ TEN SAM TYTUŁ PO ENG, ALE INNY PO PL, TO WYBIERAM PIERWSZY TYTUŁ
 ujednolic_tytuly_misji(silnik)
+
+# TUTAJ SKRYPT USUWAJACY MISJE (ZE STATUSEM PRZETLUMACZONE), KTORE DOSTALY BLAD PRZY REDAKCJI
+# DLA BEZPIECZENSTWA NIECH PRZETLUMACZY JESZCZE RAZ
