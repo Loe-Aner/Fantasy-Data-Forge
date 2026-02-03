@@ -135,11 +135,16 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
         try:
             q_select_npc = text("""
             WITH wszystkie_idki AS (
-                SELECT tabela_wartosci.ID_NPC FROM dbo.MISJE AS m
+                SELECT tabela_wartosci.ID_NPC 
+                FROM dbo.MISJE AS m
                 CROSS APPLY (VALUES (m.NPC_START_ID), (m.NPC_KONIEC_ID)) AS tabela_wartosci (ID_NPC)
                 WHERE m.MISJA_ID_MOJE_PK = :misja_id
+                                
                 UNION
-                SELECT ds.NPC_ID_FK FROM dbo.DIALOGI_STATUSY AS ds WHERE ds.MISJA_ID_MOJE_FK = :misja_id
+                                
+                SELECT ds.NPC_ID_FK 
+                FROM dbo.DIALOGI_STATUSY AS ds 
+                WHERE ds.MISJA_ID_MOJE_FK = :misja_id
             ),
             oczyszczone_dane AS (
                 SELECT wi.ID_NPC, ns.STATUS,
@@ -147,14 +152,16 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
                 FROM wszystkie_idki AS wi
                 INNER JOIN dbo.NPC_STATUSY AS ns ON wi.ID_NPC = ns.NPC_ID_FK
             )
-            SELECT DISTINCT pvt.[0_ORYGINAŁ], pvt.[3_ZATWIERDZONO]
-            FROM oczyszczone_dane
-            PIVOT (MAX(CZYSTA_NAZWA) FOR STATUS IN ([0_ORYGINAŁ], [3_ZATWIERDZONO])) AS pvt;
+                SELECT DISTINCT pvt.[0_ORYGINAŁ], pvt.[3_ZATWIERDZONO]
+                FROM oczyszczone_dane
+                PIVOT (MAX(CZYSTA_NAZWA) FOR STATUS IN ([0_ORYGINAŁ], [3_ZATWIERDZONO])) AS pvt;
             """)
 
             q_select_sk = text("""
-                SELECT sk.SLOWO_EN, sk.SLOWO_PL FROM dbo.MISJE_SLOWA_KLUCZOWE AS msk
-                INNER JOIN dbo.SLOWA_KLUCZOWE AS sk ON msk.SLOWO_ID = sk.SLOWO_ID_PK
+                SELECT sk.SLOWO_EN, sk.SLOWO_PL 
+                FROM dbo.MISJE_SLOWA_KLUCZOWE AS msk
+                INNER JOIN dbo.SLOWA_KLUCZOWE AS sk 
+                   ON msk.SLOWO_ID = sk.SLOWO_ID_PK
                 WHERE msk.MISJA_ID_MOJE_FK = :misja_id
             """)
 
@@ -247,13 +254,22 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
             ROW_NUMBER() OVER (PARTITION BY z.MISJA_ID_MOJE_FK ORDER BY z.DATA_WYSCRAPOWANIA DESC) AS r
         FROM dbo.ZRODLO AS z
         INNER JOIN dbo.MISJE AS m ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
-        WHERE 1=1 AND m.MISJA_ID_Z_GRY IS NOT NULL AND m.MISJA_ID_Z_GRY <> 123456789
+        WHERE 1=1 
+          AND m.MISJA_ID_Z_GRY IS NOT NULL 
+          AND m.MISJA_ID_Z_GRY <> 123456789
         
         {warunki_sql}
         
-        AND NOT EXISTS (SELECT 1 FROM dbo.MISJE_STATUSY AS ms WHERE ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK AND ms.STATUS = N'1_PRZETŁUMACZONO')
+          AND NOT EXISTS (
+                            SELECT 1 
+                            FROM dbo.MISJE_STATUSY AS ms 
+                            WHERE ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK 
+                              AND ms.STATUS = N'1_PRZETŁUMACZONO'
+                          )
     )
-    SELECT MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY FROM hashe WHERE r = 1 ORDER BY MISJA_ID_MOJE_PK;
+    SELECT MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY 
+    FROM hashe WHERE r = 1 
+    ORDER BY MISJA_ID_MOJE_PK;
     """)
 
     parametry = {

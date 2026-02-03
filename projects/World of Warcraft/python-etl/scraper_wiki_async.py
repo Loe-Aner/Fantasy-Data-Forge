@@ -22,14 +22,9 @@ class HostThrottle:
     async def wait(self) -> None:
         async with self._lock:
             elapsed = time.monotonic() - self._last_call
-            jitter = random.uniform(0, self.min_delay * 0.5) 
-            target_delay = self.min_delay + jitter
-            
-            remaining = target_delay - elapsed
-            
+            remaining = self.min_delay - elapsed
             if remaining > 0:
                 await asyncio.sleep(remaining)
-            
             self._last_call = time.monotonic()
 
 def cpu_bound_parsing_task(html: str, url: str) -> dict | None:
@@ -103,7 +98,7 @@ class WoWScraperService:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9,pl;q=0.8",
             "Referer": "https://www.google.com/",
-            "X-Bot-Contact": "Discord: Loe'Aner (WoW Translation Project)" 
+            "X-Bot-Contact": "Discord: Loe'Aner OR Y'Tarr#2342 (WoW Translation Project)" 
         }
         
         self.client = AsyncSession(

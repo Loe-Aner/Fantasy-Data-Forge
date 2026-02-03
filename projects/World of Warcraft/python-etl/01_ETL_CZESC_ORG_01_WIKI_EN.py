@@ -1,5 +1,4 @@
 import asyncio
-from sqlalchemy import text
 
 from moduly.db_core import utworz_engine_do_db
 from moduly.repo_kolejka_linkow import (
