@@ -137,3 +137,20 @@ a={x=10, y=20}
 -- to samo co
 a={}; a["x"] = 10; a["y"] = 20
 
+x = {a=1, b=2, -- te dwa obiekciki nie sa indeksowane, bo sa przypisane do nazwy
+    {x=0, c="ss"}, -- ta tablice i ta na dole juz maja indeksy odpowiednio 1 i 2, bo nie maja nazwy
+    {d="sss", s=100}
+}
+print(x[1]["c"]) -- zwraca 'ss'
+-- w lua konstruktor tabeli obsluguje dwa oddzielne mechanizmy:
+-- a. czesc slownikowa (hash map): wszystko, co ma przypisany klucz
+-- b. czesc tablicowa: wszystko, co nie ma klucza
+
+i = 1
+x = 20
+while i <= x do
+    local x = i*2
+    print(x)
+    i = i + 1
+end
+

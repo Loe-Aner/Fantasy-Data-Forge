@@ -1,0 +1,1 @@
+-- badania pokazuja ze uzycie lokalnej kopii funkcji zamiast globalnej moze przyspieszyc kod o 30%
