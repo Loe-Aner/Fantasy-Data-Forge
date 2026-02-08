@@ -1,0 +1,10 @@
+## Interface: 120000
+## Title: Kroniki Warcrafta - |cffff0000i to po POLSKU!|r
+## Notes: Pełne tłumaczenie questów i wypowiedzi w World of Warcraft (work in progress!).
+## Author: Piotr (Loe'Aner)
+## Version: 0.1
+## SavedVariables: KronikiDB_Nieprzetlumaczone
+
+
+Konfiguracja.lua
+Baza.lua
