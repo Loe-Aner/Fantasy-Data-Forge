@@ -8,7 +8,7 @@ prywatna_tabela["InicjujDB"] = function(self, event, NazwaZaladowanegoAddonu)
     end
 
     print("|cff00ff00Kroniki Warcrafta:|r Załadowano pomyślnie!")
-
+    
     -- dla nowych graczy
     if KronikiDB_Nieprzetlumaczone == nil then
         KronikiDB_Nieprzetlumaczone = {
