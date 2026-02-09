@@ -11,7 +11,8 @@ Konfiguracja.lua
 
 # 2. Potem definicje funkcji (narzędzia)
 pomocnicze\inicjacja.lua
-pomocnicze\Zbieracz.lua
+pomocnicze\narzedzia.lua
+pomocnicze\zbieracz.lua
 
 # 3. Na samym końcu logika, która z nich korzysta
 Baza.lua

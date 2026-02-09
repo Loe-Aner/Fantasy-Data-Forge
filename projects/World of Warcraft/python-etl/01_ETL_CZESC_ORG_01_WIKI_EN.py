@@ -21,7 +21,7 @@ from scraper_wiki_main import parsuj_misje_z_url, dekompresuj_html
 # BAZA
 kategorie = [
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_90",
-    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_83",

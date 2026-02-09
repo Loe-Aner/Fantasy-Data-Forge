@@ -6,9 +6,8 @@ kiedy silnik wowa laduje plik .lua, robi to mniej wiecej tak:
 Wewnatrz pliku lua, te trzy kropki przechwytują te dwa argumenty wyslane przez silnik.
 
 Ta tabela w drugim argumencie jest tym samym obiektem w pamięci dla kazdego pliku w moim .toc
-
 -- ]]
 local nazwaAddonu, prywatna_tabela = ...
 
 prywatna_tabela["AKTUALNA_WERSJA_DB"] = 1
-prywatna_tabela["DEBUGOWANKO"] = true
+--prywatna_tabela["DEBUGOWANKO"] = true
