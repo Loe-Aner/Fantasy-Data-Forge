@@ -1,7 +1,0 @@
-1. 306,02 mln PLN @-@
-2. 90% MSCI World Net Total Return USD Index, 10% stawka WIBID 1M ustalona 2 dni robocze przed ostatnim dniem roboczym poprzedniego miesiąca @-@
-3. Akcje i inne instrumenty udziałowe 101,99%, Instrumenty pochodne -1,99% @-@
-4. STANY ZJEDNOCZONE 88,86%, HOLANDIA 3,58%, KANADA 2,29%, INNE 5,27% @-@
-5. Adobe Inc 5,11%, Servicenow Inc. 4,65%, Analog Devices, Inc. 4,26%, HubSpot Inc 4,14%, Datadog INC. 3,75%, ASML Holding NV 3,39%, Palo Alto Networks, Inc. 3,21%, MongoDB, Inc 3,15%, Zscaler Inc. 3,13%, Take-Two Interactive Software Inc 2,98% @-@
-6. Technologiczny 78,64%, Ochrona zdrowia 11,18%, Dobra konsumpcyjne 10,18% @-@
-7. USD 89,91%, EUR 7,80%, CAD 2,29% @-@

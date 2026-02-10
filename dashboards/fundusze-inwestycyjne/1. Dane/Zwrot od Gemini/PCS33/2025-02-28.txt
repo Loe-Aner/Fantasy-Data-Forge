@@ -1,7 +1,0 @@
-1. 2 895,99 mln PLN @-@
-2. 75% NASDAQ 100 USD + 15% MSCI Europe IT EUR + 10% WIBID ON @-@
-3. Akcje zagraniczne 60,33%, Depozyty i ekwiwalenty 18,21%, Tytuły uczestnictwa funduszy akcyjnych 12,87%, Obligacje skarbowe 6,76%, Zobowiązania Repo 0,29%, Pozostałe 1,54% @-@
-4. Stany Zjednoczone 77,59%, Holandia 7,09%, Niemcy 6,22%, Francja 1,06%, Pozostałe 1,61% @-@
-5. PLN Depozyty i ekwiwalenty 18,21%, Polska (WIBOR 6M, 25.11.27) 6,76%, Invesco NASDAQ 100 ETF 5,97%, Microsoft Corporation 5,15%, ASML Holding N.V. 5,12%, Direxion NASDAQ-100® Equal Weighted ETF 5,06%, Apple Inc. 4,48%, SAP SE 4,29%, NVIDIA Corporation 4,13%, Amazon.com Inc. 3,25% @-@
-6. Brak @-@
-7. PLN 97,30%, Pozostałe 2,70% @-@

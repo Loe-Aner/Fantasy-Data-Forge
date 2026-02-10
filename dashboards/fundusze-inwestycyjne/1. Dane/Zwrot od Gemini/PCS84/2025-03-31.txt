@@ -1,7 +1,0 @@
-1. 217,11 mln PLN @-@
-2. Brak @-@
-3. Obligacje korporacyjne 50,18%, Obligacje skarbowe 36,58%, Tytuły uczestnictwa funduszy dłużnych 3,82%, Depozyty i ekwiwalenty 3,63%, Pozostałe 5,79% @-@
-4. Polska 25,35%, Niemcy 20,00%, Austria 12,41%, Stany Zjednoczone 6,38%, Luksemburg 4,66%, Włochy 3,82%, Wielka Brytania 3,74% @-@
-5. Austria (EUR, zerokuponowe, 30.05.2025) 11,46%, Polska (EUR, 1,13%, 07.08.26) 6,14%, Kreditanstalt für Wiederaufbau (EUR, 2,00%, 15.11.29) 5,09%, Polska (WIBOR 6M, 25.11.27) 4,30%, Bank Peako S.A. (EUR, 5,50%, 23.11.2027) 4,21%, Mercedes-Benz Group AG (EUR, 0,75%, 10.09.2030) 3,53%, EBOR (USD, 3,88%, 16.10.29) 3,43%, Assicurazioni Generali (EUR, 14.06.2031, 2,43%) 3,42%, Unia Europejska (EUR, 2,75%, 04.02.33) 3,38%, PKO Bank Polski S.A. (EUR, 3,88%, 12.09.27) 3,28% @-@
-6. Brak @-@
-7. PLN 96,17%, Pozostałe 3,83% @-@

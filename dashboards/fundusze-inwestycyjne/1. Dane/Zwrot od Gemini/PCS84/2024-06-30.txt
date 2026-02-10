@@ -1,7 +1,0 @@
-1. 150,29 mln PLN @-@
-2. Brak @-@
-3. Obligacje korporacyjne 44,43%, Obligacje skarbowe 35,81%, Depozyty i ekwiwalenty 10,57%, Tytuły uczestnictwa funduszy dłużnych 5,74%, Dłużne papiery wartościowe 2,51%, Pozostałe 0,94% @-@
-4. Polska 21,51%, Niemcy 19,87%, Austria 11,41%, Świat 8,36%, Luksemburg 6,78%, USA 6,55%, Unia Europejska 5,39%, Francja 4,85%, Czechy 2,41%, Pozostałe 2,46% @-@
-5. Austria (EUR, zerokuponowe, 29.08.24) 11,27%, PLN Depozyty i ekwiwalenty 10,57%, Polska (EUR, 1,13%, 07.08.26) 9,60%, Kreditanstalt für Wiederaufbau (EUR, 2,00%, 15.11.29) 7,97%, Polska (WIBOR 6M, 25.11.27) 6,57%, Unia Europejska (EUR, 2,75%, 04.02.33) 5,32%, European Investment Bank (EUR, 2,75%, 28.07.28) 4,34%, Verbund AG (EUR, 1,50%, 20.11.24) 3,12%, Polska (WIBOR 6M, 25.01.26) 2,98%, E.D.F. S.A. (EUR, 3,75%, 05.06.27) 2,85% @-@
-6. Brak @-@
-7. PLN 99,86%, Pozostałe 0,14% @-@

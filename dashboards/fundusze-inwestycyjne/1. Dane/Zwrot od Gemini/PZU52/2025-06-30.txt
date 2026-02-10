@@ -1,7 +1,0 @@
-1. 204,18 mln PLN @-@
-2. 30% indeks MSCI World Net Total Return Index + 70% WIBOR 6M @-@
-3. Dłużne pap. wart. - krajowe 49,03%, Dłużne pap. wart. - zagraniczne 25,87%, Akcje zagraniczne 9,67%, Tytuły uczestnictwa 6,92%, Akcje krajowe 4,01%, Środki pieniężne i należności 3,53%, Pozostałe 0,97% @-@
-4. Polska 53,03%, Stany Zjednoczone 10,12%, Czechy 4,35%, Rumunia 3,99%, Izrael 3,96%, Inne kraje 20,04%, Aktywa inne niż papiery wartościowe 4,51% @-@
-5. Skarb Państwa RP DS1033 16,58%, Skarb Państwa RP IZ0836 8,51%, Skarb Państwa RP WZ0330 4,67%, Skarb Państwa CZE CZ0001005243 4,35%, Skarb Państwa ISR IL0011355570 3,96%, Bank Gospodarstwa Krajowego BGK/USD/20330522 3,08%, Skarb Państwa HUN XS3101499260 2,65%, Bank Gospodarstwa Krajowego FPC0342 2,34%, TENGIZ FIN INT USG87602AA90 1,98%, iShares JP Morgan EM Local Gov 1,83% @-@
-6. Obligacje rządowe 43,12%, Fiananse 22,95%, Technologia 6,13%, Dobra konsumpcyjne, niecykliczne 4,41%, Energetyka 4,00%, Przemysł 2,09%, Dobra konsumpcyjne, cykliczne 1,88%, Komunikacja 1,86%, Użyteczność publiczna 1,06%, Dobra podstawowe 0,37% @-@
-7. PLN 43,62%, USD 25,21%, EUR 12,80%, CZK 4,35%, ILS 3,96%, Inne waluty 5,55%, Aktywa inne niż papiery wartościowe 4,51% @-@

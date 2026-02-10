@@ -1,7 +1,0 @@
-1. 1 183 mln PLN @-@
-2. WIBID 6M + 25pb @-@
-3. Obligacje skarbowe i lokaty bankowe 66,20%, Instrumenty dłużne emitowane przez banki 31,50%, Instrumenty dłużne nieskarbowe 16,20%, Obligacje PFR/BGK 8,80%, SBB/BSB -22,70% @-@
-4. Polska 85,20%, Pozostałe 14,80% @-@
-5. WZ1129 15,32%, IZ0836 12,44%, WZ1126 12,08%, WZ1128 11,63%, FPC0631 8,77%, WZ1127 6,15%, WZ0126 3,48%, RATB 0225 2,88%, KRUK 0528 2,67%, MILLENNIUM 0927 2,54% @-@
-6. Obligacje skarbowe 66,20%, Finanse 44,80%, Nieruchomości 7,60%, Spółki użyteczności publicznej 1,70%, Komunikacja 0,80%, Paliwa 0,90%, Przemysł 0,40%, Dobra wyższego rzędu 0,30%, Dobra pierwszej potrzeby 0,00% @-@
-7. PLN 100% @-@

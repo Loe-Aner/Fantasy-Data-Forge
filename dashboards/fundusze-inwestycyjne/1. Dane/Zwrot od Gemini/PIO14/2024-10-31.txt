@@ -1,7 +1,0 @@
-1. 319,92 mln PLN @-@
-2. ICE BofA All Maturity Polish Government Index 52,5% + POLONIA + 35 pb 17,5% + WIG 16,5% + MSCI World Net Total Return Local Currency 13,5% @-@
-3. Instrumenty akcyjne 29,73%, Instrumenty dłużne 67,35%, Pozostałe instrumenty 4,61% @-@
-4. Polska 92,79%, Rumunia 1,81%, Luksemburg 1,80%, Węgry 0,91%, Stany Zjednoczone 0,63%, Portugalia 0,60%, Holandia 0,55%, Serbia 0,54%, Hiszpania 0,33%, Pozostałe 0,05% @-@
-5. LPP SA 2,84%, POWSZECHNA KASA OSZCZĘDNOŚCI BANK POLSKI SA 1,91%, ORLEN SA 1,83%, ALLEGRO.EU 1,83%, BANK POLSKA KASA OPIEKI SA 1,69%, POWSZECHNY ZAKŁAD UBEZPIECZEŃ SA 1,47%, MLP GROUP SA 1,36%, CCC SA 1,13%, X-TRADE BROKERS DM S.A. 1,08%, INPOST SA 0,91%, PS0729 4,74%, DS1033 5,38%, WS0429 5,42%, PS0728 6,78%, DS1034 4,86% @-@
-6. Finanse 39,08%, Produkty konsumpcyjne uzupełniające 25,55%, Przemysł 9,86%, Produkty konsumpcyjne podstawowe 7,90%, Technologie informatyczne 6,54%, Energetyka 6,01%, Usługi 3,31%, Ochrona zdrowia 1,53%, Materiały 0,23% @-@
-7. PLN 87,51%, EUR 10,11%, USD 2,13%, GBP 0,25% @-@

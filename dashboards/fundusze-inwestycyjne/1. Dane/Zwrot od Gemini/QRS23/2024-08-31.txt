@@ -1,7 +1,0 @@
-1. 86 mln PLN @-@
-2. MSCI ACWI NTR @-@
-3. Akcje 89,04%, Gotówka 10,96% @-@
-4. USA 62,60%, Polska 9,80%, Europa Zachodnia 4,40%, Pozostałe 23,20% @-@
-5. NVIDIA 7,34%, AMAZON 5,59%, MICROSOFT 5,50%, APPLE 4,38%, MSCI WORLD HEALTH CARE 4,30%, ALPHABET 3,82%, META PLATFORMS 3,29%, MERCADOLIBRE 3,05%, RUSSELL 2000 3,03%, SALESFORCE 2,80% @-@
-6. Informatyka 36,16%, Dobra wyższego rzędu 17,44%, Komunikacja 13,56%, Zdrowie 8,96%, Przemysł 5,16%, Ekspozycja na indeksy giełdowe 4,55%, Dobra pierwszej potrzeby 1,72%, Finanse 1,09%, Paliwa 0,42%, Surowce 0,00%, Spółki użyteczności publicznej 0,00%, Nieruchomości 0,00% @-@
-7. PLN 94,8%, USD 3,4%, CHF 0,0%, EUR 1,8%, GBP 0,0% @-@

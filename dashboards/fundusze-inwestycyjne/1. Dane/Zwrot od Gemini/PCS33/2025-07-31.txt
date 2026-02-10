@@ -1,7 +1,0 @@
-1. 2 986,22 mln PLN @-@
-2. 75% NASDAQ 100 USD + 15% MSCI Europe IT EUR + 10% WIBID ON @-@
-3. Akcje 87,95%, Pozostałe aktywa 12,05% @-@
-4. Stany Zjednoczone 70,47%, Holandia 6,73%, Niemcy 6,33%, Francja 1,28%, Pozostałe 3,13% @-@
-5. Indeks Nasdaq 100 7,40%, NVIDIA Corporation 6,22%, Microsoft Corporation 5,56%, Apple Inc. 5,47%, ASML Holding N.V. 5,25%, SAP SE 4,93%, Amazon.com Inc. 3,85%, Alphabet Inc. 3,25%, Broadcom Inc. 2,88% @-@
-6. Brak @-@
-7. PLN 100,45%, Pozostałe -0,45% @-@

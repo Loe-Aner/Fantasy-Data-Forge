@@ -1,7 +1,0 @@
-1. 357,37 mln PLN @-@
-2. 90% MSCI World Growth Net Total Return + 10% WIBID 1M @-@
-3. Akcje i inne instrumenty udziałowe 100,07%, Instrumenty pochodne -0,07% @-@
-4. STANY ZJEDNOCZONE 88,23%, HOLANDIA 4,39%, KANADA 2,57%, INNE 4,81% @-@
-5. Adobe Inc 4,81%, Analog Devices, Inc. 4,53%, HubSpot Inc 4,29%, ASML Holding NV 3,98%, Servicenow Inc. 3,77%, Datadog INC. 3,69%, Snowflake Inc. 3,67%, MongoDB, Inc 3,37%, MARVELL TECHNOLOGY INC 3,12%, Microsoft Corporation 3,12% @-@
-6. Technologiczny 75,97%, Ochrona Zdrowia 10,54%, Telekomunikacja 4,97%, Dobra i usługi wyższego rzędu 4,83%, Finansowy 2,10%, Energii 1,59% @-@
-7. USD 89,24%, EUR 8,19%, CAD 2,57% @-@

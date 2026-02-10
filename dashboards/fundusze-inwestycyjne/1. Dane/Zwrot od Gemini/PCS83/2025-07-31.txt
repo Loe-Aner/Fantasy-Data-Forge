@@ -1,7 +1,0 @@
-1. 234,60 mln PLN @-@
-2. 75% WIG20TR + 25% mWIG40TR @-@
-3. Akcje 100,73% @-@
-4. Polska 99,66%, Pozostałe 1,06% @-@
-5. Indeks WIG20 Kontrakt terminowy 13,74%, PKO Bank Polski S.A. 8,55%, Orlen S.A. 6,97%, Bank Pekao S.A. 5,23%, PZU S.A. 5,20%, Allegro.eu S.A. 3,80%, Dino Polska S.A. 3,46%, Santander Bank Polska S.A. 3,11%, LPP S.A. 3,04%, BETA ETF mWIG40TR 2,65% @-@
-6. Finansowy 22,09%, Paliwowy 6,97%, Dóbr i usług wyższego rzędu 6,84%, Dóbr codziennego użytku 3,46% @-@
-7. PLN 99,95%, Pozostałe 0,05% @-@

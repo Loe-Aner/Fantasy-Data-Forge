@@ -1,7 +1,0 @@
-1. 132 mln PLN @-@
-2. Brak @-@
-3. Akcje 91,2%, Gotówka 5,6%, Fundusze akcyjne 1,1%, Dłużne papiery skarbowe 1,1%, Kontrakty terminowe akcyjne 0,9% @-@
-4. Polska 89,9%, Ameryka Północna 7,6%, Europa bez Polski 2,5% @-@
-5. CCC S.A. 5,1%, ING Bank Śląski S.A. 4,3%, Rzeczpospolita Polska - WZ1129 4,2%, X-Trade Brokers Dom Maklerski S.A. 4,2%, LPP S.A. 4,1%, Benefit Systems S.A. 4,1%, Asseco Poland SA. 3,6%, MO-BRUK S.A. 2,7%, SHOPER S.A. 2,6%, Inter Cars SA 2,6% @-@
-6. Informatyka 11,2%, Banki 11,1%, Odzież i kosmetyki 8,9%, Budownictwo 7,9%, Handel detaliczny 6,5%, Ochrona zdrowia 6,3%, Finanse 6,0% @-@
-7. PLN 90,8%, USD 6,6%, EUR 2,7% @-@

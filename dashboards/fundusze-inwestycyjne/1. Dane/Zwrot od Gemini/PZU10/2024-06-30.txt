@@ -1,7 +1,0 @@
-1. 115,15 mln PLN @-@
-2. 70% indeks mWIG40 TR + 20% indeks sWIG80TR + 10% WIBID 3M @-@
-3. Akcje krajowe 80,86%, Akcje zagraniczne 14,43%, Środki pieniężne i należności 4,68%, Pozostałe 0,03% @-@
-4. Polska 80,86%, Luksemburg 6,70%, Niemcy 2,87%, Stany Zjednoczone 2,43%, Francja 1,72%, Inne kraje 0,70%, Aktywa inne niż papiery wartościowe 4,71% @-@
-5. X-Trade Brokers Dom Maklerski Spółka Akcyjna 6,33%, BENEFIT 5,40%, InPost S.A. 5,32%, Bank Millennium S.A. 4,40%, Alior Bank S.A. 4,03%, LPP S.A. 3,72%, 11 bit studios S.A. 3,66%, TAURON POLSKA ENERGIA S.A. 3,29%, Inter Cars S.A. 3,03%, CCC S.A. 2,96% @-@
-6. Brak @-@
-7. PLN 82,25%, EUR 10,61%, USD 2,43%, Aktywa inne niż papiery wartościowe 4,71% @-@

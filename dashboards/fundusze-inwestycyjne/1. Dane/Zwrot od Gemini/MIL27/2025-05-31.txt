@@ -1,7 +1,0 @@
-1. 197 mln PLN @-@
-2. Brak @-@
-3. Akcje 54,9%, Dłużne papiery skarbowe 26,3%, Kontrakty terminowe akcyjne 9,8%, Gotówka 9,0% @-@
-4. Polska 87,8%, Ameryka Północna 10,7%, Europa bez Polski 1,0%, Rynki Wschodzące 0,4% @-@
-5. CHICAGO MERCANTILE EXCHANGE - E-mini S&P500 FUT JUN25 8,2%, Powszechna Kasa Oszczędności Bank Polski S.A. 6,9%, Rzeczpospolita Polska - DS0727 6,5%, Rzeczpospolita Polska - WZ0330 5,1%, Rzeczpospolita Polska - DS0432 4,6%, Rzeczpospolita Polska - WZ1127 4,2%, Orlen S.A. 3,7%, LPP S.A. 3,7%, Bank Pekao S.A. 3,6%, CHICAGO MERCANTILE EXCHANGE - E-mini NASDAQ FUT JUN25 3,3% @-@
-6. Banki 22,1%, Handel detaliczny i kosmetyki 8,2%, Odzież 6,0%, Paliwa 5,4%, Informatyka 5,1%, Ubezpieczenia 4,6%, Finanse 4,6% @-@
-7. PLN 97,3%, EUR 1,5%, USD 1,2% @-@

@@ -2,14 +2,14 @@ local nazwaAddonu, prywatna_tabela = ...
 
 -- === 1. DANE GRACZA ===
 local ImieGracza = UnitName("player")
--- UnitRace zwraca: nazwa lokalna, nazwa angielska. Bierzemy te druga (angielska) dla bezpieczenstwa
+-- UnitRace zwraca: nazwa lokalna, nazwa angielska. Biore te druga (angielska) dla bezpieczenstwa
 local _, RasaGracza = UnitRace("player") 
 local RasaGraczaMala = string.lower(RasaGracza or "")
 
--- UnitClass zwraca: nazwa lokalna, TAG (angielski). Bierzemy TAG.
+-- UnitClass zwraca: nazwa lokalna, TAG (angielski). Biore TAG.
 local _, KlasaGracza = UnitClass("player") 
--- Klasa (TAG) jest zawsze z duzych (np. WARRIOR), wiec robimy formatowanie:
--- Zamieniamy WARRIOR na Warrior (zeby pasowalo do tekstow w questach)
+-- Klasa (TAG) jest zawsze z duzych (np. WARRIOR), wiec robie formatowanie:
+-- Zamieniam np. WARRIOR na Warrior (zeby pasowalo do tekstow w questach)
 KlasaGracza = string.upper(string.sub(KlasaGracza, 1, 1)) .. string.lower(string.sub(KlasaGracza, 2))
 local KlasaGraczaMala = string.lower(KlasaGracza)
 
@@ -46,7 +46,9 @@ local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
     local TekstZnormalizowany = NormalizujTekst(TekstOryginalny)
     local hash_tekstu = prywatna_tabela.GenerujHash(TekstZnormalizowany)
     
-    if not hash_tekstu then return end
+    if not hash_tekstu then 
+        return 
+        end
 
     local BazaBrakujacych = KronikiDB_Nieprzetlumaczone["ListaMisji"]
 

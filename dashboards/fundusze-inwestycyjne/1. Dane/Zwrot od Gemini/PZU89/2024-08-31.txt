@@ -1,7 +1,0 @@
-1. 15,43 mln PLN @-@
-2. MSCI World IMI Cyber Security Net TotalReturn USD Index @-@
-3. Akcje zagraniczne 88,80%, Środki pieniężne i należności 4,97%, Tytuły uczestnictwa 4,63%, Akcje krajowe 0,00%, Pozostałe 1,60% @-@
-4. Stany Zjednoczone 69,92%, Izrael 9,63%, Wielka Brytania 6,16%, Holandia 3,18%, Kanada 2,32%, Inne kraje 2,22%, Aktywa inne niż papiery wartościowe 6,57% @-@
-5. Fortinet Inc 6,14%, CHECK POINT SOFTWARE TECHNOLOGIES LTD 5,60%, Motorola Solutions Inc. 5,45%, Palo Alto Networks Inc 5,36%, Cloudflare Inc 5,12%, Cisco Systems Inc 4,86%, Gen Digital Inc. 4,69%, BAE Systems PLC 4,69%, Equinix Inc. 4,63%, Datadog Inc 4,27% @-@
-6. Brak @-@
-7. USD 80,19%, GBP 6,16%, EUR 2,54%, CAD 2,32%, JPY 2,22%, Aktywa inne niż papiery wartościowe 6,57% @-@

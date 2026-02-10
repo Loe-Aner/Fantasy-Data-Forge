@@ -1,7 +1,0 @@
-1. 182,82 mln PLN @-@
-2. 70% WIG20 TR + 30% mWIG40 TR @-@
-3. Akcje krajowe 86,95%, Akcje zagraniczne 7,13%, Środki pieniężne i należności 2,47%, Pozostałe 3,44% @-@
-4. Polska 88,27%, Luksemburg 5,91%, Wielka Brytania 0,63%, Cypr 0,23%, Hiszpania 0,20%, Inne kraje 0,15%, Aktywa inne niż papiery wartościowe 4,60% @-@
-5. POWSZECHNA KASA OSZCZĘDNOŚCI BANK POLSKI 10,01%, ORLEN S.A. 8,18%, Bank Polska Kasa Opieki S.A. 6,05%, Powszechny Zakład Ubezpieczeń S.A. 6,02%, Allegro.eu SA 4,45%, Dino Polska Spółka Akcyjna 4,01%, LPP S.A. 3,55%, Santander Bank Polska S.A. 3,53%, CD Projekt S.A. 2,95%, KGHM Polska Miedź S.A. 2,90% @-@
-6. Fiananse 39,51%, Dobra konsumpcyjne, cykliczne 10,67%, Energetyka 8,81%, Dobra konsumpcyjne, niecykliczne 8,40%, Komunikacja 7,19%, Technologia 6,63%, Użyteczność publiczna 5,82%, Dobra podstawowe 4,73%, Obligacje rządowe 4,31%, Przemysł 1,55% @-@
-7. PLN 95,40%, Aktywa inne niż papiery wartościowe 4,60% @-@

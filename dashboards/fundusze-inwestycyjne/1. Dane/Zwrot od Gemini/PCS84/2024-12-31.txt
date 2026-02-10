@@ -1,7 +1,0 @@
-1. 208,08 mln PLN @-@
-2. Brak @-@
-3. Obligacje korporacyjne 46,13%, Obligacje skarbowe 39,61%, Depozyty i ekwiwalenty 9,42%, Tytuły uczestnictwa funduszy dłużnych 4,28%, Pozostałe 0,56% @-@
-4. Polska 22,50%, Niemcy 17,69%, Austria 11,27%, Stany Zjednoczone 6,74%, Luksemburg 4,97%, Wielka Brytania 4,03%, Włochy 4,02%, Unia Europejska 4,00%, Pozostałe 7,66% @-@
-5. Austria (EUR, zerokuponowe, 27.02.25) 11,13%, PLN Depozyty i ekwiwalenty 9,42%, Polska (EUR, 1,13%, 07.08.26) 6,99%, Kreditanstalt für Wiederaufbau (EUR, 2,00%, 15.11.29) 5,79%, Polska (WIBOR 6M, 25.11.27) 4,75%, Unia Europejska (EUR, 2,75%, 04.02.33) 3,96%, Assicurazioni Generali (EUR, 14.06.2031, 2,43%) 3,87%, EBOR (USD, 3,88%, 16.10.29) 3,83%, PKO Bank Polski S.A. (EUR, 3,88%, 12.09.27) 3,72%, Deutsche Bank AG (EUR, 1,38%, 10.06.26) 3,66% @-@
-6. Brak @-@
-7. PLN 99,84%, Pozostałe 0,16% @-@

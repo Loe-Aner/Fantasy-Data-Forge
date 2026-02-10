@@ -1,7 +1,0 @@
-1. 15,28 mln PLN @-@
-2. 100% MSCI World IMI Space ExplorationNet Total Return USD Index @-@
-3. Akcje zagraniczne 94,70%, Środki pieniężne i należności 2,84%, Akcje krajowe 0,00%, Pozostałe 2,46% @-@
-4. Stany Zjednoczone 81,85%, Francja 6,26%, Szwecja 4,96%, Niemcy 0,87%, Kanada 0,59%, Inne kraje 0,17%, Aktywa inne niż papiery wartościowe 5,30% @-@
-5. Boeing Company 6,81%, RTX Corporation 5,15%, Hexagon AB 4,96%, Northrop Grumman Corporation 4,84%, Autodesk Inc. 4,66%, ANSYS Inc 4,53%, Synopsys Inc 4,51%, Honeywell International Inc 4,50%, Lockheed Martin Corp 4,18%, Parker-Hannifin Corp 4,04% @-@
-6. Przemysł 72,13%, Technologia 22,39%, Komunikacja 1,31%, Dobra podstawowe 0,76% @-@
-7. USD 81,85%, EUR 7,13%, SEK 4,96%, CAD 0,59%, GBP 0,17%, Aktywa inne niż papiery wartościowe 5,30% @-@

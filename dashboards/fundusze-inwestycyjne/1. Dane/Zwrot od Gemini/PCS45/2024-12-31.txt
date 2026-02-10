@@ -1,7 +1,0 @@
-1. 270,93 mln PLN @-@
-2. 42,5% WIG20TR + 42,5% MSCI World USD + 15% Treasury BondSpot Poland Index @-@
-3. Tytuły uczestnictwa funduszy akcyjnych 40,08%, Akcje polskie 38,90%, Obligacje skarbowe 13,02%, Depozyty i ekwiwalenty 3,35%, Obligacje korporacyjne 1,43%, Pozostałe 3,22% @-@
-4. Akcje: Polska 42,61%, Stany Zjednoczone 37,58%, Wielka Brytania 1,05%, Japonia 1,04%, Pozostałe 3,76%; Obligacje: Polska 15,55% @-@
-5. iShares Core MSCI World UCITS ETF USD (Acc) 18,15%, iShares Core S&P 500 ETF 17,94%, PKO Bank Polski S.A. 6,88%, iShares Core S&P 500 UCITS ETF USD (Dist) 3,93%, Orlen S.A. 3,85%, PZU S.A. 3,70%, Bank Pekao S.A. 3,38%, PLN Depozyty i ekwiwalenty 3,35%, LPP S.A. 2,82%, Dino Polska S.A. 2,62% @-@
-6. Brak @-@
-7. PLN 99,85%, Pozostałe 0,15% @-@

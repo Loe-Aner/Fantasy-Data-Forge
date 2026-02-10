@@ -1,7 +1,0 @@
-1. 154,38 mln PLN @-@
-2. 90% Bloomberg Composite Gold Index, 10% stawka WIBID 1M @-@
-3. Instrumenty zmiennokuponowe 22,90%, Instrumenty stałokuponowe 62,50%, Akcje i inne instrumenty udziałowe 15,95%, Instrumenty pochodne -1,35% @-@
-4. IRLANDIA 44,11%, POLSKA 22,60%, JERSEY 22,35%, INNE 10,94% @-@
-5. VanEck Vectors Gold Miners UCITS ETF 13,98%, WZ1128 Skarb Państwa 10,82%, SGLD Invesco Physical Gold ETC 8,52%, XGLD Xtrackers Physical Gold ETC 8,50%, IGLN iShares Physical Gold ETC 8,36%, GOLD Amundi Physical Gold ETC 8,33%, WZ1129 Skarb Państwa 6,47%, GBSE WisdomTree Physical Gold - EUR DLY HDG 3,83%, PHAU WisdomTree Physical Gold 3,80%, GBS Gold Bullion Securities 3,73% @-@
-6. Brak @-@
-7. USD 62,15%, PLN 22,60%, EUR 11,62%, AUD 3,63% @-@

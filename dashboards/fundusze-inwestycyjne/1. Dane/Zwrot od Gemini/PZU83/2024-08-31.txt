@@ -1,7 +1,0 @@
-1. 49,68 mln PLN @-@
-2. 100% MSCI World Information Technology Net Total Return USD Index @-@
-3. Akcje zagraniczne 93,13%, Środki pieniężne i należności 4,89%, Akcje krajowe 0,16%, Pozostałe 1,82% @-@
-4. Stany Zjednoczone 81,91%, Japonia 3,07%, Holandia 2,44%, Niemcy 1,55%, Irlandia 1,15%, Inne kraje 3,18%, Aktywa inne niż papiery wartościowe 6,71% @-@
-5. Apple Inc 18,17%, NVIDIA Corp 16,31%, Microsoft Corp 16,02%, Broadcom Inc 3,99%, ASML Holding NV 1,81%, Salesforce.com Inc 1,38%, Adobe Systems Inc 1,36%, SAP SE 1,27%, Advanced Micro Devices Inc 1,27%, Oracle Corp 1,26% @-@
-6. Brak @-@
-7. USD 84,12%, EUR 4,29%, JPY 3,07%, CAD 1,01%, SEK 0,26%, Inne waluty 0,55%, Aktywa inne niż papiery wartościowe 6,71% @-@

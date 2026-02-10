@@ -1,7 +1,0 @@
-1. 2836,15 mln PLN @-@
-2. 45% NASDAQ 100 USD + 20% MSCI Europe IT EUR + 20% MSCI World USD + 15% WIBID ON @-@
-3. Akcje zagraniczne 42,76%, Depozyty i ekwiwalenty 27,51%, Tytuły uczestnictwa funduszy akcyjnych 20,82%, Obligacje skarbowe 7,33%, Pozostałe 1,58% @-@
-4. Stany Zjednoczone 55,24%, Holandia 10,87%, Niemcy 7,26%, Francja 2,36%, Pozostałe 5,39% @-@
-5. PLN Depozyty i ekwiwalenty 27,51%, iShares Core MSCI World UCITS ETF USD (Acc) 8,24%, ASML Holding N.V. 8,18%, Polska (WIBOR 6M, 25.11.26) 7,08%, Invesco NASDAQ 100 ETF 5,84%, iShares Core S&P 500 ETF 4,58%, SAP SE 4,54%, Microsoft Corporation 2,56%, NVIDIA Corporation 1,86%, Apple Inc. 1,82% @-@
-6. Brak @-@
-7. PLN 98,95%, Pozostałe 1,05% @-@
