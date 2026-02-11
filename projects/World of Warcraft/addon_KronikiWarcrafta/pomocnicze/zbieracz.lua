@@ -15,53 +15,69 @@ local KlasaGraczaMala = string.lower(KlasaGracza)
 
 
 -- === 2. FUNKCJA NORMALIZUJĄCA ===
-local function NormalizujTekst(tekst)
-    if not tekst or tekst == "" then return "" end
+local function NormalizujTekst(Tekst)
+    if not Tekst or Tekst == "" then return "" end
 
-    -- 1. Imie
-    tekst = string.gsub(tekst, ImieGracza, "{imie}")
+    Tekst = string.match(Tekst, "^%s*(.-)%s*$") -- usuwam niepotrzebne spacje z surowego tekstu
+
+    -- 1. Imie (np. Loe'Aner -> {imie})
+    Tekst = string.gsub(Tekst, ImieGracza, "{imie}")
 
     -- 2. Rasa (np. Human -> {rasa})
     if RasaGracza then
-        tekst = string.gsub(tekst, RasaGracza, "{rasa}")
-        tekst = string.gsub(tekst, RasaGraczaMala, "{rasa}")
+        Tekst = string.gsub(Tekst, RasaGracza, "{rasa}")
+        Tekst = string.gsub(Tekst, RasaGraczaMala, "{rasa}")
     end
 
     -- 3. Klasa (np. Warrior -> {klasa})
     if KlasaGracza then
-        tekst = string.gsub(tekst, KlasaGracza, "{klasa}")
-        tekst = string.gsub(tekst, KlasaGraczaMala, "{klasa}")
+        Tekst = string.gsub(Tekst, KlasaGracza, "{klasa}")
+        Tekst = string.gsub(Tekst, KlasaGraczaMala, "{klasa}")
     end
 
-    return tekst
+    return Tekst
 end
 
+local function PodzielTekst(TekstOryginalny, sep)
+   if sep == nil or TekstOryginalny == nil then
+      return
+   end
+   
+   local TekstPodzielony = {}
+   local Wzorzec = "([^" .. sep .. "]+)"
+   
+   for str in string.gmatch(TekstOryginalny, Wzorzec) do
+      table.insert(TekstPodzielony, str)
+   end
+   return TekstPodzielony
+end
 
 -- === 3. ZAPIS DO BAZY ===
 local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
-    if not TekstOryginalny or TekstOryginalny == "" then 
-        return 
-    end
+   if not TekstOryginalny or TekstOryginalny == "" then 
+      return 
+   end
 
-    local TekstZnormalizowany = NormalizujTekst(TekstOryginalny)
-    local hash_tekstu = prywatna_tabela.GenerujHash(TekstZnormalizowany)
-    
-    if not hash_tekstu then 
-        return 
-        end
+   local TekstPodzielony = PodzielTekst(TekstOryginalny, "\r\n\r\n")
+   local BazaBrakujacych = KronikiDB_Nieprzetlumaczone["ListaMisji"]
 
-    local BazaBrakujacych = KronikiDB_Nieprzetlumaczone["ListaMisji"]
-
-    if not BazaBrakujacych[hash_tekstu] then
-        BazaBrakujacych[hash_tekstu] = {
-            ["MISJA_ID"] = MisjaID,
-            ["TYP"] = TypTekstu,
-            ["TEKST_ENG"] = TekstZnormalizowany, 
-            ["TEKST_RAW"] = TekstOryginalny, 
-            ["HASH"] = hash_tekstu
-        }
-        print("|cff00ccff[Kroniki]|r Nowy znormalizowany wpis: " .. hash_tekstu)
-    end
+   for _, PojedynczaLinia in ipairs(TekstPodzielony) do
+      local TekstZnormalizowany = NormalizujTekst(PojedynczaLinia)
+      local HashTekstu = prywatna_tabela.GenerujHash(TekstZnormalizowany)
+      
+      if HashTekstu then 
+         if not BazaBrakujacych[HashTekstu] then
+            BazaBrakujacych[HashTekstu] = {
+               ["MISJA_ID"] = MisjaID,
+               ["TYP"] = TypTekstu,
+               ["TEKST_ENG"] = TekstZnormalizowany, 
+               ["TEKST_RAW"] = PojedynczaLinia, 
+               ["HASH"] = HashTekstu
+            }
+            print("|cff00ccff[Kroniki]|r Nowy znormalizowany wpis: " .. HashTekstu)
+         end
+      end
+   end
 end
 
 

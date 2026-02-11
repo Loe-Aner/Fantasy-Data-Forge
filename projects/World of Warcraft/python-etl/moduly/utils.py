@@ -18,7 +18,7 @@ if __name__ == "__main__":
         ("Warming Up", "b135ed3f"),
         ("Stand Your Ground", "ec5d92dd"),
         ("Spar with Private Cole.", "36d30343"),
-        ("Prepare yourself, {imie}. We're nearing the island where the previous expedition was lost.\r\n\r\nWarm up on these combat dummies. We need everyone ready for whatever we find on that island.", "90364fdd")
+        ("Unfortunately, our remaining supplies have been stolen by murlocs!", "996c162a")
     ]
 
     print("\n" + "="*50)
