@@ -11,7 +11,8 @@ prywatna_tabela["GenerujHash"] = function(tekst)
 
     for i = 1, dlugosc do
         local znak_kod = string.byte(tekst, i)            -- pobranie kodu ASCI znaku
-        hash = bit.band(hash * 33 + znak_kod, 0xFFFFFFFF) -- aby liczba nie urosla w nieskonczonosc
+        hash = bit.band(hash * 33 + znak_kod, 0xFFFFFFFF) 
+        -- aby liczba nie urosla w nieskonczonosc / zawsze miesci sie w 32 bitach
     end
 
     return string.format("%x", hash)

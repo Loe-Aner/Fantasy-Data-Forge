@@ -8,6 +8,7 @@ prywatna_tabela["InicjujDB"] = function(self, event, NazwaZaladowanegoAddonu)
     end
 
     print("|cff00ff00Kroniki Warcrafta:|r Załadowano pomyślnie!")
+    self:UnregisterEvent("ADDON_LOADED")
     
     -- dla nowych graczy
     if KronikiDB_Nieprzetlumaczone == nil then
@@ -15,18 +16,16 @@ prywatna_tabela["InicjujDB"] = function(self, event, NazwaZaladowanegoAddonu)
             ["Wersja"] = AKTUALNA_WERSJA_DB,
             ["ListaMisji"] = {}
         }
-        print("|cff00ff00Kroniki Warcrafta:|r Utworzono nową bazę danych.")
-        self:UnregisterEvent("ADDON_LOADED")
+        print("|cff00ff00Kroniki Warcrafta:|r Utworzono nową bazę danych na nieprzetłumaczone rekordy.")
         return
     end
 
     -- dla graczy, ktorzy aktualizuja addon
     if KronikiDB_Nieprzetlumaczone["Wersja"] == nil or KronikiDB_Nieprzetlumaczone["Wersja"] < AKTUALNA_WERSJA_DB then
-        print("|cff00ff00Kroniki Warcrafta:|r Wykryto starą bazę (" .. (KronikiDB_Nieprzetlumaczone["Wersja"] or "brak") .. "). Aktualizacja do v" .. AKTUALNA_WERSJA_DB .. "...")
+        local stara_wersja = KronikiDB_Nieprzetlumaczone["Wersja"] or "brak"
+        print("|cff00ff00Kroniki:|r Aktualizacja DB: " .. stara_wersja .. " -> " .. AKTUALNA_WERSJA_DB)
         
         KronikiDB_Nieprzetlumaczone["Wersja"] = AKTUALNA_WERSJA_DB
         print("|cff00ff00Kroniki Warcrafta:|r Aktualizacja zakończona.")
     end
-
-    self:UnregisterEvent("ADDON_LOADED")
 end

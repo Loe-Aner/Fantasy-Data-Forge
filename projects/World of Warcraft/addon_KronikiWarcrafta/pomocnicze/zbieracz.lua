@@ -16,7 +16,9 @@ local KlasaGraczaMala = string.lower(KlasaGracza)
 
 -- === 2. FUNKCJA NORMALIZUJĄCA ===
 local function NormalizujTekst(Tekst)
-    if not Tekst or Tekst == "" then return "" end
+    if not Tekst or Tekst == "" then 
+      return "" 
+   end
 
     Tekst = string.match(Tekst, "^%s*(.-)%s*$") -- usuwam niepotrzebne spacje z surowego tekstu
 
@@ -40,7 +42,7 @@ end
 
 local function PodzielTekst(TekstOryginalny, sep)
    if sep == nil or TekstOryginalny == nil then
-      return
+      return {}
    end
    
    local TekstPodzielony = {}
@@ -55,7 +57,7 @@ end
 -- === 3. ZAPIS DO BAZY ===
 local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
    if not TekstOryginalny or TekstOryginalny == "" then 
-      return 
+      return ""
    end
 
    local TekstPodzielony = PodzielTekst(TekstOryginalny, "\r\n\r\n")
@@ -74,7 +76,7 @@ local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
                ["TEKST_RAW"] = PojedynczaLinia, 
                ["HASH"] = HashTekstu
             }
-            print("|cff00ccff[Kroniki]|r Nowy znormalizowany wpis: " .. HashTekstu)
+            print("|cff00ccff[Kroniki]|r Dodano nieprzetłumaczony rekord: " .. HashTekstu)
          end
       end
    end
