@@ -1,5 +1,7 @@
 local nazwaAddonu, prywatna_tabela = ...
 
+local CreateFrame = CreateFrame
+
 local ramka = CreateFrame("Frame")    -- nadsluchuje eventow, nie widac jej nigdzie
 ramka:RegisterEvent("ADDON_LOADED")   -- konkretny event; przekazuje obiekt po lewej stronie jako 1szy argument funkcji
                                       -- dłużej: f["RegisterEvent"](f, "ADDON_LOADED")

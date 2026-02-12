@@ -1,5 +1,21 @@
 local nazwaAddonu, prywatna_tabela = ...
 
+-- === 0. CACHE ===
+local UnitName = UnitName
+local UnitRace = UnitRace
+local UnitClass = UnitClass
+local GetQuestID = GetQuestID
+local GetTitleText = GetTitleText
+local GetQuestText = GetQuestText
+local GetObjectiveText = GetObjectiveText
+local GetProgressText = GetProgressText
+local GetRewardText = GetRewardText
+-- Biblioteki Lua i funkcje podstawowe
+local string = string
+local table = table
+local ipairs = ipairs
+local print = print
+
 -- === 1. DANE GRACZA ===
 local ImieGracza = UnitName("player")
 -- UnitRace zwraca: nazwa lokalna, nazwa angielska. Biore te druga (angielska) dla bezpieczenstwa
@@ -73,8 +89,7 @@ local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
                ["MISJA_ID"] = MisjaID,
                ["TYP"] = TypTekstu,
                ["TEKST_ENG"] = TekstZnormalizowany, 
-               ["TEKST_RAW"] = PojedynczaLinia, 
-               ["HASH"] = HashTekstu
+               ["TEKST_RAW"] = PojedynczaLinia
             }
             print("|cff00ccff[Kroniki]|r Dodano nieprzetłumaczony rekord: " .. HashTekstu)
          end
@@ -82,27 +97,21 @@ local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
    end
 end
 
-
 -- === 4. GLOWNA FUNKCJA ZBIERACZA ===
-prywatna_tabela["ZbierajMisje"] = function (self, event)
+prywatna_tabela["ZbierajMisje"] = function(self, event)
     local MisjaID = GetQuestID()
+    if not MisjaID or MisjaID == 0 then return end
 
-    local TytulMisji = GetTitleText()
-    ZapiszPojedynczyTekst("TYTUŁ", TytulMisji, MisjaID)
+    ZapiszPojedynczyTekst("TYTUŁ", GetTitleText(), MisjaID)
 
     if event == "QUEST_DETAIL" then
-        local TrescMisji = GetQuestText()
-        ZapiszPojedynczyTekst("TREŚĆ", TrescMisji, MisjaID)
-
-        local CelMisji = GetObjectiveText()
-        ZapiszPojedynczyTekst("CEL", CelMisji, MisjaID)
+        ZapiszPojedynczyTekst("TREŚĆ", GetQuestText(), MisjaID)
+        ZapiszPojedynczyTekst("CEL",   GetObjectiveText(), MisjaID)
 
     elseif event == "QUEST_PROGRESS" then
-        local PostepMisji = GetProgressText()
-        ZapiszPojedynczyTekst("POSTĘP", PostepMisji, MisjaID)
+        ZapiszPojedynczyTekst("POSTĘP", GetProgressText(), MisjaID)
 
     elseif event == "QUEST_COMPLETE" then
-        local ZakonczenieMisji = GetRewardText()
-        ZapiszPojedynczyTekst("ZAKOŃCZENIE", ZakonczenieMisji, MisjaID)
+        ZapiszPojedynczyTekst("ZAKOŃCZENIE", GetRewardText(), MisjaID)
     end
 end

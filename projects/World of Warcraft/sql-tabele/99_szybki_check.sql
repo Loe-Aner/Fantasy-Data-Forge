@@ -4,7 +4,7 @@ WHERE 1=1
   --AND MISJA_TYTUL_EN = 'Warming Up'
   AND MISJA_ID_Z_GRY != 123456789
   --AND DODATEK_EN = 'Midnight'
-  AND MISJA_ID_Z_GRY = 56775
+  AND MISJA_ID_Z_GRY = 58209
   AND MISJA_ID_MOJE_PK IN (129, 130, 131)
   --AND KRAINA_EN = 'Exile''s Reach'
   --AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
@@ -17,7 +17,7 @@ FROM dbo.MISJE_STATUSY AS ms
 INNER JOIN dbo.MISJE AS m
   ON ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
 WHERE 1=1
-  AND m.MISJA_ID_MOJE_PK = 146
+  AND m.MISJA_ID_MOJE_PK = 114
   --AND m.KRAINA_EN = 'Exile''s Reach'
 ;
 

@@ -1,5 +1,7 @@
 local nazwaAddonu, prywatna_tabela = ...
 
+local CreateFrame = CreateFrame
+
 local AKTUALNA_WERSJA_DB = prywatna_tabela["AKTUALNA_WERSJA_DB"]
 
 prywatna_tabela["InicjujDB"] = function(self, event, NazwaZaladowanegoAddonu)
