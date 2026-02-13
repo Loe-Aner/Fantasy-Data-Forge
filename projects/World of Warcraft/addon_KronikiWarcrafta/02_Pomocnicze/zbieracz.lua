@@ -4,6 +4,7 @@ local nazwaAddonu, prywatna_tabela = ...
 local UnitName = UnitName
 local UnitRace = UnitRace
 local UnitClass = UnitClass
+local UnitSex = UnitSex
 local GetQuestID = GetQuestID
 local GetTitleText = GetTitleText
 local GetQuestText = GetQuestText
@@ -23,11 +24,10 @@ local _, RasaGracza = UnitRace("player")
 local RasaGraczaMala = string.lower(RasaGracza or "")
 
 -- UnitClass zwraca: nazwa lokalna, TAG (angielski). Biore TAG.
-local _, KlasaGracza = UnitClass("player") 
--- Klasa (TAG) jest zawsze z duzych (np. WARRIOR), wiec robie formatowanie:
--- Zamieniam np. WARRIOR na Warrior (zeby pasowalo do tekstow w questach)
-KlasaGracza = string.upper(string.sub(KlasaGracza, 1, 1)) .. string.lower(string.sub(KlasaGracza, 2))
-local KlasaGraczaMala = string.lower(KlasaGracza)
+local _, KlasaTag = UnitClass("player")
+local KlasaKlucz = KlasaTag
+local KlasaGracza = string.upper(string.sub(KlasaTag, 1, 1)) .. string.lower(string.sub(KlasaTag, 2))
+local KlasaGraczaMala = string.lower(KlasaTag)
 
 
 -- === 2. FUNKCJA NORMALIZUJĄCA ===
@@ -105,8 +105,8 @@ prywatna_tabela["ZbierajMisje"] = function(self, event)
     ZapiszPojedynczyTekst("TYTUŁ", GetTitleText(), MisjaID)
 
     if event == "QUEST_DETAIL" then
-        ZapiszPojedynczyTekst("TREŚĆ", GetQuestText(), MisjaID)
         ZapiszPojedynczyTekst("CEL",   GetObjectiveText(), MisjaID)
+        ZapiszPojedynczyTekst("TREŚĆ", GetQuestText(), MisjaID)
 
     elseif event == "QUEST_PROGRESS" then
         ZapiszPojedynczyTekst("POSTĘP", GetProgressText(), MisjaID)
@@ -115,3 +115,13 @@ prywatna_tabela["ZbierajMisje"] = function(self, event)
         ZapiszPojedynczyTekst("ZAKOŃCZENIE", GetRewardText(), MisjaID)
     end
 end
+
+-- przerzut do globalnej tablicy
+prywatna_tabela["NormalizujTekst"] = NormalizujTekst
+prywatna_tabela["PodzielTekst"] = PodzielTekst
+
+prywatna_tabela["DaneGracza"] = {
+    ["KlasaKlucz"] = KlasaKlucz,
+    ["RasaKlucz"]  = string.upper(string.gsub(RasaGracza or "", "%s+", "")),
+    ["Plec"]       = UnitSex("player") == 2 and "Male" or "Female"
+}

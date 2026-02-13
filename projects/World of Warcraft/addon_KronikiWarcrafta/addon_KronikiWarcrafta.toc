@@ -5,14 +5,17 @@
 ## Version: 0.1
 ## SavedVariables: KronikiDB_Nieprzetlumaczone
 
-
-# 1. Najpierw stałe
+# 1. Najpierw bazy danych i stałe
+01_BazaDanych\0001_SirenIsles.lua
 Konfiguracja.lua
 
-# 2. Potem definicje funkcji (narzędzia)
-pomocnicze\inicjacja.lua
-pomocnicze\narzedzia.lua
-pomocnicze\zbieracz.lua
+# 2. Potem definicje funkcji i narzędzi
+02_Pomocnicze\inicjacja.lua
+02_Pomocnicze\narzedzia.lua
+02_Pomocnicze\zbieracz.lua
 
-# 3. Na samym końcu logika, która z nich korzysta
+# 3. Logika tłumacząca (musi być po narzędziach i bazach)
+02_Pomocnicze\tlumacz.lua
+
+# 4. Główny plik startowy (ten z ramka:SetScript i eventami)
 Baza.lua

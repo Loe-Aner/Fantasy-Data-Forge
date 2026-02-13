@@ -16,6 +16,7 @@ local function GlownyHandler(self, event, ...) -- trzy kropki to odpowiednik *ar
 
     elseif event == "QUEST_DETAIL" or event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE" then
         prywatna_tabela.ZbierajMisje(self, event, ...) -- trzy kropki 'dla porzadku'
+        
     end
 end
 
