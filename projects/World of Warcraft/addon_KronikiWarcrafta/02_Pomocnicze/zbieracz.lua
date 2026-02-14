@@ -37,7 +37,6 @@ local function NormalizujTekst(Tekst)
     end
 
     Tekst = string.match(Tekst, "^%s*(.-)%s*$")
-
     Tekst = string.gsub(Tekst, "%f[%a]" .. ImieGracza .. "%f[%A]", "{imie}")
 
     -- 2. Rasa
@@ -70,29 +69,54 @@ local function PodzielTekst(TekstOryginalny, sep)
 end
 
 -- === 3. ZAPIS DO BAZY ===
-local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
+local function ZapiszPojedynczyTekst(RodzajTekstu, TypTekstu, TekstOryginalny, MisjaID)
    if not TekstOryginalny or TekstOryginalny == "" then 
       return ""
    end
 
    local TekstPodzielony = PodzielTekst(TekstOryginalny, "\r\n\r\n")
-   local BazaBrakujacych = KronikiDB_Nieprzetlumaczone["ListaMisji"]
+   local BazaBrakujacychMisji = KronikiDB_Nieprzetlumaczone["ListaMisji"]
+   local BazaBrakujacychGossipow = KronikiDB_Nieprzetlumaczone["ListaGossipow"]
+   local BazaBrakujacychBubbles = KronikiDB_Nieprzetlumaczone["ListaBubbles"] -- ===========================2do===========================
+
+   local NazwaNPC = UnitName("npc") or "Nieznany"
+   local GUID = UnitGUID("npc")
+   local npcID
+   
+   if GUID then
+      _, _, _, _, _, npcID = strsplit("-", GUID) -- szosta liczba to id npca
+   end
+   npcID = npcID or "123456789" -- ta sama flaga jest w mojej DB na 'smieci'
 
    for _, PojedynczaLinia in ipairs(TekstPodzielony) do
+
       local TekstZnormalizowany = NormalizujTekst(PojedynczaLinia)
       local HashTekstu = prywatna_tabela.GenerujHash(TekstZnormalizowany)
-      
       local CzyJuzPrzetlumaczone = KronikiDB_Przetlumaczone_0001 and KronikiDB_Przetlumaczone_0001[HashTekstu]
-
+      
       if HashTekstu and not CzyJuzPrzetlumaczone then 
-         if not BazaBrakujacych[HashTekstu] then
-            BazaBrakujacych[HashTekstu] = {
-               ["MISJA_ID"] = MisjaID,
-               ["TYP"] = TypTekstu,
-               ["TEKST_ENG"] = TekstZnormalizowany, 
-               ["TEKST_RAW"] = PojedynczaLinia
-            }
-            print("|cff00ccff[Kroniki]|r Dodano nowy brakujący rekord: " .. HashTekstu)
+         if RodzajTekstu == "MISJA" then
+            if not BazaBrakujacychMisji[HashTekstu] then
+               BazaBrakujacychMisji[HashTekstu] = {
+                  ["NPC"] = NazwaNPC .. " (" .. npcID .. ")",
+                  ["MISJA_ID"] = MisjaID,
+                  ["TYP"] = TypTekstu,
+                  ["TEKST_ENG"] = TekstZnormalizowany, 
+                  ["TEKST_RAW"] = PojedynczaLinia
+               }
+               print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla misji: " .. HashTekstu)
+            end
+         end
+
+         if RodzajTekstu == "GOSSIP" then
+            if not BazaBrakujacychGossipow[HashTekstu] then
+               BazaBrakujacychGossipow[HashTekstu] = {
+                  ["NPC"] = NazwaNPC .. " (" .. npcID .. ")",
+                  ["TEKST_ENG"] = TekstZnormalizowany, 
+                  ["TEKST_RAW"] = PojedynczaLinia
+               }
+               print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla gossipa: " .. HashTekstu)
+            end
          end
       end
    end
@@ -103,19 +127,28 @@ prywatna_tabela["ZbierajMisje"] = function(self, event)
     local MisjaID = GetQuestID()
     if not MisjaID or MisjaID == 0 then return end
 
-    ZapiszPojedynczyTekst("TYTUŁ", GetTitleText(), MisjaID)
+    ZapiszPojedynczyTekst("MISJA", "TYTUŁ", GetTitleText(), MisjaID)
 
     if event == "QUEST_DETAIL" then
-        ZapiszPojedynczyTekst("CEL",   GetObjectiveText(), MisjaID)
-        ZapiszPojedynczyTekst("TREŚĆ", GetQuestText(), MisjaID)
+        ZapiszPojedynczyTekst("MISJA", "CEL", GetObjectiveText(), MisjaID)
+        ZapiszPojedynczyTekst("MISJA", "TREŚĆ", GetQuestText(), MisjaID)
 
     elseif event == "QUEST_PROGRESS" then
-        ZapiszPojedynczyTekst("POSTĘP", GetProgressText(), MisjaID)
+        ZapiszPojedynczyTekst("MISJA", "POSTĘP", GetProgressText(), MisjaID)
 
     elseif event == "QUEST_COMPLETE" then
-        ZapiszPojedynczyTekst("ZAKOŃCZENIE", GetRewardText(), MisjaID)
+        ZapiszPojedynczyTekst("MISJA", "ZAKOŃCZENIE", GetRewardText(), MisjaID)
     end
 end
+
+-- prywatna_tabela["ZbierajGossipy"] = function(self, event)
+   
+--    if event == "GOSSIP_SHOW" then
+--       local Gossip = GetGossipText()
+--       local WyboryGossip = GetGossipOptions()
+--    end
+   
+-- end
 
 -- przerzut do globalnej tablicy
 prywatna_tabela["NormalizujTekst"] = NormalizujTekst

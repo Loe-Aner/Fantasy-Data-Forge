@@ -13,8 +13,10 @@ prywatna_tabela["InicjujDB"] = function(self, event, NazwaZaladowanegoAddonu)
     -- dla nowych graczy
     if KronikiDB_Nieprzetlumaczone == nil then
         KronikiDB_Nieprzetlumaczone = {
-            ["Wersja"] = AKTUALNA_WERSJA_DB,
-            ["ListaMisji"] = {}
+            ["Wersja"]        = AKTUALNA_WERSJA_DB,
+            ["ListaMisji"]    = {},
+            ["ListaGossipow"] = {},
+            ["ListaBubbles"]  = {}
         }
         print("|cff00ff00Kroniki Warcrafta:|r Utworzono nową bazę danych na nieprzetłumaczone rekordy.")
         return
@@ -24,8 +26,12 @@ prywatna_tabela["InicjujDB"] = function(self, event, NazwaZaladowanegoAddonu)
     if KronikiDB_Nieprzetlumaczone["Wersja"] == nil or KronikiDB_Nieprzetlumaczone["Wersja"] < AKTUALNA_WERSJA_DB then
         local stara_wersja = KronikiDB_Nieprzetlumaczone["Wersja"] or "brak"
         print("|cff00ff00Kroniki:|r Aktualizacja DB: " .. stara_wersja .. " -> " .. AKTUALNA_WERSJA_DB)
-        
+
+        KronikiDB_Nieprzetlumaczone["ListaGossipow"] = KronikiDB_Nieprzetlumaczone["ListaGossipow"] or {}
+        KronikiDB_Nieprzetlumaczone["ListaBubbles"]  = KronikiDB_Nieprzetlumaczone["ListaBubbles"]  or {}
+        KronikiDB_Nieprzetlumaczone["ListaMisji"]    = KronikiDB_Nieprzetlumaczone["ListaMisji"]    or {}
+
         KronikiDB_Nieprzetlumaczone["Wersja"] = AKTUALNA_WERSJA_DB
-        print("|cff00ff00Kroniki Warcrafta:|r Aktualizacja zakończona.")
+        print("|cff00ff00Kroniki Warcrafta:|r Aktualizacja zakończona pomyślnie.")
     end
 end
