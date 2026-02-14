@@ -33,24 +33,23 @@ local KlasaGraczaMala = string.lower(KlasaTag)
 -- === 2. FUNKCJA NORMALIZUJĄCA ===
 local function NormalizujTekst(Tekst)
     if not Tekst or Tekst == "" then 
-      return "" 
-   end
-
-    Tekst = string.match(Tekst, "^%s*(.-)%s*$") -- usuwam niepotrzebne spacje z surowego tekstu
-
-    -- 1. Imie (np. Loe'Aner -> {imie})
-    Tekst = string.gsub(Tekst, ImieGracza, "{imie}")
-
-    -- 2. Rasa (np. Human -> {rasa})
-    if RasaGracza then
-        Tekst = string.gsub(Tekst, RasaGracza, "{rasa}")
-        Tekst = string.gsub(Tekst, RasaGraczaMala, "{rasa}")
+       return "" 
     end
 
-    -- 3. Klasa (np. Warrior -> {klasa})
+    Tekst = string.match(Tekst, "^%s*(.-)%s*$")
+
+    Tekst = string.gsub(Tekst, "%f[%a]" .. ImieGracza .. "%f[%A]", "{imie}")
+
+    -- 2. Rasa
+    if RasaGracza then
+        Tekst = string.gsub(Tekst, "%f[%a]" .. RasaGracza .. "%f[%A]", "{rasa}")
+        Tekst = string.gsub(Tekst, "%f[%a]" .. RasaGraczaMala .. "%f[%A]", "{rasa}")
+    end
+
+    -- 3. Klasa
     if KlasaGracza then
-        Tekst = string.gsub(Tekst, KlasaGracza, "{klasa}")
-        Tekst = string.gsub(Tekst, KlasaGraczaMala, "{klasa}")
+        Tekst = string.gsub(Tekst, "%f[%a]" .. KlasaGracza .. "%f[%A]", "{klasa}")
+        Tekst = string.gsub(Tekst, "%f[%a]" .. KlasaGraczaMala .. "%f[%A]", "{klasa}")
     end
 
     return Tekst
@@ -83,7 +82,9 @@ local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
       local TekstZnormalizowany = NormalizujTekst(PojedynczaLinia)
       local HashTekstu = prywatna_tabela.GenerujHash(TekstZnormalizowany)
       
-      if HashTekstu then 
+      local CzyJuzPrzetlumaczone = KronikiDB_Przetlumaczone_0001 and KronikiDB_Przetlumaczone_0001[HashTekstu]
+
+      if HashTekstu and not CzyJuzPrzetlumaczone then 
          if not BazaBrakujacych[HashTekstu] then
             BazaBrakujacych[HashTekstu] = {
                ["MISJA_ID"] = MisjaID,
@@ -91,7 +92,7 @@ local function ZapiszPojedynczyTekst(TypTekstu, TekstOryginalny, MisjaID)
                ["TEKST_ENG"] = TekstZnormalizowany, 
                ["TEKST_RAW"] = PojedynczaLinia
             }
-            print("|cff00ccff[Kroniki]|r Dodano nieprzetłumaczony rekord: " .. HashTekstu)
+            print("|cff00ccff[Kroniki]|r Dodano nowy brakujący rekord: " .. HashTekstu)
          end
       end
    end
