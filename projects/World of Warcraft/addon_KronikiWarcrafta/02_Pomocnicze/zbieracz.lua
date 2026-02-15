@@ -141,14 +141,26 @@ prywatna_tabela["ZbierajMisje"] = function(self, event)
     end
 end
 
--- prywatna_tabela["ZbierajGossipy"] = function(self, event)
-   
---    if event == "GOSSIP_SHOW" then
---       local Gossip = GetGossipText()
---       local WyboryGossip = GetGossipOptions()
---    end
-   
--- end
+prywatna_tabela["ZbierajGossipy"] = function(self, event)
+   if event == "GOSSIP_SHOW" then
+      local Gossip = C_GossipInfo.GetText()          -- wywolanie z 'C' jest nowsze
+      local WyboryGossip = C_GossipInfo.GetOptions() -- UWAGA: zwraca tabele, a nie jak wyzej bezposredni tekst
+
+      if not Gossip and not #WyboryGossip == 0 then
+         return
+      end
+
+      if Gossip then
+         ZapiszPojedynczyTekst("GOSSIP", "Dialog", Gossip, nil)
+      end
+
+      for _, PojedynczaLinia in ipairs(WyboryGossip) do
+         if PojedynczaLinia["name"] then
+            ZapiszPojedynczyTekst("GOSSIP", "Wybory", PojedynczaLinia["name"], nil)
+         end
+      end
+   end
+end
 
 -- przerzut do globalnej tablicy
 prywatna_tabela["NormalizujTekst"] = NormalizujTekst

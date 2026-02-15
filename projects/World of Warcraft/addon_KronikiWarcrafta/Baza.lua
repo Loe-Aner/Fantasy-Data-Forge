@@ -5,6 +5,7 @@ local nazwaAddonu, prywatna_tabela = ...
 -- Funkcje Podstawowe WoW API
 local CreateFrame = CreateFrame
 local hooksecurefunc = hooksecurefunc
+local C_Timer = C_Timer
 
 -- Funkcje Questowe
 local GetTitleText = GetTitleText
@@ -22,10 +23,14 @@ local QuestInfoRewardsFrame = QuestInfoRewardsFrame
 local QuestInfoRewardText = QuestInfoRewardText
 local QuestProgressText = QuestProgressText
 local QuestInfoXPFrame = QuestInfoXPFrame
+local C_GossipInfo = C_GossipInfo
+local GossipGreetingText = GossipGreetingText
+local GossipFrame = GossipFrame
 
 -- 5. Funkcje z innych plikow
 local InicjujDB = prywatna_tabela["InicjujDB"]
 local ZbierajMisje = prywatna_tabela["ZbierajMisje"]
+local ZbierajGossipy = prywatna_tabela["ZbierajGossipy"]
 local PrzetlumaczTekst = prywatna_tabela["PrzetlumaczTekst"]
 
 local ramka = CreateFrame("Frame")
@@ -33,6 +38,7 @@ ramka:RegisterEvent("ADDON_LOADED")
 ramka:RegisterEvent("QUEST_DETAIL")
 ramka:RegisterEvent("QUEST_PROGRESS")
 ramka:RegisterEvent("QUEST_COMPLETE")
+ramka:RegisterEvent("GOSSIP_SHOW")
 
 -- === FUNKCJA MODYFIKUJĄCA UI ===
 local function PodmienTekstOknienko()
@@ -123,6 +129,51 @@ local function PodmienTekstOknienko()
             QuestInfoRewardText:SetTextColor(0, 0, 0)
         end
     end
+
+    local GossipDialog = C_GossipInfo.GetText()
+    if GossipDialog and GossipFrame and GossipFrame:IsVisible() then
+        local GossipDialogPL = PrzetlumaczTekst(GossipDialog)    
+
+        if GossipGreetingText and GossipGreetingText:IsShown() then
+            GossipGreetingText:SetText(GossipDialogPL)
+            GossipGreetingText:SetFont(FontTresci, 14)
+            GossipGreetingText:SetTextColor(0, 0, 0)
+        end
+
+        if GossipFrame.GreetingPanel and GossipFrame.GreetingPanel.ScrollBox then
+            local RamkiWLiscie = GossipFrame.GreetingPanel.ScrollBox:GetFrames()
+
+            for _, PojedynczaRamka in ipairs(RamkiWLiscie) do
+                if PojedynczaRamka.GreetingText and PojedynczaRamka.GreetingText:GetText() then
+                    local ObecnyTekst = PojedynczaRamka.GreetingText:GetText()
+                    local TekstPL = PrzetlumaczTekst(ObecnyTekst)
+                    
+                    if TekstPL then
+                        PojedynczaRamka.GreetingText:SetText(TekstPL)
+                        PojedynczaRamka.GreetingText:SetFont(FontTresci, 14)
+                        PojedynczaRamka.GreetingText:SetTextColor(0, 0, 0)
+                    end
+                end
+
+                if PojedynczaRamka.GetText and PojedynczaRamka:GetText() then
+                    local TekstPrzycisku = PojedynczaRamka:GetText()
+                    local TekstPL = PrzetlumaczTekst(TekstPrzycisku)
+
+                    if TekstPL then
+                        PojedynczaRamka:SetText(TekstPL)
+
+                        if PojedynczaRamka.GetFontString then
+                            local FontString = PojedynczaRamka:GetFontString()
+                            if FontString then
+                                FontString:SetFont(FontTresci, 14)
+                                FontString:SetTextColor(0, 0, 0) -- te kody w grze np 'cFF0000FF' maja wyzszy priorytet
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
 end
 
 hooksecurefunc("QuestInfo_Display", function(template, parentFrame, acceptButton, material, mapView)
@@ -136,6 +187,10 @@ local function GlownyHandler(self, event, ...)
 
     elseif event == "QUEST_DETAIL" or event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE" then
         ZbierajMisje(self, event, ...)
+
+    elseif event == "GOSSIP_SHOW" then
+        ZbierajGossipy(self, event, ...)
+        C_Timer.After(0, PodmienTekstOknienko) -- 0 oznacza 'w nastepnej klatce'
     end
 end
 
