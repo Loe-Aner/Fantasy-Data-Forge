@@ -27,7 +27,7 @@ local C_GossipInfo = C_GossipInfo
 local GossipGreetingText = GossipGreetingText
 local GossipFrame = GossipFrame
 
--- 5. Funkcje z innych plikow
+-- Funkcje z innych plikow
 local InicjujDB = prywatna_tabela["InicjujDB"]
 local ZbierajMisje = prywatna_tabela["ZbierajMisje"]
 local ZbierajGossipy = prywatna_tabela["ZbierajGossipy"]
@@ -48,8 +48,8 @@ ramka:RegisterEvent("CHAT_MSG_MONSTER_EMOTE")    -- Emotki
 
 -- === FUNKCJA MODYFIKUJĄCA UI ===
 local function PodmienTekstOknienko()
-    local FontTytulu = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\MorpheusPL.ttf"
-    local FontTresci = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\FrizQuadrataPL.ttf"
+    local FontTytulu = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\MorpheusPL.ttf"     -- ========= TO PUSCIC NA ZMIENNA GLOBALNA =========
+    local FontTresci = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\FrizQuadrataPL.ttf" -- ========= TO PUSCIC NA ZMIENNA GLOBALNA =========
 
     -- 1. TYTUŁ
     if QuestInfoTitleHeader then
@@ -194,7 +194,7 @@ local function GlownyHandler(self, event, ...)
         end
 
     elseif event == "QUEST_DETAIL" or event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE" then
-        ZbierajMisje(self, event, ...)
+        ZbierajMisje(self, event, ...) -- =========== ?? TUTAJ PODMIENIC W KODZIE BY BYLA DODATKOWA FUNKCJA NA TLUMACZENIE?? ===========
 
     elseif event == "GOSSIP_SHOW" then
         ZbierajGossipy(self, event, ...)
