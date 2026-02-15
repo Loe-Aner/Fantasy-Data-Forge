@@ -69,7 +69,7 @@ local function PodzielTekst(TekstOryginalny, sep)
 end
 
 -- === 3. ZAPIS DO BAZY ===
-local function ZapiszPojedynczyTekst(RodzajTekstu, TypTekstu, TekstOryginalny, MisjaID)
+local function ZapiszPojedynczyTekst(RodzajTekstu, TypTekstu, TekstOryginalny, DaneDodatkowe)
    if not TekstOryginalny or TekstOryginalny == "" then 
       return ""
    end
@@ -77,16 +77,30 @@ local function ZapiszPojedynczyTekst(RodzajTekstu, TypTekstu, TekstOryginalny, M
    local TekstPodzielony = PodzielTekst(TekstOryginalny, "\r\n\r\n")
    local BazaBrakujacychMisji = KronikiDB_Nieprzetlumaczone["ListaMisji"]
    local BazaBrakujacychGossipow = KronikiDB_Nieprzetlumaczone["ListaGossipow"]
-   local BazaBrakujacychBubbles = KronikiDB_Nieprzetlumaczone["ListaBubbles"] -- ===========================2do===========================
+   local BazaBrakujacychDymkow = KronikiDB_Nieprzetlumaczone["ListaDymkow"]
 
-   local NazwaNPC = UnitName("npc") or "Nieznany"
-   local GUID = UnitGUID("npc")
-   local npcID
+   local NazwaNPC
+   local MisjaID = nil
+   local npcID = "123456789" -- ta sama flaga jest w mojej DB na 'smieci'
+
+   if RodzajTekstu == "DYMEK" then
+      NazwaNPC = DaneDodatkowe
    
-   if GUID then
-      _, _, _, _, _, npcID = strsplit("-", GUID) -- szosta liczba to id npca
+   elseif RodzajTekstu == "MISJA" then
+      NazwaNPC = UnitName("npc") or "Nieznany"
+      MisjaID = DaneDodatkowe
+
+   else
+      NazwaNPC = UnitName("npc") or "Nieznany"
    end
-   npcID = npcID or "123456789" -- ta sama flaga jest w mojej DB na 'smieci'
+
+   local GUID = UnitGUID("npc")
+   if GUID then
+      local _, _, _, _, _, idZTargetu = strsplit("-", GUID) -- szosta liczba to ID npca/targetu
+      if idZTargetu then 
+         npcID = idZTargetu 
+         end      
+      end
 
    for _, PojedynczaLinia in ipairs(TekstPodzielony) do
 
@@ -116,6 +130,17 @@ local function ZapiszPojedynczyTekst(RodzajTekstu, TypTekstu, TekstOryginalny, M
                   ["TEKST_RAW"] = PojedynczaLinia
                }
                print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla gossipa: " .. HashTekstu)
+            end
+         end
+
+         if RodzajTekstu == "DYMEK" then
+            if not BazaBrakujacychDymkow[HashTekstu] then
+               BazaBrakujacychDymkow[HashTekstu] = {
+                  ["NPC"] = NazwaNPC,
+                  ["TEKST_ENG"] = TekstZnormalizowany, 
+                  ["TEKST_RAW"] = PojedynczaLinia
+               }
+               print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla dymku: " .. HashTekstu)
             end
          end
       end
@@ -162,12 +187,13 @@ prywatna_tabela["ZbierajGossipy"] = function(self, event)
    end
 end
 
+prywatna_tabela["ZbierajDymki"] = function(self, event, TrescDymku, NazwaNPC, ...) -- eventy beda w Baza.lua
+      if not TrescDymku then
+         return
+      end
+      ZapiszPojedynczyTekst("DYMEK", "Dialog", TrescDymku, NazwaNPC)
+   end
+
 -- przerzut do globalnej tablicy
 prywatna_tabela["NormalizujTekst"] = NormalizujTekst
 prywatna_tabela["PodzielTekst"] = PodzielTekst
-
-prywatna_tabela["DaneGracza"] = {
-    ["KlasaKlucz"] = KlasaKlucz,
-    ["RasaKlucz"]  = string.upper(string.gsub(RasaGracza or "", "%s+", "")),
-    ["Plec"]       = UnitSex("player") == 2 and "Male" or "Female"
-}

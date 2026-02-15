@@ -16,7 +16,7 @@ prywatna_tabela["InicjujDB"] = function(self, event, NazwaZaladowanegoAddonu)
             ["Wersja"]        = AKTUALNA_WERSJA_DB,
             ["ListaMisji"]    = {},
             ["ListaGossipow"] = {},
-            ["ListaBubbles"]  = {}
+            ["ListaDymkow"]   = {}
         }
         print("|cff00ff00Kroniki Warcrafta:|r Utworzono nową bazę danych na nieprzetłumaczone rekordy.")
         return
@@ -28,7 +28,7 @@ prywatna_tabela["InicjujDB"] = function(self, event, NazwaZaladowanegoAddonu)
         print("|cff00ff00Kroniki:|r Aktualizacja DB: " .. stara_wersja .. " -> " .. AKTUALNA_WERSJA_DB)
 
         KronikiDB_Nieprzetlumaczone["ListaGossipow"] = KronikiDB_Nieprzetlumaczone["ListaGossipow"] or {}
-        KronikiDB_Nieprzetlumaczone["ListaBubbles"]  = KronikiDB_Nieprzetlumaczone["ListaBubbles"]  or {}
+        KronikiDB_Nieprzetlumaczone["ListaDymkow"]   = KronikiDB_Nieprzetlumaczone["ListaDymkow"]   or {}
         KronikiDB_Nieprzetlumaczone["ListaMisji"]    = KronikiDB_Nieprzetlumaczone["ListaMisji"]    or {}
 
         KronikiDB_Nieprzetlumaczone["Wersja"] = AKTUALNA_WERSJA_DB

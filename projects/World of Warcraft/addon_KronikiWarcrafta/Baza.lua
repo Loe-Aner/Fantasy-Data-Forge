@@ -31,7 +31,9 @@ local GossipFrame = GossipFrame
 local InicjujDB = prywatna_tabela["InicjujDB"]
 local ZbierajMisje = prywatna_tabela["ZbierajMisje"]
 local ZbierajGossipy = prywatna_tabela["ZbierajGossipy"]
+local ZbierajDymki = prywatna_tabela["ZbierajDymki"]
 local PrzetlumaczTekst = prywatna_tabela["PrzetlumaczTekst"]
+local TlumaczDymki = prywatna_tabela["TlumaczDymki"]
 
 local ramka = CreateFrame("Frame")
 ramka:RegisterEvent("ADDON_LOADED")
@@ -39,6 +41,10 @@ ramka:RegisterEvent("QUEST_DETAIL")
 ramka:RegisterEvent("QUEST_PROGRESS")
 ramka:RegisterEvent("QUEST_COMPLETE")
 ramka:RegisterEvent("GOSSIP_SHOW")
+ramka:RegisterEvent("CHAT_MSG_MONSTER_SAY")      -- Mówienie
+ramka:RegisterEvent("CHAT_MSG_MONSTER_YELL")     -- Krzyczenie
+ramka:RegisterEvent("CHAT_MSG_MONSTER_WHISPER")  -- Szeptanie
+ramka:RegisterEvent("CHAT_MSG_MONSTER_EMOTE")    -- Emotki
 
 -- === FUNKCJA MODYFIKUJĄCA UI ===
 local function PodmienTekstOknienko()
@@ -176,14 +182,16 @@ local function PodmienTekstOknienko()
     end
 end
 
-hooksecurefunc("QuestInfo_Display", function(template, parentFrame, acceptButton, material, mapView)
-    PodmienTekstOknienko()
-end)
-
--- === OBSLUGA EVENTOW (TYLKO DLA BAZY DANYCH I STARTU) ===
+-- === OBSLUGA EVENTOW ===
 local function GlownyHandler(self, event, ...)
     if event == "ADDON_LOADED" then
-        InicjujDB(self, event, ...)
+        local nazwaZaladowanegoAddonu = ...
+
+        if nazwaZaladowanegoAddonu == nazwaAddonu then
+            InicjujDB(self, event, ...)
+            C_Timer.NewTicker(0.1, TlumaczDymki) -- 10 razy na sekunde sprawdza czy jest dymek na ekranie
+            self:UnregisterEvent("ADDON_LOADED")
+        end
 
     elseif event == "QUEST_DETAIL" or event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE" then
         ZbierajMisje(self, event, ...)
@@ -191,7 +199,18 @@ local function GlownyHandler(self, event, ...)
     elseif event == "GOSSIP_SHOW" then
         ZbierajGossipy(self, event, ...)
         C_Timer.After(0, PodmienTekstOknienko) -- 0 oznacza 'w nastepnej klatce'
-    end
-end
+
+    elseif event == "CHAT_MSG_MONSTER_SAY"     or 
+           event == "CHAT_MSG_MONSTER_YELL"    or 
+           event == "CHAT_MSG_MONSTER_WHISPER" or 
+           event == "CHAT_MSG_MONSTER_EMOTE"   then
+           
+        ZbierajDymki(self, event, ...)
+           end
+        end
+
+hooksecurefunc("QuestInfo_Display", function(template, parentFrame, acceptButton, material, mapView)
+    PodmienTekstOknienko()
+end)
 
 ramka:SetScript("OnEvent", GlownyHandler)
