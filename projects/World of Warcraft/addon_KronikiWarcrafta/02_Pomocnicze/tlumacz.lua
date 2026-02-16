@@ -77,7 +77,17 @@ local function TlumaczDymki()
    end
 end
 
+local function TlumaczDymkiCzat(self, event, TekstEN, Autor, ...)
+   local TekstPL = PrzetlumaczTekst(TekstEN)
+   if TekstPL then
+      return false, TekstPL, Autor, ... -- false oznacza 'nie blokuj wiadomosci'; zwroc tekst po PL
+   else
+      return false, TekstEN, Autor, ... -- jezeli ten po PL jest pusty/nil, zwroc oryginal
+   end
+end
+
 -- przypisanie do tabeli addonu na koncu
 prywatna_tabela["PrzetlumaczTekst"] = PrzetlumaczTekst
 prywatna_tabela["SkanujRamke"] = SkanujRamke
 prywatna_tabela["TlumaczDymki"] = TlumaczDymki
+prywatna_tabela["TlumaczDymkiCzat"] = TlumaczDymkiCzat

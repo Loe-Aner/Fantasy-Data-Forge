@@ -22,7 +22,11 @@ local QuestInfoDescriptionText = QuestInfoDescriptionText
 local QuestInfoRewardsFrame = QuestInfoRewardsFrame
 local QuestInfoRewardText = QuestInfoRewardText
 local QuestProgressText = QuestProgressText
+local GetProgressTitleText = GetProgressTitleText
+local QuestProgressTitleText = QuestProgressTitleText
 local QuestInfoXPFrame = QuestInfoXPFrame
+local ObjectiveTrackerFrame = ObjectiveTrackerFrame
+local CampaignQuestObjectiveTracker = CampaignQuestObjectiveTracker
 local C_GossipInfo = C_GossipInfo
 local GossipGreetingText = GossipGreetingText
 local GossipFrame = GossipFrame
@@ -34,6 +38,7 @@ local ZbierajGossipy = prywatna_tabela["ZbierajGossipy"]
 local ZbierajDymki = prywatna_tabela["ZbierajDymki"]
 local PrzetlumaczTekst = prywatna_tabela["PrzetlumaczTekst"]
 local TlumaczDymki = prywatna_tabela["TlumaczDymki"]
+local TlumaczDymkiCzat = prywatna_tabela["TlumaczDymkiCzat"]
 
 local ramka = CreateFrame("Frame")
 ramka:RegisterEvent("ADDON_LOADED")
@@ -51,16 +56,32 @@ local function PodmienTekstOknienko()
     local FontTytulu = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\MorpheusPL.ttf"     -- ========= TO PUSCIC NA ZMIENNA GLOBALNA =========
     local FontTresci = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\FrizQuadrataPL.ttf" -- ========= TO PUSCIC NA ZMIENNA GLOBALNA =========
 
-    -- 1. TYTUŁ
-    if QuestInfoTitleHeader then
-        local TytulOryginal = GetTitleText()
-        local TytulPL = PrzetlumaczTekst(TytulOryginal)
+-- 1. TYTUŁ
+    local TytulDoTlumaczenia = nil
+
+    if QuestMapFrame and QuestMapFrame:IsVisible() then
+        local questID = QuestMapFrame_GetDetailQuestID() 
         
-        if TytulPL and TytulPL ~= "" then
+        if questID and questID > 0 then
+             TytulDoTlumaczenia = C_QuestLog.GetTitleForQuestID(questID)
+        end
+    end
+
+    if (not TytulDoTlumaczenia) then
+        TytulDoTlumaczenia = GetTitleText()
+    end
+
+    if (not TytulDoTlumaczenia) and QuestInfoTitleHeader then
+        TytulDoTlumaczenia = QuestInfoTitleHeader:GetText()
+    end
+
+    if TytulDoTlumaczenia then
+        local TytulPL = PrzetlumaczTekst(TytulDoTlumaczenia)
+        if TytulPL then
             QuestInfoTitleHeader:SetText(TytulPL)
             QuestInfoTitleHeader:SetFont(FontTytulu, 18)
             QuestInfoTitleHeader:SetTextColor(0, 0, 0)
-            QuestInfoTitleHeader:Show() -- WYMUSZENIE POKAZANIA
+            QuestInfoTitleHeader:Show()
         end
     end
 
@@ -99,6 +120,11 @@ local function PodmienTekstOknienko()
 
     -- === TREŚCI WŁAŚCIWE ===
     local OpisOryginal = GetQuestText()
+
+    if (not OpisOryginal or OpisOryginal == "") and QuestInfoDescriptionText:IsVisible() then
+        OpisOryginal = QuestInfoDescriptionText:GetText()
+    end -- tlumaczy po nacisnieciu M
+
     if OpisOryginal and QuestInfoDescriptionText:IsVisible() then
         local OpisPL = PrzetlumaczTekst(OpisOryginal)
         if OpisPL then 
@@ -106,10 +132,17 @@ local function PodmienTekstOknienko()
             QuestInfoDescriptionText:SetFont(FontTresci, 14)
             QuestInfoDescriptionText:SetTextColor(0, 0, 0)
         end
-        
-        local CelOryginal = GetObjectiveText()
+    end
+
+    local CelOryginal = GetObjectiveText()
+
+    if (not CelOryginal or CelOryginal == "") and QuestInfoObjectivesText:IsVisible() then
+        CelOryginal = QuestInfoObjectivesText:GetText()
+    end -- tlumaczy po nacisnieciu M
+
+    if CelOryginal and QuestInfoObjectivesText:IsVisible() then
         local CelPL = PrzetlumaczTekst(CelOryginal)
-        if CelPL and QuestInfoObjectivesText then
+        if CelPL then
              QuestInfoObjectivesText:SetText(CelPL) 
              QuestInfoObjectivesText:SetFont(FontTresci, 14)
              QuestInfoObjectivesText:SetTextColor(0, 0, 0)
@@ -123,6 +156,17 @@ local function PodmienTekstOknienko()
             QuestProgressText:SetText(PostepPL)
             QuestProgressText:SetFont(FontTresci, 14)
             QuestProgressText:SetTextColor(0, 0, 0)
+        end
+    end
+
+    if QuestProgressTitleText and QuestProgressTitleText:IsVisible() then
+        local Tytul = GetTitleText()
+        local TytulPL = PrzetlumaczTekst(Tytul)
+        
+        if TytulPL then
+            QuestProgressTitleText:SetText(TytulPL)
+            QuestProgressTitleText:SetFont(FontTytulu, 18)
+            QuestProgressTitleText:SetTextColor(0, 0, 0)
         end
     end
 
@@ -189,12 +233,38 @@ local function GlownyHandler(self, event, ...)
 
         if nazwaZaladowanegoAddonu == nazwaAddonu then
             InicjujDB(self, event, ...)
-            C_Timer.NewTicker(0.1, TlumaczDymki) -- 10 razy na sekunde sprawdza czy jest dymek na ekranie
+            C_Timer.NewTicker(0.33, TlumaczDymki) -- 3 razy na sekunde sprawdza czy jest dymek na ekranie
             self:UnregisterEvent("ADDON_LOADED")
+
+            -- filtr na czat: zanim wyswietlisz tekst, przepusc go przez funkcje filtrujaca; dzieki temu w czacie jest tekst PL
+            ChatFrame_AddMessageEventFilter("CHAT_MSG_MONSTER_SAY", TlumaczDymkiCzat)
+            ChatFrame_AddMessageEventFilter("CHAT_MSG_MONSTER_YELL", TlumaczDymkiCzat)
+            ChatFrame_AddMessageEventFilter("CHAT_MSG_MONSTER_WHISPER", TlumaczDymkiCzat)
+            ChatFrame_AddMessageEventFilter("CHAT_MSG_MONSTER_EMOTE", TlumaczDymkiCzat)  
+
+            if ObjectiveTrackerFrame then
+                ObjectiveTrackerFrame.headerText = "Wszystkie zadania"
+                if ObjectiveTrackerFrame.Header and ObjectiveTrackerFrame.Header.Text then
+                    ObjectiveTrackerFrame.Header.Text:SetText("Wszystkie zadania")
+                end
+            end
+
+            if CampaignQuestObjectiveTracker then
+                CampaignQuestObjectiveTracker.headerText = "Kampania"
+                if CampaignQuestObjectiveTracker.Header and CampaignQuestObjectiveTracker.Header.Text then
+                    CampaignQuestObjectiveTracker.Header.Text:SetText("Kampania")
+                end
+            end
+
+            PodmienTekstOknienko() -- po wejsciu do gry tlumaczy stale elementy, jak naglowki All Objectives/Campaign
         end
 
     elseif event == "QUEST_DETAIL" or event == "QUEST_PROGRESS" or event == "QUEST_COMPLETE" then
-        ZbierajMisje(self, event, ...) -- =========== ?? TUTAJ PODMIENIC W KODZIE BY BYLA DODATKOWA FUNKCJA NA TLUMACZENIE?? ===========
+        ZbierajMisje(self, event, ...)
+
+        if event == "QUEST_PROGRESS" then
+            C_Timer.After(0, PodmienTekstOknienko)
+        end
 
     elseif event == "GOSSIP_SHOW" then
         ZbierajGossipy(self, event, ...)
@@ -211,6 +281,10 @@ local function GlownyHandler(self, event, ...)
 
 hooksecurefunc("QuestInfo_Display", function(template, parentFrame, acceptButton, material, mapView)
     PodmienTekstOknienko()
-end)
+end) -- podstawia dane do misji
+
+hooksecurefunc("QuestMapFrame_ShowQuestDetails", function(questID)
+    PodmienTekstOknienko()
+end) -- aby pokazaly sie dane dla misji po kliknieciu 'M'
 
 ramka:SetScript("OnEvent", GlownyHandler)
