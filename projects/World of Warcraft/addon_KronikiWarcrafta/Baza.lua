@@ -22,7 +22,7 @@ local QuestInfoDescriptionText = QuestInfoDescriptionText
 local QuestInfoRewardsFrame = QuestInfoRewardsFrame
 local QuestInfoRewardText = QuestInfoRewardText
 local QuestProgressText = QuestProgressText
-local GetProgressTitleText = GetProgressTitleText
+local QuestInfoDescriptionHeader = QuestInfoDescriptionHeader
 local QuestProgressTitleText = QuestProgressTitleText
 local QuestInfoXPFrame = QuestInfoXPFrame
 local ObjectiveTrackerFrame = ObjectiveTrackerFrame
@@ -39,6 +39,7 @@ local ZbierajDymki = prywatna_tabela["ZbierajDymki"]
 local PrzetlumaczTekst = prywatna_tabela["PrzetlumaczTekst"]
 local TlumaczDymki = prywatna_tabela["TlumaczDymki"]
 local TlumaczDymkiCzat = prywatna_tabela["TlumaczDymkiCzat"]
+local ZbierajCelPodrzedny = prywatna_tabela["ZbierajCelPodrzedny"]
 
 local ramka = CreateFrame("Frame")
 ramka:RegisterEvent("ADDON_LOADED")
@@ -60,10 +61,10 @@ local function PodmienTekstOknienko()
     local TytulDoTlumaczenia = nil
 
     if QuestMapFrame and QuestMapFrame:IsVisible() then
-        local questID = QuestMapFrame_GetDetailQuestID() 
+        local MisjaID = QuestMapFrame_GetDetailQuestID() 
         
-        if questID and questID > 0 then
-             TytulDoTlumaczenia = C_QuestLog.GetTitleForQuestID(questID)
+        if MisjaID and MisjaID > 0 then
+             TytulDoTlumaczenia = C_QuestLog.GetTitleForQuestID(MisjaID)
         end
     end
 
@@ -83,6 +84,43 @@ local function PodmienTekstOknienko()
             QuestInfoTitleHeader:SetTextColor(0, 0, 0)
             QuestInfoTitleHeader:Show()
         end
+    end
+
+    -- obsluga dynamicznych podrzednych celi (te po wcisnieciu M)
+    local i = 1
+    local MisjaID = QuestMapFrame_GetDetailQuestID() 
+
+    if not MisjaID or MisjaID == 0 then 
+        MisjaID = GetQuestID() 
+    end
+
+    while true do
+        local PodrzednyCel = _G["QuestInfoObjective" .. i]
+
+        if not PodrzednyCel then break end
+        if PodrzednyCel:IsVisible() and PodrzednyCel:GetText() then
+            local TekstPelny = PodrzednyCel:GetText() -- np. "0/7 Quilboar slain"
+            local Licznik, TrescWlasciwa = TekstPelny:match("^(%d+/%d+)%s+(.+)$")
+
+            if not Licznik then
+                Licznik = ""
+                TrescWlasciwa = TekstPelny
+            else
+                Licznik = Licznik .. " "
+            end
+
+            local Tlumaczenie = PrzetlumaczTekst(TrescWlasciwa)
+            if Tlumaczenie and Tlumaczenie ~= "" and Tlumaczenie ~= TrescWlasciwa then
+                PodrzednyCel:SetText(Licznik .. Tlumaczenie)
+                PodrzednyCel:SetFont(FontTresci, 14)
+                PodrzednyCel:SetTextColor(0, 0, 0)
+            else
+                if MisjaID and MisjaID > 0 then
+                    ZbierajCelPodrzedny(MisjaID, TrescWlasciwa) -- ===== chwilowo niestety zapisuje tez polski tekst...... =====
+                end
+            end
+        end
+        i = i + 1
     end
 
     -- 2. CELE MISJI (Nagłówek)
@@ -121,18 +159,25 @@ local function PodmienTekstOknienko()
     -- === TREŚCI WŁAŚCIWE ===
     local OpisOryginal = GetQuestText()
 
-    if (not OpisOryginal or OpisOryginal == "") and QuestInfoDescriptionText:IsVisible() then
+    if (not OpisOryginal or OpisOryginal == "") and QuestInfoDescriptionText then
         OpisOryginal = QuestInfoDescriptionText:GetText()
     end -- tlumaczy po nacisnieciu M
 
-    if OpisOryginal and QuestInfoDescriptionText:IsVisible() then
+    if OpisOryginal then
         local OpisPL = PrzetlumaczTekst(OpisOryginal)
-        if OpisPL then 
+        if OpisPL and QuestInfoDescriptionText then 
             QuestInfoDescriptionText:SetText(OpisPL) 
             QuestInfoDescriptionText:SetFont(FontTresci, 14)
             QuestInfoDescriptionText:SetTextColor(0, 0, 0)
         end
-    end
+    end -- tlumaczy po nacisnieciu M
+
+    if QuestInfoDescriptionHeader then
+        QuestInfoDescriptionHeader:SetText("Opis")
+        QuestInfoDescriptionHeader:SetFont(FontTytulu, 18)
+        QuestInfoDescriptionHeader:SetTextColor(0, 0, 0)
+        QuestInfoDescriptionHeader:Show()
+    end  -- tlumaczy po nacisnieciu M
 
     local CelOryginal = GetObjectiveText()
 
@@ -283,7 +328,7 @@ hooksecurefunc("QuestInfo_Display", function(template, parentFrame, acceptButton
     PodmienTekstOknienko()
 end) -- podstawia dane do misji
 
-hooksecurefunc("QuestMapFrame_ShowQuestDetails", function(questID)
+hooksecurefunc("QuestMapFrame_ShowQuestDetails", function(MisjaID)
     PodmienTekstOknienko()
 end) -- aby pokazaly sie dane dla misji po kliknieciu 'M'
 

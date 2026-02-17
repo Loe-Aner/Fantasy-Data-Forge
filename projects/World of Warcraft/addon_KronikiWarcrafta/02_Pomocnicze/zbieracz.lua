@@ -194,6 +194,12 @@ prywatna_tabela["ZbierajDymki"] = function(self, event, TrescDymku, NazwaNPC, ..
       ZapiszPojedynczyTekst("DYMEK", "Dialog", TrescDymku, NazwaNPC)
    end
 
+prywatna_tabela["ZbierajCelPodrzedny"] = function(QuestID, TekstCelu)
+   if QuestID and TekstCelu then
+      ZapiszPojedynczyTekst("MISJA", "CelPodrzedny", TekstCelu, QuestID)
+   end
+end
+
 -- przerzut do globalnej tablicy
 prywatna_tabela["NormalizujTekst"] = NormalizujTekst
 prywatna_tabela["PodzielTekst"] = PodzielTekst
