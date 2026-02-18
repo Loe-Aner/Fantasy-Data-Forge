@@ -11,6 +11,7 @@ local GetQuestText = GetQuestText
 local GetObjectiveText = GetObjectiveText
 local GetProgressText = GetProgressText
 local GetRewardText = GetRewardText
+local MinimapZoneText = MinimapZoneText
 -- Biblioteki Lua i funkcje podstawowe
 local string = string
 local table = table
@@ -200,6 +201,17 @@ prywatna_tabela["ZbierajCelPodrzedny"] = function(QuestID, TekstCelu)
    end
 end
 
+prywatna_tabela["ZbierajOpisMoba"] = function(TekstMoba)
+   if TekstMoba then
+      ZapiszPojedynczyTekst("MISJA", "OpisMoba", TekstMoba, nil)
+   end
+end
+
+prywatna_tabela["ZbierajNazwyKrain"] = function(NazwaKrainy)
+   if NazwaKrainy then
+      ZapiszPojedynczyTekst("MISJA", "NazwaKrainy", NazwaKrainy, nil)
+   end
+end
 -- przerzut do globalnej tablicy
 prywatna_tabela["NormalizujTekst"] = NormalizujTekst
 prywatna_tabela["PodzielTekst"] = PodzielTekst

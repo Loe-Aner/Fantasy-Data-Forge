@@ -13,6 +13,7 @@ local GetQuestText = GetQuestText
 local GetObjectiveText = GetObjectiveText
 local GetProgressText = GetProgressText
 local GetRewardText = GetRewardText
+local QuestNPCModelText = QuestNPCModelText
 
 -- Globalne Ramki UI
 local QuestInfoTitleHeader = QuestInfoTitleHeader
@@ -30,6 +31,9 @@ local CampaignQuestObjectiveTracker = CampaignQuestObjectiveTracker
 local C_GossipInfo = C_GossipInfo
 local GossipGreetingText = GossipGreetingText
 local GossipFrame = GossipFrame
+local MinimapZoneText = MinimapZoneText
+local ZoneTextString = ZoneTextString
+local SubZoneTextString = SubZoneTextString
 
 -- Funkcje z innych plikow
 local InicjujDB = prywatna_tabela["InicjujDB"]
@@ -40,6 +44,8 @@ local PrzetlumaczTekst = prywatna_tabela["PrzetlumaczTekst"]
 local TlumaczDymki = prywatna_tabela["TlumaczDymki"]
 local TlumaczDymkiCzat = prywatna_tabela["TlumaczDymkiCzat"]
 local ZbierajCelPodrzedny = prywatna_tabela["ZbierajCelPodrzedny"]
+local ZbierajOpisMoba = prywatna_tabela["ZbierajOpisMoba"]
+local ZbierajNazwyKrain = prywatna_tabela["ZbierajNazwyKrain"]
 
 local ramka = CreateFrame("Frame")
 ramka:RegisterEvent("ADDON_LOADED")
@@ -47,10 +53,14 @@ ramka:RegisterEvent("QUEST_DETAIL")
 ramka:RegisterEvent("QUEST_PROGRESS")
 ramka:RegisterEvent("QUEST_COMPLETE")
 ramka:RegisterEvent("GOSSIP_SHOW")
+ramka:RegisterEvent("QUEST_LOG_UPDATE")
 ramka:RegisterEvent("CHAT_MSG_MONSTER_SAY")      -- Mówienie
 ramka:RegisterEvent("CHAT_MSG_MONSTER_YELL")     -- Krzyczenie
 ramka:RegisterEvent("CHAT_MSG_MONSTER_WHISPER")  -- Szeptanie
 ramka:RegisterEvent("CHAT_MSG_MONSTER_EMOTE")    -- Emotki
+ramka:RegisterEvent("ZONE_CHANGED")              -- zmiana krainy
+ramka:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+ramka:RegisterEvent("ZONE_CHANGED_INDOORS")
 
 -- === FUNKCJA MODYFIKUJĄCA UI ===
 local function PodmienTekstOknienko()
@@ -185,6 +195,15 @@ local function PodmienTekstOknienko()
         CelOryginal = QuestInfoObjectivesText:GetText()
     end -- tlumaczy po nacisnieciu M
 
+    local OpisMoba = QuestNPCModelText:GetText()
+    if OpisMoba then
+        ZbierajOpisMoba(OpisMoba)
+        local OpisMobaPL = PrzetlumaczTekst(OpisMoba)
+        if OpisMobaPL and OpisMobaPL ~= "" and OpisMobaPL ~= OpisMoba then
+            QuestNPCModelText:SetText(OpisMobaPL)
+        end
+    end  -- to sie nie zmienia w trakcie gry, jest stale
+
     if CelOryginal and QuestInfoObjectivesText:IsVisible() then
         local CelPL = PrzetlumaczTekst(CelOryginal)
         if CelPL then
@@ -271,6 +290,75 @@ local function PodmienTekstOknienko()
     end
 end
 
+-- === FUNKCJA TŁUMACZĄCA TRACKER KAMPANII ===
+local function TlumaczTrackerKampanii(self)
+    local GlownaRamka = self["ContentsFrame"]
+    if GlownaRamka then
+        -- to tlumaczy tytuly zadan po prawej stronie
+        local WszystkieDzieci = {GlownaRamka:GetChildren()}
+        for _, PojedynczeDziecko in ipairs(WszystkieDzieci) do
+            if PojedynczeDziecko["HeaderText"] and PojedynczeDziecko["HeaderText"]["GetText"] then
+                local OryginalnyTekst = PojedynczeDziecko["HeaderText"]:GetText()
+                if OryginalnyTekst then
+                    local PrzetlumaczonyTekst = PrzetlumaczTekst(OryginalnyTekst)
+                    if PrzetlumaczonyTekst and PrzetlumaczonyTekst ~= "" and PrzetlumaczonyTekst ~= OryginalnyTekst then
+                        PojedynczeDziecko["HeaderText"]:SetText(PrzetlumaczonyTekst)
+                    end
+                end
+            end
+            -- to tlumaczy zadania celow po prawej stronie
+            local MisjaID = PojedynczeDziecko["questID"] or PojedynczeDziecko.id
+            local ElementyWSrodkuZadania = {PojedynczeDziecko:GetChildren()}
+            for _, Element in ipairs(ElementyWSrodkuZadania) do
+                if Element["Text"] and Element["Text"]["GetText"] then
+                    local PelnyTekst = Element["Text"]:GetText()
+                    
+                    if PelnyTekst then
+                        local Licznik, TrescWlasciwa = PelnyTekst:match("^(%d+/%d+)%s+(.+)$")
+                        
+                        if not Licznik then
+                            Licznik = ""
+                            TrescWlasciwa = PelnyTekst
+                        else
+                            Licznik = Licznik .. " "
+                        end
+                        
+                        local PrzetlumaczonyTekstCelu = PrzetlumaczTekst(TrescWlasciwa)
+                        
+                        if PrzetlumaczonyTekstCelu and PrzetlumaczonyTekstCelu ~= "" and PrzetlumaczonyTekstCelu ~= TrescWlasciwa then
+                            Element["Text"]:SetText(Licznik .. PrzetlumaczonyTekstCelu)
+                        else
+                            -- zapisz brakujacy cel do bazy (tylko angielski tekst)
+                            if MisjaID and MisjaID > 0 and TrescWlasciwa then
+                                ZbierajCelPodrzedny(MisjaID, TrescWlasciwa)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+local TrwaTlumaczenieMinimapy = false
+
+local function PodmienTekstLokacji(self, tekst)
+    if self["TrwaTlumaczenie"] then return end
+    if not tekst or tekst == "" then return end
+
+    ZbierajNazwyKrain(tekst)
+    local PrzetlumaczonyTekst = PrzetlumaczTekst(tekst)
+
+    if PrzetlumaczonyTekst and PrzetlumaczonyTekst ~= "" and PrzetlumaczonyTekst ~= tekst then
+        self["TrwaTlumaczenie"] = true
+        
+        C_Timer.After(0, function()
+            self:SetText(PrzetlumaczonyTekst)
+            self["TrwaTlumaczenie"] = false
+        end)
+    end
+end
+
 -- === OBSLUGA EVENTOW ===
 local function GlownyHandler(self, event, ...)
     if event == "ADDON_LOADED" then
@@ -300,7 +388,6 @@ local function GlownyHandler(self, event, ...)
                     CampaignQuestObjectiveTracker.Header.Text:SetText("Kampania")
                 end
             end
-
             PodmienTekstOknienko() -- po wejsciu do gry tlumaczy stale elementy, jak naglowki All Objectives/Campaign
         end
 
@@ -314,6 +401,9 @@ local function GlownyHandler(self, event, ...)
     elseif event == "GOSSIP_SHOW" then
         ZbierajGossipy(self, event, ...)
         C_Timer.After(0, PodmienTekstOknienko) -- 0 oznacza 'w nastepnej klatce'
+
+    elseif event == "QUEST_LOG_UPDATE" then
+        C_Timer.After(0, PodmienTekstOknienko) -- podmienia tytul w objectivach (po prawej stronie)
 
     elseif event == "CHAT_MSG_MONSTER_SAY"     or 
            event == "CHAT_MSG_MONSTER_YELL"    or 
@@ -331,5 +421,21 @@ end) -- podstawia dane do misji
 hooksecurefunc("QuestMapFrame_ShowQuestDetails", function(MisjaID)
     PodmienTekstOknienko()
 end) -- aby pokazaly sie dane dla misji po kliknieciu 'M'
+
+if CampaignQuestObjectiveTracker then
+    hooksecurefunc(CampaignQuestObjectiveTracker, "Update", TlumaczTrackerKampanii)
+end
+
+if MinimapZoneText then
+    hooksecurefunc(MinimapZoneText, "SetText", PodmienTekstLokacji)
+end
+
+if ZoneTextString then
+    hooksecurefunc(ZoneTextString, "SetText", PodmienTekstLokacji)
+end
+
+if SubZoneTextString then
+    hooksecurefunc(SubZoneTextString, "SetText", PodmienTekstLokacji)
+end
 
 ramka:SetScript("OnEvent", GlownyHandler)
