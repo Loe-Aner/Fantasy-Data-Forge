@@ -34,6 +34,10 @@ local GossipFrame = GossipFrame
 local MinimapZoneText = MinimapZoneText
 local ZoneTextString = ZoneTextString
 local SubZoneTextString = SubZoneTextString
+local QuestScrollFrame = QuestScrollFrame
+local QuestMapFrame = QuestMapFrame
+local MapQuestInfoRewardsFrame = MapQuestInfoRewardsFrame
+
 
 -- Funkcje z innych plikow
 local InicjujDB = prywatna_tabela["InicjujDB"]
@@ -155,6 +159,52 @@ local function PodmienTekstOknienko()
             QuestInfoRewardsFrame.ItemReceiveText:SetFont(FontTresci, 14)
             QuestInfoRewardsFrame.ItemReceiveText:SetTextColor(0, 0, 0)
             QuestInfoRewardsFrame.ItemReceiveText:Show() -- WYMUSZENIE POKAZANIA
+        end
+    end
+
+    -- 3.1 NAGRODY (jak nacisne M)
+    if QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame then
+        QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label:SetText("Nagrody")
+        QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label:SetFont(FontTytulu, 18)
+        QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label:SetTextColor(0.85, 0.77, 0.60)
+        QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label:Show() -- WYMUSZENIE POKAZANIA
+    end
+
+    -- 3.2 NAGRODY - you will (also) receive: (jak nacisne M)
+    if MapQuestInfoRewardsFrame and MapQuestInfoRewardsFrame.ItemReceiveText then
+        local TekstEN = MapQuestInfoRewardsFrame.ItemReceiveText:GetText()
+        local TekstPL = nil
+    
+        if TekstEN == "You will receive:" then
+            TekstPL = "Otrzymasz:"
+        elseif TekstEN == "You will also receive:" then
+            TekstPL = "Otrzymasz również:"
+        end
+    
+        if TekstPL then
+            MapQuestInfoRewardsFrame.ItemReceiveText:SetText(TekstPL)
+            MapQuestInfoRewardsFrame.ItemReceiveText:SetFont(FontTresci, 11)
+            MapQuestInfoRewardsFrame.ItemReceiveText:SetTextColor(0.85, 0.77, 0.60)
+            MapQuestInfoRewardsFrame.ItemReceiveText:Show() -- WYMUSZENIE POKAZANIA
+        end
+    end
+
+    -- 3.3 NAGRODY - item choose (jak nacisne M)
+    if MapQuestInfoRewardsFrame and MapQuestInfoRewardsFrame.ItemChooseText then
+        local TekstEN = MapQuestInfoRewardsFrame.ItemChooseText:GetText()
+        local TekstPL = nil
+    
+        if TekstEN == "You will receive:" then
+            TekstPL = "Otrzymasz przedmiot:"
+        elseif TekstEN == "You will receive one of:" then
+            TekstPL = "Otrzymasz jeden z poniższych:"
+        end
+    
+        if TekstPL then
+            MapQuestInfoRewardsFrame.ItemChooseText:SetText(TekstPL)
+            MapQuestInfoRewardsFrame.ItemChooseText:SetFont(FontTresci, 11)
+            MapQuestInfoRewardsFrame.ItemChooseText:SetTextColor(0.85, 0.77, 0.60)
+            MapQuestInfoRewardsFrame.ItemChooseText:Show() -- WYMUSZENIE POKAZANIA
         end
     end
 
@@ -359,6 +409,69 @@ local function PodmienTekstLokacji(self, tekst)
     end
 end
 
+local function PrzetlumaczZawartoscQuestLogu()
+    local GlownaRamka = QuestScrollFrame.Contents
+    
+    if not GlownaRamka then
+        return
+    end
+    
+    local WszystkieDzieci = {GlownaRamka:GetChildren()}
+    
+    for _, PojedynczeDziecko in ipairs(WszystkieDzieci) do
+        if PojedynczeDziecko.Text and PojedynczeDziecko.Text.GetText then
+            local OdczytanyTekst = PojedynczeDziecko.Text:GetText()
+            
+            if OdczytanyTekst then
+                local Licznik, TrescWlasciwa = OdczytanyTekst:match("^(%d+/%d+)%s+(.+)$")
+                
+                if not Licznik then
+                    local PrzetlumaczonyTekst = PrzetlumaczTekst(OdczytanyTekst)
+                    if PrzetlumaczonyTekst and PrzetlumaczonyTekst ~= "" and PrzetlumaczonyTekst ~= OdczytanyTekst then
+                        PojedynczeDziecko.Text:SetText(PrzetlumaczonyTekst)
+                    else
+                        ZbierajOpisMoba(OdczytanyTekst)
+                    end
+                else
+                    local PrzetlumaczonyTekstCelu = PrzetlumaczTekst(TrescWlasciwa)
+                    if PrzetlumaczonyTekstCelu and PrzetlumaczonyTekstCelu ~= "" and PrzetlumaczonyTekstCelu ~= TrescWlasciwa then
+                        PojedynczeDziecko.Text:SetText(Licznik .. " " .. PrzetlumaczonyTekstCelu)
+                    else
+                        ZbierajOpisMoba(TrescWlasciwa)
+                    end
+                end
+            end
+        end
+        
+        local ElementyWSrodkuZadania = {PojedynczeDziecko:GetChildren()}
+        
+        for _, Element in ipairs(ElementyWSrodkuZadania) do
+            if Element.Text and Element.Text.GetText then
+                local PelnyTekst = Element.Text:GetText()
+                
+                if PelnyTekst then
+                    local Licznik, TrescWlasciwa = PelnyTekst:match("^(%d+/%d+)%s+(.+)$")
+                    
+                    if not Licznik then
+                        Licznik = ""
+                        TrescWlasciwa = PelnyTekst
+                    else
+                        Licznik = Licznik .. " "
+                    end
+                    
+                    local PrzetlumaczonyTekstCelu = PrzetlumaczTekst(TrescWlasciwa)
+                    
+                    if PrzetlumaczonyTekstCelu and PrzetlumaczonyTekstCelu ~= "" and PrzetlumaczonyTekstCelu ~= TrescWlasciwa then
+                        Element.Text:SetText(Licznik .. PrzetlumaczonyTekstCelu)
+                    else
+                        ZbierajOpisMoba(TrescWlasciwa)
+                    end
+                end
+            end
+        end
+    end
+end
+
 -- === OBSLUGA EVENTOW ===
 local function GlownyHandler(self, event, ...)
     if event == "ADDON_LOADED" then
@@ -436,6 +549,22 @@ end
 
 if SubZoneTextString then
     hooksecurefunc(SubZoneTextString, "SetText", PodmienTekstLokacji)
+end
+
+if QuestScrollFrame then
+    if QuestScrollFrame.Update then
+        hooksecurefunc(QuestScrollFrame, "Update", function()
+            C_Timer.After(0, PrzetlumaczZawartoscQuestLogu)
+        end)
+    elseif QuestScrollFrame.update then
+        hooksecurefunc(QuestScrollFrame, "update", function()
+            C_Timer.After(0, PrzetlumaczZawartoscQuestLogu)
+        end)
+    end
+    
+    QuestScrollFrame:HookScript("OnShow", function()
+        C_Timer.After(0, PrzetlumaczZawartoscQuestLogu)
+    end)
 end
 
 ramka:SetScript("OnEvent", GlownyHandler)
