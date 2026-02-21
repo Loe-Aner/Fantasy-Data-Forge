@@ -107,7 +107,7 @@ def aktualizuj_id_misji_wowhead_z_excela(df, silnik, chunk_size=1000):
     print(f"UPDATE MISJE: Excel={excel_total}, dopasowane_do_DB={match_total}, wysłane={total}, batche={chunks}")
 
 def slowa_kluczowe_do_db(
-    plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
+    plik_do_otwarcia=r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
     silnik=utworz_engine_do_db()
 ):
 
@@ -185,7 +185,7 @@ def slowa_kluczowe_do_db(
 
 
 def mapowanie_misji_do_db(
-    plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
+    plik_do_otwarcia=r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\slowa_kluczowe.xlsx",
     silnik=utworz_engine_do_db()
 ):
 
@@ -269,7 +269,7 @@ def mapowanie_misji_do_db(
 
 def zapisz_npc_i_status_przetlumaczony_do_db(
     silnik, 
-    plik_do_otwarcia=r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx",
+    plik_do_otwarcia=r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx",
     rozmiar_partii=10000
 ):
     status_docelowy = "3_ZATWIERDZONO"

@@ -37,7 +37,7 @@ def pobierz_przetworz_zapisz_batch_lista(
         silnik, 
         lista_id_batch, 
         nazwa_dodatku,
-        folder_zapisz: str = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\slowa_kluczowe_batche"
+        folder_zapisz: str = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\slowa_kluczowe_batche"
     ):
     
     min_b = min(lista_id_batch)
@@ -91,7 +91,7 @@ def pobierz_przetworz_zapisz_batch_lista(
 
     try:
         odpowiedz = klient.models.generate_content(
-                    model="gemini-3-pro-preview",
+                    model="gemini-3.1-pro-preview",
                     contents=json.dumps(wsad_dla_geminisia),
                     config={
                         "system_instruction": instrukcja_slowa_kluczowe(),
@@ -187,7 +187,7 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
             # ETAP 1: TŁUMACZENIE
             print(f"--- [ID: {misja_id}] Start Tłumaczenia... ---")
             odp_tlumacz = klient.models.generate_content(
-                model="gemini-3-pro-preview",
+                model="gemini-3.1-pro-preview",
                 contents=wsad_json,
                 config={"system_instruction": instrukcja_tlumacz(txt_npc, txt_sk), "response_mime_type": "application/json"}
             )
@@ -200,7 +200,7 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
             print(f"--- [ID: {misja_id}] Start Redakcji... ---")
             wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
             odp_redaktor = klient.models.generate_content(
-                model="gemini-3-pro-preview",
+                model="gemini-3.1-pro-preview",
                 contents=wsad_redakcja,
                 config={"system_instruction": instrukcja_redaktor(wsad_json, txt_npc, txt_sk), "response_mime_type": "application/json"}
             )
@@ -304,8 +304,8 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
 
 
 def tych_npcow_nie_tlumacz(silnik, klient):
-    sciezka = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx"
-    sciezka_zapis = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\npc_nie_do_tlumaczenia"
+    sciezka = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx"
+    sciezka_zapis = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\npc_nie_do_tlumaczenia"
     zakladka = "surowe"
 
     print(f"--- START ---")
@@ -366,11 +366,11 @@ def tych_npcow_nie_tlumacz(silnik, klient):
 
 
 def przetlumacz_nazwy_npc(silnik, klient):
-    sciezka = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx"
-    sciezka_zapis = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\propozycja_tlumaczen_npc"
+    sciezka = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx"
+    sciezka_zapis = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\propozycja_tlumaczen_npc"
     zakladka = "surowe"
 
-    print(f"--- START TŁUMACZENIA (Z WYSZUKIWARKĄ GOOGLE) ---")
+    print(f"--- START TŁUMACZENIA ---")
     print(f"1. Wczytuję dane z pliku: {sciezka}")
     df = pd.read_excel(sciezka, sheet_name=zakladka, usecols=["NPC_ID_MOJE_PK", "NAZWA", "NAZWA_PL_FINAL"], index_col="NPC_ID_MOJE_PK")
     
@@ -399,7 +399,7 @@ def przetlumacz_nazwy_npc(silnik, klient):
         
         try:
             odpowiedz = klient.models.generate_content(
-                model="gemini-3-pro-preview",
+                model="gemini-3.1-pro-preview",
                 contents=dfj,
                 config={
                     "system_instruction": instrukcja_tlumacz_npc(), 

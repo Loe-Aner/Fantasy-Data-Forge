@@ -5,8 +5,10 @@ silnik = utworz_engine_do_db()
 klient = zaladuj_api_i_klienta("API_TLUMACZENIE")
 
 # PROPOZYCJA TLUMACZEN NAZW NPCOW
-# NAJPIERW ODSWIEZYC PLIK A POTEM WYJSC
+# NAJPIERW WYKONAC KROKI W SKRYPCIE 01_NPC
 przetlumacz_nazwy_npc(
     silnik=silnik, 
     klient=klient
     )
+
+# POTEM WEJSC DO PLIKU I ODSWIEZYC, A NASTEPNIE WERYFIKACJA I KOREKTA TLUMACZEN

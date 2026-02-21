@@ -11,3 +11,5 @@ local nazwaAddonu, prywatna_tabela = ...
 
 prywatna_tabela["AKTUALNA_WERSJA_DB"] = 1
 --prywatna_tabela["DEBUGOWANKO"] = true
+prywatna_tabela["FontTytulu"]  = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\MorpheusPL.ttf"
+prywatna_tabela["FontTresci"]  = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\FrizQuadrataPL.ttf"

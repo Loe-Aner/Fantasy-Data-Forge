@@ -37,7 +37,8 @@ local SubZoneTextString = SubZoneTextString
 local QuestScrollFrame = QuestScrollFrame
 local QuestMapFrame = QuestMapFrame
 local MapQuestInfoRewardsFrame = MapQuestInfoRewardsFrame
-
+local QuestObjectiveTracker = QuestObjectiveTracker
+local GameTooltip = GameTooltip
 
 -- Funkcje z innych plikow
 local InicjujDB = prywatna_tabela["InicjujDB"]
@@ -50,6 +51,13 @@ local TlumaczDymkiCzat = prywatna_tabela["TlumaczDymkiCzat"]
 local ZbierajCelPodrzedny = prywatna_tabela["ZbierajCelPodrzedny"]
 local ZbierajOpisMoba = prywatna_tabela["ZbierajOpisMoba"]
 local ZbierajNazwyKrain = prywatna_tabela["ZbierajNazwyKrain"]
+local DostosujKolorkiFont = prywatna_tabela["DostosujKolorkiFont"]
+local FontTytulu = prywatna_tabela["FontTytulu"]
+local FontTresci = prywatna_tabela["FontTresci"]
+local TlumaczOpisKampanii = prywatna_tabela["TlumaczOpisKampanii"]
+local ZbierajOpisKampanii = prywatna_tabela["ZbierajOpisKampanii"]
+local TlumaczCelePoPrawejStronie = prywatna_tabela["TlumaczCelePoPrawejStronie"]
+local TlumaczGlobalnyDymek = prywatna_tabela["TlumaczGlobalnyDymek"]
 
 local ramka = CreateFrame("Frame")
 ramka:RegisterEvent("ADDON_LOADED")
@@ -68,9 +76,6 @@ ramka:RegisterEvent("ZONE_CHANGED_INDOORS")
 
 -- === FUNKCJA MODYFIKUJĄCA UI ===
 local function PodmienTekstOknienko()
-    local FontTytulu = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\MorpheusPL.ttf"     -- ========= TO PUSCIC NA ZMIENNA GLOBALNA =========
-    local FontTresci = "Interface\\AddOns\\addon_KronikiWarcrafta\\Media\\FrizQuadrataPL.ttf" -- ========= TO PUSCIC NA ZMIENNA GLOBALNA =========
-
 -- 1. TYTUŁ
     local TytulDoTlumaczenia = nil
 
@@ -82,7 +87,7 @@ local function PodmienTekstOknienko()
         end
     end
 
-    if (not TytulDoTlumaczenia) then
+    if not TytulDoTlumaczenia then
         TytulDoTlumaczenia = GetTitleText()
     end
 
@@ -93,10 +98,7 @@ local function PodmienTekstOknienko()
     if TytulDoTlumaczenia then
         local TytulPL = PrzetlumaczTekst(TytulDoTlumaczenia)
         if TytulPL then
-            QuestInfoTitleHeader:SetText(TytulPL)
-            QuestInfoTitleHeader:SetFont(FontTytulu, 18)
-            QuestInfoTitleHeader:SetTextColor(0, 0, 0)
-            QuestInfoTitleHeader:Show()
+            DostosujKolorkiFont(QuestInfoTitleHeader, TytulPL, FontTytulu, 18, nil, nil, nil, true)
         end
     end
 
@@ -125,9 +127,7 @@ local function PodmienTekstOknienko()
 
             local Tlumaczenie = PrzetlumaczTekst(TrescWlasciwa)
             if Tlumaczenie and Tlumaczenie ~= "" and Tlumaczenie ~= TrescWlasciwa then
-                PodrzednyCel:SetText(Licznik .. Tlumaczenie)
-                PodrzednyCel:SetFont(FontTresci, 14)
-                PodrzednyCel:SetTextColor(0, 0, 0)
+                DostosujKolorkiFont(PodrzednyCel, Licznik .. Tlumaczenie, FontTresci, 14, 0, 0, 0, true)
             else
                 if MisjaID and MisjaID > 0 then
                     ZbierajCelPodrzedny(MisjaID, TrescWlasciwa) -- ===== chwilowo niestety zapisuje tez polski tekst...... =====
@@ -139,35 +139,23 @@ local function PodmienTekstOknienko()
 
     -- 2. CELE MISJI (Nagłówek)
     if QuestInfoObjectivesHeader then
-        QuestInfoObjectivesHeader:SetText("Cele misji")
-        QuestInfoObjectivesHeader:SetFont(FontTytulu, 18)
-        QuestInfoObjectivesHeader:SetTextColor(0, 0, 0)
-        QuestInfoObjectivesHeader:Show() -- WYMUSZENIE POKAZANIA
+        DostosujKolorkiFont(QuestInfoObjectivesHeader, "Cele misji", FontTytulu, 18, 0, 0, 0, true)
     end
 
     -- 3. NAGRODY (Nagłówek)
     if QuestInfoRewardsFrame then
         if QuestInfoRewardsFrame.Header then
-            QuestInfoRewardsFrame.Header:SetText("Nagrody")
-            QuestInfoRewardsFrame.Header:SetFont(FontTytulu, 18)
-            QuestInfoRewardsFrame.Header:SetTextColor(0, 0, 0)
-            QuestInfoRewardsFrame.Header:Show() -- WYMUSZENIE POKAZANIA
+            DostosujKolorkiFont(QuestInfoRewardsFrame.Header, "Nagrody", FontTytulu, 18, 0, 0, 0, true)
         end
         
         if QuestInfoRewardsFrame.ItemReceiveText then
-            QuestInfoRewardsFrame.ItemReceiveText:SetText("Otrzymasz:")
-            QuestInfoRewardsFrame.ItemReceiveText:SetFont(FontTresci, 14)
-            QuestInfoRewardsFrame.ItemReceiveText:SetTextColor(0, 0, 0)
-            QuestInfoRewardsFrame.ItemReceiveText:Show() -- WYMUSZENIE POKAZANIA
+            DostosujKolorkiFont(QuestInfoRewardsFrame.ItemReceiveText, "Otrzymasz:", FontTresci, 14, 0, 0, 0, true)
         end
     end
 
     -- 3.1 NAGRODY (jak nacisne M)
     if QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame then
-        QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label:SetText("Nagrody")
-        QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label:SetFont(FontTytulu, 18)
-        QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label:SetTextColor(0.85, 0.77, 0.60)
-        QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label:Show() -- WYMUSZENIE POKAZANIA
+        DostosujKolorkiFont(QuestMapFrame.QuestsFrame.DetailsFrame.RewardsFrameContainer.RewardsFrame.Label, "Nagrody", FontTytulu, 18, 0.85, 0.77, 0.60, true)
     end
 
     -- 3.2 NAGRODY - you will (also) receive: (jak nacisne M)
@@ -182,10 +170,7 @@ local function PodmienTekstOknienko()
         end
     
         if TekstPL then
-            MapQuestInfoRewardsFrame.ItemReceiveText:SetText(TekstPL)
-            MapQuestInfoRewardsFrame.ItemReceiveText:SetFont(FontTresci, 11)
-            MapQuestInfoRewardsFrame.ItemReceiveText:SetTextColor(0.85, 0.77, 0.60)
-            MapQuestInfoRewardsFrame.ItemReceiveText:Show() -- WYMUSZENIE POKAZANIA
+            DostosujKolorkiFont(MapQuestInfoRewardsFrame.ItemReceiveText, TekstPL, FontTresci, 11, 0.85, 0.77, 0.60, true)
         end
     end
 
@@ -201,19 +186,13 @@ local function PodmienTekstOknienko()
         end
     
         if TekstPL then
-            MapQuestInfoRewardsFrame.ItemChooseText:SetText(TekstPL)
-            MapQuestInfoRewardsFrame.ItemChooseText:SetFont(FontTresci, 11)
-            MapQuestInfoRewardsFrame.ItemChooseText:SetTextColor(0.85, 0.77, 0.60)
-            MapQuestInfoRewardsFrame.ItemChooseText:Show() -- WYMUSZENIE POKAZANIA
+            DostosujKolorkiFont(MapQuestInfoRewardsFrame.ItemChooseText, TekstPL, FontTresci, 11, 0.85, 0.77, 0.60, true)
         end
     end
 
     -- 4. DOŚWIADCZENIE
     if QuestInfoXPFrame and QuestInfoXPFrame.ReceiveText then
-        QuestInfoXPFrame.ReceiveText:SetText("Doświadczenie:")
-        QuestInfoXPFrame.ReceiveText:SetFont(FontTresci, 14)
-        QuestInfoXPFrame.ReceiveText:SetTextColor(0, 0, 0)
-        QuestInfoXPFrame.ReceiveText:Show() -- WYMUSZENIE POKAZANIA
+        DostosujKolorkiFont(QuestInfoXPFrame.ReceiveText, "Doświadczenie:", FontTresci, 14, 0, 0, 0, true)
     end
 
     -- === TREŚCI WŁAŚCIWE ===
@@ -226,17 +205,12 @@ local function PodmienTekstOknienko()
     if OpisOryginal then
         local OpisPL = PrzetlumaczTekst(OpisOryginal)
         if OpisPL and QuestInfoDescriptionText then 
-            QuestInfoDescriptionText:SetText(OpisPL) 
-            QuestInfoDescriptionText:SetFont(FontTresci, 14)
-            QuestInfoDescriptionText:SetTextColor(0, 0, 0)
+            DostosujKolorkiFont(QuestInfoDescriptionText, OpisPL, FontTresci, 14, 0, 0, 0, true)
         end
     end -- tlumaczy po nacisnieciu M
 
     if QuestInfoDescriptionHeader then
-        QuestInfoDescriptionHeader:SetText("Opis")
-        QuestInfoDescriptionHeader:SetFont(FontTytulu, 18)
-        QuestInfoDescriptionHeader:SetTextColor(0, 0, 0)
-        QuestInfoDescriptionHeader:Show()
+        DostosujKolorkiFont(QuestInfoDescriptionHeader, "Opis", FontTytulu, 18, 0, 0, 0, true)
     end  -- tlumaczy po nacisnieciu M
 
     local CelOryginal = GetObjectiveText()
@@ -257,9 +231,7 @@ local function PodmienTekstOknienko()
     if CelOryginal and QuestInfoObjectivesText:IsVisible() then
         local CelPL = PrzetlumaczTekst(CelOryginal)
         if CelPL then
-             QuestInfoObjectivesText:SetText(CelPL) 
-             QuestInfoObjectivesText:SetFont(FontTresci, 14)
-             QuestInfoObjectivesText:SetTextColor(0, 0, 0)
+            DostosujKolorkiFont(QuestInfoObjectivesText, CelPL, FontTresci, 14, 0, 0, 0, true)
         end
     end
 
@@ -267,9 +239,7 @@ local function PodmienTekstOknienko()
     if PostepOryginal and QuestProgressText and QuestProgressText:IsVisible() then
         local PostepPL = PrzetlumaczTekst(PostepOryginal)
         if PostepPL then
-            QuestProgressText:SetText(PostepPL)
-            QuestProgressText:SetFont(FontTresci, 14)
-            QuestProgressText:SetTextColor(0, 0, 0)
+            DostosujKolorkiFont(QuestProgressText, PostepPL, FontTresci, 14, 0, 0, 0, true)
         end
     end
 
@@ -278,9 +248,7 @@ local function PodmienTekstOknienko()
         local TytulPL = PrzetlumaczTekst(Tytul)
         
         if TytulPL then
-            QuestProgressTitleText:SetText(TytulPL)
-            QuestProgressTitleText:SetFont(FontTytulu, 18)
-            QuestProgressTitleText:SetTextColor(0, 0, 0)
+            DostosujKolorkiFont(QuestProgressTitleText, TytulPL, FontTytulu, 18, 0, 0, 0, true)
         end
     end
 
@@ -288,9 +256,7 @@ local function PodmienTekstOknienko()
     if ZakonczenieOryginal and QuestInfoRewardText and QuestInfoRewardText:IsVisible() then
         local ZakonczeniePL = PrzetlumaczTekst(ZakonczenieOryginal)
         if ZakonczeniePL then
-            QuestInfoRewardText:SetText(ZakonczeniePL)
-            QuestInfoRewardText:SetFont(FontTresci, 14)
-            QuestInfoRewardText:SetTextColor(0, 0, 0)
+            DostosujKolorkiFont(QuestInfoRewardText, ZakonczeniePL, FontTresci, 14, 0, 0, 0, true)
         end
     end
 
@@ -299,9 +265,7 @@ local function PodmienTekstOknienko()
         local GossipDialogPL = PrzetlumaczTekst(GossipDialog)    
 
         if GossipGreetingText and GossipGreetingText:IsShown() then
-            GossipGreetingText:SetText(GossipDialogPL)
-            GossipGreetingText:SetFont(FontTresci, 14)
-            GossipGreetingText:SetTextColor(0, 0, 0)
+            DostosujKolorkiFont(GossipGreetingText, GossipDialogPL, FontTresci, 14, 0, 0, 0, true)
         end
 
         if GossipFrame.GreetingPanel and GossipFrame.GreetingPanel.ScrollBox then
@@ -313,9 +277,7 @@ local function PodmienTekstOknienko()
                     local TekstPL = PrzetlumaczTekst(ObecnyTekst)
                     
                     if TekstPL then
-                        PojedynczaRamka.GreetingText:SetText(TekstPL)
-                        PojedynczaRamka.GreetingText:SetFont(FontTresci, 14)
-                        PojedynczaRamka.GreetingText:SetTextColor(0, 0, 0)
+                        DostosujKolorkiFont(PojedynczaRamka.GreetingText, TekstPL, FontTresci, 14, 0, 0, 0, true)
                     end
                 end
 
@@ -341,8 +303,8 @@ local function PodmienTekstOknienko()
 end
 
 -- === FUNKCJA TŁUMACZĄCA TRACKER KAMPANII ===
-local function TlumaczTrackerKampanii(self)
-    local GlownaRamka = self["ContentsFrame"]
+local function TlumaczTrackerKampanii()
+    local GlownaRamka = CampaignQuestObjectiveTracker.ContentsFrame
     if GlownaRamka then
         -- to tlumaczy tytuly zadan po prawej stronie
         local WszystkieDzieci = {GlownaRamka:GetChildren()}
@@ -356,7 +318,7 @@ local function TlumaczTrackerKampanii(self)
                     end
                 end
             end
-            -- to tlumaczy zadania celow po prawej stronie
+            -- to tlumaczy zadania (cele) po prawej stronie
             local MisjaID = PojedynczeDziecko["questID"] or PojedynczeDziecko.id
             local ElementyWSrodkuZadania = {PojedynczeDziecko:GetChildren()}
             for _, Element in ipairs(ElementyWSrodkuZadania) do
@@ -501,6 +463,13 @@ local function GlownyHandler(self, event, ...)
                     CampaignQuestObjectiveTracker.Header.Text:SetText("Kampania")
                 end
             end
+
+            if QuestObjectiveTracker then
+                QuestObjectiveTracker.headerText = "Misje"
+                if QuestObjectiveTracker.Header and QuestObjectiveTracker.Header.Text then
+                    QuestObjectiveTracker.Header.Text:SetText("Misje")
+                end
+            end
             PodmienTekstOknienko() -- po wejsciu do gry tlumaczy stale elementy, jak naglowki All Objectives/Campaign
         end
 
@@ -536,7 +505,31 @@ hooksecurefunc("QuestMapFrame_ShowQuestDetails", function(MisjaID)
 end) -- aby pokazaly sie dane dla misji po kliknieciu 'M'
 
 if CampaignQuestObjectiveTracker then
-    hooksecurefunc(CampaignQuestObjectiveTracker, "Update", TlumaczTrackerKampanii)
+    hooksecurefunc(CampaignQuestObjectiveTracker, "Update", function(...)
+        C_Timer.After(0.1, function()
+            TlumaczTrackerKampanii()
+            TlumaczCelePoPrawejStronie()
+        end)
+    end)
+end
+
+local RamkaInicjalizacyjna = CreateFrame("Frame")
+RamkaInicjalizacyjna:RegisterEvent("PLAYER_ENTERING_WORLD")
+RamkaInicjalizacyjna:SetScript("OnEvent", function()
+    C_Timer.After(2.5, function()
+        if ObjectiveTrackerFrame and ObjectiveTrackerFrame.Update then
+            ObjectiveTrackerFrame:Update()
+        end
+    end)
+end)
+
+if QuestMapFrame and QuestMapFrame.QuestsFrame and QuestMapFrame.QuestsFrame.CampaignOverview then
+    QuestMapFrame.QuestsFrame.CampaignOverview:HookScript("OnShow", function()
+        C_Timer.After(0.1, function()
+            ZbierajOpisKampanii()
+            TlumaczOpisKampanii()
+        end)
+    end)
 end
 
 if MinimapZoneText then
@@ -550,6 +543,14 @@ end
 if SubZoneTextString then
     hooksecurefunc(SubZoneTextString, "SetText", PodmienTekstLokacji)
 end
+
+if GameTooltip then
+    GameTooltip:HookScript("OnShow", function(self)
+       C_Timer.After(0.05, function()
+          TlumaczGlobalnyDymek(self)
+       end)
+    end)
+ end
 
 if QuestScrollFrame then
     if QuestScrollFrame.Update then

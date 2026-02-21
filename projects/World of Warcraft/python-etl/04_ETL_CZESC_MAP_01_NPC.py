@@ -11,3 +11,5 @@ tych_npcow_nie_tlumacz(
     silnik=silnik, 
     klient=klient
     )
+
+# PO ODSWIEZEINU WEJSC DO PLIKU I ODSWIEZYC, A NASTEPNIE PRZYPISAC ICH

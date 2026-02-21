@@ -5,16 +5,18 @@ local UnitName = UnitName
 local UnitRace = UnitRace
 local UnitClass = UnitClass
 local UnitSex = UnitSex
+local UnitGUID = UnitGUID
 local GetQuestID = GetQuestID
 local GetTitleText = GetTitleText
 local GetQuestText = GetQuestText
 local GetObjectiveText = GetObjectiveText
 local GetProgressText = GetProgressText
 local GetRewardText = GetRewardText
-local MinimapZoneText = MinimapZoneText
+local QuestMapFrame = QuestMapFrame
 -- Biblioteki Lua i funkcje podstawowe
 local string = string
 local table = table
+local strsplit = strsplit
 local ipairs = ipairs
 local print = print
 
@@ -26,7 +28,6 @@ local RasaGraczaMala = string.lower(RasaGracza or "")
 
 -- UnitClass zwraca: nazwa lokalna, TAG (angielski). Biore TAG.
 local _, KlasaTag = UnitClass("player")
-local KlasaKlucz = KlasaTag
 local KlasaGracza = string.upper(string.sub(KlasaTag, 1, 1)) .. string.lower(string.sub(KlasaTag, 2))
 local KlasaGraczaMala = string.lower(KlasaTag)
 
@@ -212,6 +213,31 @@ prywatna_tabela["ZbierajNazwyKrain"] = function(NazwaKrainy)
       ZapiszPojedynczyTekst("MISJA", "NazwaKrainy", NazwaKrainy, nil)
    end
 end
+
+prywatna_tabela["ZbierajTekstTooltipa"] = function(TekstOryginalny)
+   if TekstOryginalny then
+      ZapiszPojedynczyTekst("MISJA", "Tooltip", TekstOryginalny, nil)
+   end
+end
+
+prywatna_tabela["ZbierajOpisKampanii"] = function()
+   if QuestMapFrame and QuestMapFrame.QuestsFrame and QuestMapFrame.QuestsFrame.CampaignOverview then
+      local GlownaRamka = QuestMapFrame.QuestsFrame.CampaignOverview
+      
+      if GlownaRamka.ScrollFrame and GlownaRamka.ScrollFrame.ScrollChild then
+         local DzieckoPrzewijania = GlownaRamka.ScrollFrame.ScrollChild
+         local WszystkieRegiony = {DzieckoPrzewijania:GetRegions()}
+         
+         for _, PojedynczyRegion in ipairs(WszystkieRegiony) do
+            if PojedynczyRegion:GetObjectType() == "FontString" then
+               local TekstEN = PojedynczyRegion:GetText()
+               ZapiszPojedynczyTekst("MISJA", "OpisKampanii", TekstEN, nil)
+            end
+         end
+      end
+   end
+end
+
 -- przerzut do globalnej tablicy
 prywatna_tabela["NormalizujTekst"] = NormalizujTekst
 prywatna_tabela["PodzielTekst"] = PodzielTekst
