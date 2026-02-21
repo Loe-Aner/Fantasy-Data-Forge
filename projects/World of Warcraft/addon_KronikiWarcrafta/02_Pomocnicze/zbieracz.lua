@@ -13,6 +13,7 @@ local GetObjectiveText = GetObjectiveText
 local GetProgressText = GetProgressText
 local GetRewardText = GetRewardText
 local QuestMapFrame = QuestMapFrame
+local C_GossipInfo = C_GossipInfo
 -- Biblioteki Lua i funkcje podstawowe
 local string = string
 local table = table

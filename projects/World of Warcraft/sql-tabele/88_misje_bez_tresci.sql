@@ -1,0 +1,19 @@
+SELECT m.*
+FROM dbo.MISJE AS m
+WHERE 1=1
+  AND MISJA_ID_Z_GRY <> 123456789
+  AND NOT EXISTS (
+				  SELECT 1
+				  FROM dbo.MISJE_STATUSY AS ms
+				  WHERE 1=1
+				    AND ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+					AND ms.STATUS = '0_ORYGINAŁ'
+				  )
+  AND NOT EXISTS (
+  				  SELECT 1
+				  FROM dbo.DIALOGI_STATUSY AS ds
+				  WHERE 1=1
+				    AND ds.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+					AND ds.STATUS = '0_ORYGINAŁ'
+				  )
+;
