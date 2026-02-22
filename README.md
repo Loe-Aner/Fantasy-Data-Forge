@@ -21,11 +21,10 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
       <p><b>Imię:</b> Piotr</p>
       <p><b>Praca:</b> Ekspert ds. Raportowania (BI & CRM)</p>
       <p><b>Umiejętność Pasywna:</b> <i>"Pod Maską"</i> - naturalna potrzeba zrozumienia technicznej natury danych, a nie tylko ich fasady.</p>
-      <p><b>Backend</b> i <b>Lore</b> mają dużo wspólnego ze sobą: w obu przypadkach chodzi o łączenie faktów, szukanie zależności i odkrywanie historii ukrytej pod powierzchnią.</p>
     </td>
     <td width="50%" valign="top">
       <h3>📚 Fascynacja Lore</h3>
-      <p>UWIELBIAM High Fantasy:</p>
+      <p>UWIELBIAM Fantasy:</p>
       <ul>
         <li>⚔️ <i>World of Warcraft</i> (Główne Uniwersum)</li>
         <li>🔨 <i>Warhammer Fantasy</i></li>
@@ -41,18 +40,18 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
 <div align="center">
   <p>
     <b>⚔️ Aktualna Misja:</b><br>
-    Dostarczenie polskiej społeczności funkcjonalnych rozwiązań (Addony, Bazy Danych, Wiki).
+    Dostarczenie polskiej społeczności funkcjonalnych rozwiązań (Addony, Bazy Danych, może WikiPL).
   </p>
   
   <p>
     🎯 <b>Cel Priorytetowy:</b> Addon tłumaczący World of Warcraft.<br>
-    <i><b>Warunek sukcesu</b>: Zburzenie bariery językowej i otwarcie bram tego uniwersum dla graczy, których wcześniej odstraszał brak polskiej wersji.</i>
+    <i><b>Warunek sukcesu</b>: Zburzenie bariery językowej i otwarcie bram tego uniwersum dla graczy, których wcześniej odstraszał brak polskiej wersji. Tłumaczenie MUSI być jakościowe. Technicznie powinno to wyglądać efektywnie i nowocześnie.</i>
   </p>
 
   <p>
     🤫 <b>Misja Poboczna:</b><br>
     <b>Cel</b>: Wypuszczenie na rynek autorskiego świata w formacie wykraczającym poza standardową książkę.<br>
-    <b>Kiedy:</b> Nie chciałbym stworzyć prostego gniota. Od ponad roku zbieram sukcesywnie pomysły na historie i świat, ale jeszcze daleka droga. Myślę, że za pisanie wziąłbym się za kilka lat, na razie mocno mnie ciągnie do projektów jw.</i>
+    <b>Kiedy:</b> Nie chciałbym stworzyć prostego gniota. Od ponad roku zbieram sukcesywnie pomysły na historie i świat, ale jeszcze daleka droga. Myślę, że za pisanie wziąłbym się za kilka lat, na razie mocno mnie ciągnie do projektów jw.
   </p>
 </div>
 
@@ -94,8 +93,8 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
 ### ⚔️ World of Warcraft `Work in Progress`
 Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy WoW'a.
 
-* ⚙️ **Technologia:** `Python` `SQL Server` `LUA`
-* 📂 **Lokalizacja:** `projects/World of Warcraft/`
+- ⚙️ **Technologia:** `Python` `SQL Server` `LUA`
+- 📂 **Lokalizacja:** `projects/World of Warcraft/`
 
 #### 🔄 Workflow & Architektura:
 1.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Database:** Projekt relacyjnej struktury danych (NPC, Questy, Wypowiedzi, Słowa Kluczowe).
@@ -111,8 +110,8 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 11. ![Planned](https://img.shields.io/badge/PLANNED-lightgrey?style=flat-square) **Cloud Automation (Fabric/Azure):** Migracja lokalnych skryptów do chmury. **Cel**: pełna automatyzacja procesu tłumaczenia (nowy patch -> lecą skrypty po kolei) oraz udostępnienie raportów Power BI ze statusami.
 
 ### 🔮 Przyszłe R&D: Lord of the Rings Online (LOTRO)
-* **Status:** `NIE ZACZĘTO`
-* **Wyzwanie:** Rozgryzienie API, formatów danych i stworzenie własnego potoku ETL dla klasycznego MMO w świecie Tolkiena.
+- **Status:** `NIE ZACZĘTO`
+- **Wyzwanie:** Rozgryzienie API, formatów danych i stworzenie własnego potoku ETL dla klasycznego MMO w świecie Tolkiena.
 
 ---
 
@@ -131,9 +130,9 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 ## 🧩 Code Challenges & Nauka
 
 Tutaj eksperymentuje na platformach e-learningowych np. DataLemur, HackerRank, Codewars.
-* **Python:** Algorytmy, struktury danych.
-* **SQL:** Rozwiązania zadań.
-* **LUA:** Nauka pod projekty.
+- **Python:** Algorytmy, struktury danych.
+- **SQL:** Rozwiązania zadań.
+- **LUA:** Nauka pod projekty.
 <br>
 
 ### 📫 Kontakt
