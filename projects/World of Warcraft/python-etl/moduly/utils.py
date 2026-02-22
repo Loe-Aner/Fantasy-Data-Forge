@@ -34,3 +34,33 @@ def generuj_hash_djb2(tekst):
 #         print(f"{hash_lua:<18} | {hash_python:<18} | {czy_zgodne}")
 
 #     print("=" * 50 + "\n")
+
+def sklej_warunki_w_WHERE(
+    kraina: str | None = None, 
+    fabula: str | None = None, 
+    dodatek: str | None = None,
+    id_misji: int | None = None
+):
+    warunki_sql = ""
+
+    if id_misji is not None:
+        warunki_sql = "AND m.MISJA_ID_MOJE_PK = :id_misji"
+
+    else:
+        czesci_warunku = []
+        
+        if kraina is not None:
+            czesci_warunku.append("AND m.KRAINA_EN = :kraina_en")
+            
+        if fabula is not None:
+            czesci_warunku.append("AND m.NAZWA_LINII_FABULARNEJ_EN = :fabula_en")
+
+        if dodatek is not None:
+            czesci_warunku.append("AND m.DODATEK_EN = :dodatek_en")
+        
+        if czesci_warunku:
+            warunki_sql = "\n        ".join(czesci_warunku)
+            return warunki_sql
+        else:
+            print("BŁĄD: Nie podano żadnych parametrów filtrowania (ID, Kraina, Fabuła lub Dodatek).")
+            return

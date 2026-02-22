@@ -16,6 +16,7 @@ from moduly.ai_prompty import (
     instrukcja_tlumacz_npc
 )
 from scraper_wiki_main import parsuj_misje_z_url
+from moduly.utils import sklej_warunki_w_WHERE
 
 import json
 import zlib
@@ -220,33 +221,11 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
     fabula: str | None = None, 
     dodatek: str | None = None,
     id_misji: int | None = None, 
-    liczba_watkow: int = 5
+    liczba_watkow: int = 4
 ):
-    
     klient = zaladuj_api_i_klienta("API_TLUMACZENIE")
     
-    warunki_sql = ""
-    
-    if id_misji is not None:
-        warunki_sql = "AND m.MISJA_ID_MOJE_PK = :id_misji"
-    
-    else:
-        czesci_warunku = []
-        
-        if kraina is not None:
-            czesci_warunku.append("AND m.KRAINA_EN = :kraina_en")
-            
-        if fabula is not None:
-            czesci_warunku.append("AND m.NAZWA_LINII_FABULARNEJ_EN = :fabula_en")
-
-        if dodatek is not None:
-            czesci_warunku.append("AND m.DODATEK_EN = :dodatek_en")
-        
-        if czesci_warunku:
-            warunki_sql = "\n        ".join(czesci_warunku)
-        else:
-            print("BŁĄD: Nie podano żadnych parametrów filtrowania (ID, Kraina, Fabuła lub Dodatek).")
-            return
+    warunki_sql = sklej_warunki_w_WHERE(kraina, fabula, dodatek, id_misji)
 
     q_select_tresc = text(f"""
     WITH hashe AS (
