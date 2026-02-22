@@ -13,13 +13,16 @@ local GetObjectiveText = GetObjectiveText
 local GetProgressText = GetProgressText
 local GetRewardText = GetRewardText
 local QuestMapFrame = QuestMapFrame
+local QuestScrollFrame = QuestScrollFrame
 local C_GossipInfo = C_GossipInfo
+local C_Timer = C_Timer
 -- Biblioteki Lua i funkcje podstawowe
 local string = string
 local table = table
 local strsplit = strsplit
 local ipairs = ipairs
 local print = print
+local _G = _G
 
 -- === 1. DANE GRACZA ===
 local ImieGracza = UnitName("player")
@@ -69,6 +72,218 @@ local function PodzielTekst(TekstOryginalny, sep)
       table.insert(TekstPodzielony, str)
    end
    return TekstPodzielony
+end
+
+local function CzySensownyTekst(Tekst)
+   if not Tekst then
+      return false
+   end
+
+   Tekst = string.match(Tekst, "^%s*(.-)%s*$")
+   if not Tekst or Tekst == "" then
+      return false
+   end
+
+   if Tekst == "-" then
+      return false
+   end
+
+   return true
+end
+
+local function CzyTekstKampanii(Tekst)
+   if not CzySensownyTekst(Tekst) then
+      return false
+   end
+
+   local MalaLitera = string.lower(Tekst)
+   return string.find(MalaLitera, "campaign", 1, true)
+      or string.find(MalaLitera, "chapter", 1, true)
+      or string.find(MalaLitera, "storyline", 1, true)
+      or string.find(MalaLitera, "kampania", 1, true)
+      or string.find(MalaLitera, "rozdzial", 1, true)
+      or string.find(MalaLitera, "postep", 1, true)
+end
+
+local function ZbierzFontStringiRekurencyjnie(Obiekt, Akumulator, Odwiedzone)
+   if not Obiekt then
+      return
+   end
+
+   if Odwiedzone[Obiekt] then
+      return
+   end
+   Odwiedzone[Obiekt] = true
+
+   if Obiekt.GetRegions then
+      local Regiony = { Obiekt:GetRegions() }
+      for _, Region in ipairs(Regiony) do
+         if Region:GetObjectType() == "FontString" and Region.GetText then
+            local Tekst = Region:GetText()
+            if CzySensownyTekst(Tekst) then
+               table.insert(Akumulator, Tekst)
+            end
+         end
+      end
+   end
+
+   if Obiekt.GetChildren then
+      local Dzieci = { Obiekt:GetChildren() }
+      for _, Dziecko in ipairs(Dzieci) do
+         ZbierzFontStringiRekurencyjnie(Dziecko, Akumulator, Odwiedzone)
+      end
+   end
+end
+
+local function CzyWlascicielQuestLogLubMapa(Obiekt)
+   local Obecny = Obiekt
+   for _ = 1, 8 do
+      if not Obecny then
+         break
+      end
+
+      local Nazwa = Obecny.GetName and Obecny:GetName()
+      if Nazwa and (
+         string.find(Nazwa, "QuestScrollFrame", 1, true)
+         or string.find(Nazwa, "QuestMapFrame", 1, true)
+         or string.find(Nazwa, "WorldMapFrame", 1, true)
+      ) then
+         return true
+      end
+
+      Obecny = Obecny.GetParent and Obecny:GetParent() or nil
+   end
+
+   return false
+end
+
+local function CzyKontekstQuestLogLubMapaWidoczny()
+   if QuestScrollFrame and QuestScrollFrame.IsVisible and QuestScrollFrame:IsVisible() then
+      return true
+   end
+
+   if QuestMapFrame and QuestMapFrame.IsVisible and QuestMapFrame:IsVisible() then
+      return true
+   end
+
+   return false
+end
+
+local function DodajLinieJesliNowa(Akumulator, Unikalne, Tekst)
+   if not CzySensownyTekst(Tekst) then
+      return
+   end
+
+   if Unikalne[Tekst] then
+      return
+   end
+
+   Unikalne[Tekst] = true
+   table.insert(Akumulator, Tekst)
+end
+
+local function PobierzLinieTooltipa(TooltipFrame)
+   local WszystkieLinie = {}
+   local UnikalneLinie = {}
+
+   if TooltipFrame.NumLines and TooltipFrame.GetName then
+      local NazwaTooltipa = TooltipFrame:GetName()
+      if NazwaTooltipa then
+         for i = 1, TooltipFrame:NumLines() do
+            local Linia = _G[NazwaTooltipa .. "TextLeft" .. i]
+            if Linia and Linia.GetText then
+               DodajLinieJesliNowa(WszystkieLinie, UnikalneLinie, Linia:GetText())
+            end
+         end
+      end
+   end
+
+   local TekstyRekurencyjne = {}
+   ZbierzFontStringiRekurencyjnie(TooltipFrame, TekstyRekurencyjne, {})
+   for _, Tekst in ipairs(TekstyRekurencyjne) do
+      DodajLinieJesliNowa(WszystkieLinie, UnikalneLinie, Tekst)
+   end
+
+   return WszystkieLinie
+end
+
+local function CzyToTooltipKampanii(WszystkieLinie)
+   for _, Tekst in ipairs(WszystkieLinie) do
+      if CzyTekstKampanii(Tekst) then
+         return true
+      end
+   end
+
+   return false
+end
+
+local function CzyMaLicznikPostepu(WszystkieLinie)
+   for _, Tekst in ipairs(WszystkieLinie) do
+      if string.find(Tekst, "%d+/%d+") then
+         return true
+      end
+   end
+
+   return false
+end
+
+local ZapiszTekstKampaniiZRozbiciem
+
+local function ZapiszLinieTooltipaKampanii(WszystkieLinie)
+   for _, Tekst in ipairs(WszystkieLinie) do
+      ZapiszTekstKampaniiZRozbiciem("TooltipPostepKampanii", Tekst)
+   end
+end
+
+local function PrzetworzTooltipKampaniiQuestLogu(TooltipFrame)
+   if not TooltipFrame then
+      return
+   end
+
+   local Wlasciciel = TooltipFrame.GetOwner and TooltipFrame:GetOwner() or nil
+   local CzyPoprawnyWlasciciel = Wlasciciel and CzyWlascicielQuestLogLubMapa(Wlasciciel)
+   local WszystkieLinie = PobierzLinieTooltipa(TooltipFrame)
+
+   if #WszystkieLinie == 0 then
+      return
+   end
+
+   local CzyKampania = CzyToTooltipKampanii(WszystkieLinie)
+   if not CzyKampania then
+      if not CzyPoprawnyWlasciciel or not CzyKontekstQuestLogLubMapaWidoczny() or not CzyMaLicznikPostepu(WszystkieLinie) then
+         return
+      end
+   end
+
+   ZapiszLinieTooltipaKampanii(WszystkieLinie)
+end
+
+local function ZbierzWidoczneRamkiTooltip(Obiekt, Akumulator, Odwiedzone, Glebokosc)
+   if not Obiekt or Odwiedzone[Obiekt] or Glebokosc > 8 then
+      return
+   end
+
+   Odwiedzone[Obiekt] = true
+
+   local CzyWidoczna = Obiekt.IsVisible and Obiekt:IsVisible()
+   if CzyWidoczna then
+      local Nazwa = Obiekt.GetName and Obiekt:GetName() or nil
+      local CzyNazwaTooltip = Nazwa and string.find(Nazwa, "Tooltip", 1, true)
+      local CzyTooltipWoW = Obiekt.NumLines and Obiekt.GetOwner
+      local StrataRamki = Obiekt.GetFrameStrata and Obiekt:GetFrameStrata() or nil
+      local CzyWarstwaTooltip = (StrataRamki == "TOOLTIP")
+
+      if CzyNazwaTooltip or CzyTooltipWoW or CzyWarstwaTooltip then
+         table.insert(Akumulator, Obiekt)
+      end
+   end
+
+   if Obiekt.GetChildren then
+      local Dzieci = { Obiekt:GetChildren() }
+      for _, Dziecko in ipairs(Dzieci) do
+         ZbierzWidoczneRamkiTooltip(Dziecko, Akumulator, Odwiedzone, Glebokosc + 1)
+      end
+   end
 end
 
 -- === 3. ZAPIS DO BAZY ===
@@ -235,6 +450,136 @@ prywatna_tabela["ZbierajOpisKampanii"] = function()
                ZapiszPojedynczyTekst("MISJA", "OpisKampanii", TekstEN, nil)
             end
          end
+      end
+   end
+end
+
+ZapiszTekstKampaniiZRozbiciem = function(TypTekstu, TekstOryginalny)
+   if not CzySensownyTekst(TekstOryginalny) then
+      return
+   end
+
+   ZapiszPojedynczyTekst("MISJA", TypTekstu, TekstOryginalny, nil)
+
+   local _, Koncowka = TekstOryginalny:match("^(.-%d+/%d+)%s+(.+)$")
+   if Koncowka and Koncowka ~= "" then
+      ZapiszPojedynczyTekst("MISJA", TypTekstu .. "_CZESC", Koncowka, nil)
+      return
+   end
+
+   local _, KoncowkaProsta = TekstOryginalny:match("^(%d+/%d+)%s+(.+)$")
+   if KoncowkaProsta and KoncowkaProsta ~= "" then
+      ZapiszPojedynczyTekst("MISJA", TypTekstu .. "_CZESC", KoncowkaProsta, nil)
+   end
+end
+
+local function CzyKandydatBlokuPostepuKampanii(Blok)
+   if not Blok then
+      return false
+   end
+
+   if Blok.Progress then
+      return true
+   end
+
+   if Blok.GetName then
+      local NazwaBloku = Blok:GetName()
+      if NazwaBloku and (
+         string.find(NazwaBloku, "Campaign", 1, true)
+         or string.find(NazwaBloku, "Progress", 1, true)
+      ) then
+         return true
+      end
+   end
+
+   return false
+end
+
+prywatna_tabela["ZbierajPostepKampaniiQuestLogu"] = function()
+   local ZawartoscQuestLogu = QuestScrollFrame and QuestScrollFrame.Contents
+   if not ZawartoscQuestLogu then
+      return
+   end
+
+   local WszystkieBloki = { ZawartoscQuestLogu:GetChildren() }
+   for _, Blok in ipairs(WszystkieBloki) do
+      if CzyKandydatBlokuPostepuKampanii(Blok) then
+         local Teksty = {}
+         ZbierzFontStringiRekurencyjnie(Blok, Teksty, {})
+
+         local ToJestSekcjaKampanii = false
+         for _, Tekst in ipairs(Teksty) do
+            if CzyTekstKampanii(Tekst) then
+               ToJestSekcjaKampanii = true
+               break
+            end
+         end
+
+         if ToJestSekcjaKampanii then
+            for _, Tekst in ipairs(Teksty) do
+               ZapiszTekstKampaniiZRozbiciem("QuestLogPostepKampanii", Tekst)
+            end
+         end
+      end
+   end
+end
+
+prywatna_tabela["ZbierajTooltipKampaniiQuestLogu"] = function(TooltipFrame)
+   if not TooltipFrame then
+      return
+   end
+
+   PrzetworzTooltipKampaniiQuestLogu(TooltipFrame)
+end
+
+prywatna_tabela["ZbierajWidoczneTooltipyQuestLogu"] = function()
+   local WorldMapFrame = _G.WorldMapFrame
+
+   local CzyQuestScrollWidoczny = QuestScrollFrame and QuestScrollFrame.IsVisible and QuestScrollFrame:IsVisible()
+   local CzyQuestMapWidoczny = QuestMapFrame and QuestMapFrame.IsVisible and QuestMapFrame:IsVisible()
+   local CzyWorldMapWidoczny = WorldMapFrame and WorldMapFrame.IsVisible and WorldMapFrame:IsVisible()
+
+   if not (CzyQuestScrollWidoczny or CzyQuestMapWidoczny or CzyWorldMapWidoczny) then
+      return
+   end
+
+   local Tooltipy = {}
+   local Odwiedzone = {}
+   ZbierzWidoczneRamkiTooltip(QuestScrollFrame, Tooltipy, Odwiedzone, 1)
+   ZbierzWidoczneRamkiTooltip(QuestMapFrame, Tooltipy, Odwiedzone, 1)
+   ZbierzWidoczneRamkiTooltip(WorldMapFrame, Tooltipy, Odwiedzone, 1)
+
+   for _, RamkaTooltipa in ipairs(Tooltipy) do
+      PrzetworzTooltipKampaniiQuestLogu(RamkaTooltipa)
+   end
+end
+
+local function UruchomZbieranieWidocznychTooltipow()
+   local FunkcjaZbierajaca = prywatna_tabela["ZbierajWidoczneTooltipyQuestLogu"]
+   if FunkcjaZbierajaca then
+      FunkcjaZbierajaca()
+   end
+end
+
+prywatna_tabela["ZahaczHoverPostepuKampaniiQuestLogu"] = function()
+   local ZawartoscQuestLogu = QuestScrollFrame and QuestScrollFrame.Contents
+   if not ZawartoscQuestLogu then
+      return
+   end
+
+   local WszystkieBloki = { ZawartoscQuestLogu:GetChildren() }
+   for _, Blok in ipairs(WszystkieBloki) do
+      if CzyKandydatBlokuPostepuKampanii(Blok) and Blok.HookScript and not Blok.KronikiHoverKampaniiHooked then
+         Blok.KronikiHoverKampaniiHooked = true
+         Blok:HookScript("OnEnter", function()
+            if C_Timer and C_Timer.After then
+               C_Timer.After(0, UruchomZbieranieWidocznychTooltipow)
+               C_Timer.After(0.08, UruchomZbieranieWidocznychTooltipow)
+               C_Timer.After(0.18, UruchomZbieranieWidocznychTooltipow)
+            else
+               UruchomZbieranieWidocznychTooltipow()
+            end
+         end)
       end
    end
 end
