@@ -2,10 +2,11 @@ import pandas as pd
 
 from moduly.db_core import utworz_engine_do_db
 from moduly.etl_excel import aktualizuj_id_misji_wowhead_z_excela
+from moduly.sciezki import sciezka_excel_mappingi
 
 silnik = utworz_engine_do_db()
 
-sciezka = r"D:\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\korekta_id_misji_wowhead.xlsx"
+sciezka = sciezka_excel_mappingi("korekta_id_misji_wowhead.xlsx")
 arkusz = "do_db"
 kolumny = ["MISJA_ID_MOJE_PK", "MISJA_ID_Z_GRY_FINAL", "MISJA_URL_WOWHEAD_FINAL"]
 df = pd.read_excel(sciezka, sheet_name=arkusz, usecols=kolumny)

@@ -1,15 +1,16 @@
 from sqlalchemy import text
+from moduly.sciezki import sciezka_sql_tabele
 
 LISTA_PLIKOW = [
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\1_tabela_NPC.sql",
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\2_tabela_misje.sql",
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\3_tabela_zrodlo.sql",
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\4_tabela_NPC_statusy.sql",
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\5_tabela_misje_statusy.sql",
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\6_tabela_dialogi.sql",
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\7_tabela_linki_do_scrapowania.sql",
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\8_tabela_slowa_kluczowe.sql",
-    r"D:\MyProjects_4Fun\projects\World of Warcraft\sql-tabele\9_tabela_misje_slowa_kluczowe.sql"
+    sciezka_sql_tabele("1_tabela_NPC.sql"),
+    sciezka_sql_tabele("2_tabela_misje.sql"),
+    sciezka_sql_tabele("3_tabela_zrodlo.sql"),
+    sciezka_sql_tabele("4_tabela_NPC_statusy.sql"),
+    sciezka_sql_tabele("5_tabela_misje_statusy.sql"),
+    sciezka_sql_tabele("6_tabela_dialogi.sql"),
+    sciezka_sql_tabele("7_tabela_linki_do_scrapowania.sql"),
+    sciezka_sql_tabele("8_tabela_slowa_kluczowe.sql"),
+    sciezka_sql_tabele("9_tabela_misje_slowa_kluczowe.sql")
 ]
 
 def czerwony_przycisk(

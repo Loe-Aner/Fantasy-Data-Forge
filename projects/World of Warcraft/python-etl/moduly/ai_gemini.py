@@ -15,6 +15,7 @@ from moduly.ai_prompty import (
     instrukcja_slowa_kluczowe, instrukcja_tlumacz, instrukcja_redaktor, instrukcja_tych_npc_nie,
     instrukcja_tlumacz_npc
 )
+from moduly.sciezki import sciezka_excel_mappingi
 from scraper_wiki_main import parsuj_misje_z_url
 from moduly.utils import sklej_warunki_w_WHERE
 
@@ -38,7 +39,7 @@ def pobierz_przetworz_zapisz_batch_lista(
         silnik, 
         lista_id_batch, 
         nazwa_dodatku,
-        folder_zapisz: str = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\slowa_kluczowe_batche"
+        folder_zapisz: str = sciezka_excel_mappingi("surowe", "slowa_kluczowe_batche")
     ):
     
     min_b = min(lista_id_batch)
@@ -283,8 +284,8 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
 
 
 def tych_npcow_nie_tlumacz(silnik, klient):
-    sciezka = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx"
-    sciezka_zapis = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\npc_nie_do_tlumaczenia"
+    sciezka = sciezka_excel_mappingi("npc.xlsx")
+    sciezka_zapis = sciezka_excel_mappingi("surowe", "npc_nie_do_tlumaczenia")
     zakladka = "surowe"
 
     print(f"--- START ---")
@@ -345,8 +346,8 @@ def tych_npcow_nie_tlumacz(silnik, klient):
 
 
 def przetlumacz_nazwy_npc(silnik, klient):
-    sciezka = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\npc.xlsx"
-    sciezka_zapis = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\surowe\propozycja_tlumaczen_npc"
+    sciezka = sciezka_excel_mappingi("npc.xlsx")
+    sciezka_zapis = sciezka_excel_mappingi("surowe", "propozycja_tlumaczen_npc")
     zakladka = "surowe"
 
     print(f"--- START TŁUMACZENIA ---")

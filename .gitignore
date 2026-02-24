@@ -35,6 +35,7 @@ Desktop.ini
 !requirements.txt
 
 projects/World of Warcraft/python-etl/moduly/ai_prompty.py
+projects/World of Warcraft/python-etl/moduly/sciezki.py
 projects/World of Warcraft/python-etl/scraper_wiki_async.py
 projects/World of Warcraft/python-etl/scraper_wiki_main.py
 projects/World of Warcraft/python-etl/scraper_wowhead.py

@@ -3,10 +3,11 @@ import pandas as pd
 from moduly.db_core import utworz_engine_do_db
 from moduly.etl_excel import aktualizuj_misje_z_excela
 from moduly.repo_misje import ustaw_id_misji_duble_123456789
+from moduly.sciezki import sciezka_excel_mappingi
 
 silnik = utworz_engine_do_db()
 
-sciezka = r"C:\Users\piotr\OneDrive\____Moje-MOJE\MyProjects_4Fun\projects\World of Warcraft\excel-mappingi\mapping_01.xlsx"
+sciezka = sciezka_excel_mappingi("mapping_01.xlsx")
 arkusz = "mapping_01"
 kolumny = ["MISJA_ID_Z_GRY", "MISJA_TYTUL_EN", "DODATEK_EN", "MISJA_URL_WOWHEAD", 
            "NAZWA_LINII_FABULARNEJ_EN", "DODANO_W_PATCHU", "KONTYNENT_EN",
