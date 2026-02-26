@@ -4,6 +4,12 @@ import pandas as pd
 from moduly.db_core import utworz_engine_do_db
 from moduly.sciezki import sciezka_excel_mappingi
 
+def wez_wartosc_lub_none(rekord: dict, klucz: str):
+    val = rekord.get(klucz)
+    if pd.isna(val) or val == "":
+        return None
+    return val
+
 def aktualizuj_misje_z_excela(df, silnik, chunk_size=1000):
     df = df.dropna(how="all").copy()
     
@@ -49,24 +55,17 @@ def aktualizuj_misje_z_excela(df, silnik, chunk_size=1000):
 
     parametry = []
     for r in df.to_dict("records"):
-        def wez_wartosc(klucz):
-            val = r.get(klucz)
-            if pd.isna(val) or val == "":
-                return None
-            return val
-
         parametry.append({
             "misja_id_gra": int(r["MISJA_ID_Z_GRY"]),
             "misja_tytul_en": r.get("MISJA_TYTUL_EN"),
-            "misja_url_wowhead": r.get("MISJA_URL_WOWHEAD"),
-            "nazwa_linii_fabularnej_en": wez_wartosc("NAZWA_LINII_FABULARNEJ_EN"),
-            "kontynent_en": wez_wartosc("KONTYNENT_EN"),
-            "kraina_en": wez_wartosc("KRAINA_EN_FINAL"), 
-            "dodatek_en": wez_wartosc("DODATEK_EN"),
-            "kontynent_pl": wez_wartosc("KONTYNENT_PL"),
-            "kraina_pl": wez_wartosc("KRAINA_PL"),
-            "dodatek_pl": wez_wartosc("DODATEK_PL"),
-            "dodano_w_patchu": wez_wartosc("DODANO_W_PATCHU"),
+            "nazwa_linii_fabularnej_en": wez_wartosc_lub_none(r, "NAZWA_LINII_FABULARNEJ_EN"),
+            "kontynent_en": wez_wartosc_lub_none(r, "KONTYNENT_EN"),
+            "kraina_en": wez_wartosc_lub_none(r, "KRAINA_EN_FINAL"), 
+            "dodatek_en": wez_wartosc_lub_none(r, "DODATEK_EN"),
+            "kontynent_pl": wez_wartosc_lub_none(r, "KONTYNENT_PL"),
+            "kraina_pl": wez_wartosc_lub_none(r, "KRAINA_PL"),
+            "dodatek_pl": wez_wartosc_lub_none(r, "DODATEK_PL"),
+            "dodano_w_patchu": wez_wartosc_lub_none(r, "DODANO_W_PATCHU"),
         })
 
     total = len(parametry)
@@ -109,8 +108,10 @@ def aktualizuj_id_misji_wowhead_z_excela(df, silnik, chunk_size=1000):
 
 def slowa_kluczowe_do_db(
     plik_do_otwarcia=sciezka_excel_mappingi("slowa_kluczowe.xlsx"),
-    silnik=utworz_engine_do_db()
+    silnik=None
 ):
+    if silnik is None:
+        silnik = utworz_engine_do_db()
 
     plik_slowa_kluczowe = pd.read_excel(
         plik_do_otwarcia, 
@@ -187,8 +188,10 @@ def slowa_kluczowe_do_db(
 
 def mapowanie_misji_do_db(
     plik_do_otwarcia=sciezka_excel_mappingi("slowa_kluczowe.xlsx"),
-    silnik=utworz_engine_do_db()
+    silnik=None
 ):
+    if silnik is None:
+        silnik = utworz_engine_do_db()
 
     plik_lacznika = pd.read_excel(
         plik_do_otwarcia,
@@ -221,14 +224,12 @@ def mapowanie_misji_do_db(
         plik_lacznika = plik_lacznika.dropna(subset=["SLOWO_ID"])
         plik_lacznika["SLOWO_ID"] = plik_lacznika["SLOWO_ID"].astype("int64")
 
-        # Walidacja Misji
         maska_poprawne_misje = plik_lacznika["MISJA_ID_MOJE_FK"].isin(dostepne_misje_sql)
         odrzucone_brak_misji = plik_lacznika[~maska_poprawne_misje].copy()
         odrzucone_brak_misji["PRZYCZYNA"] = "Brak ID misji w DB"
 
         plik_lacznika = plik_lacznika[maska_poprawne_misje]
 
-        # Walidacja Duplikatów
         pary_z_excela = set(zip(plik_lacznika["MISJA_ID_MOJE_FK"], plik_lacznika["SLOWO_ID"]))
         
         do_wgrania_set = pary_z_excela - istniejace_pary_sql
@@ -246,11 +247,10 @@ def mapowanie_misji_do_db(
         if dane_do_insertu:
             print(f"Rozpoczynam dodawanie {len(dane_do_insertu)} nowych powiązań...")
             conn.execute(q_insert_lacznik, dane_do_insertu)
-            print(f"✅ Sukces: Dodano {len(dane_do_insertu)} powiązań.")
+            print(f"Sukces: Dodano {len(dane_do_insertu)} powiązań.")
         else:
             print("Brak nowych powiązań do dodania.")
 
-    # Raportowanie
     raport_odrzuconych = pd.concat([
         odrzucone_brak_slowa,
         odrzucone_brak_misji,
@@ -258,15 +258,15 @@ def mapowanie_misji_do_db(
     ], ignore_index=True)
 
     if not raport_odrzuconych.empty:
-        print("\n⚠️  Raport odrzuconych rekordów:")
+        print("\nRaport odrzuconych rekordów:")
         grupy = raport_odrzuconych.groupby("PRZYCZYNA")
         for przyczyna, grupa in grupy:
-            print(f"🔴 {przyczyna}: {len(grupa)} szt.")
+            print(f"{przyczyna}: {len(grupa)} szt.")
             if "Brak" in przyczyna:
                 kolumna_info = "SLOWO_EN" if "słowa" in przyczyna else "MISJA_ID_MOJE_FK"
                 print(f"   Przykłady: {grupa[kolumna_info].unique()}")
     else:
-        print("\n🎉 Wszystkie rekordy z Excela są poprawne i trafiły do bazy (lub już tam były).")
+        print("\nWszystkie rekordy z Excela są poprawne i trafiły do bazy (lub już tam były).")
 
 def zapisz_npc_i_status_przetlumaczony_do_db(
     silnik, 

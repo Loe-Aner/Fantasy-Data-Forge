@@ -19,7 +19,7 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
         ;
     """)
 
-    q_select_tytul = text(f"""
+    q_select_tytul = text("""
         SELECT 
             m.MISJA_ID_MOJE_PK, 
             m.MISJA_TYTUL_EN, 
@@ -63,6 +63,12 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
 
     with silnik.connect() as conn:
         misje = conn.execute(q_select_misje_id, parametry).scalars().all()
+        if not misje:
+            print("Brak misji spełniających podane filtry.")
+            return pd.DataFrame(columns=[
+                "MISJA_ID", "SEGMENT", "PODSEGMENT", "ID_SEGMENTU", "NR_BLOKU",
+                "NR_WYP", "STATUS", "TRESC", "NAZWA_NPC_START", "NAZWA_NPC_KONIEC"
+            ])
         tytuly = conn.execute(q_select_tytul, {"misje_id": misje}).mappings().all()
         misje_dialogi = conn.execute(q_select_misje_dialogi, {"misje_id": misje}).mappings().all()
         misje_tresci = conn.execute(q_select_misje_tresci, {"misje_id": misje}).mappings().all()

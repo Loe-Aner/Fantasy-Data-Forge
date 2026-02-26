@@ -41,26 +41,21 @@ def sklej_warunki_w_WHERE(
     dodatek: str | None = None,
     id_misji: int | None = None
 ):
-    warunki_sql = ""
-
     if id_misji is not None:
-        warunki_sql = "AND m.MISJA_ID_MOJE_PK = :id_misji"
+        return "AND m.MISJA_ID_MOJE_PK = :id_misji"
 
-    else:
-        czesci_warunku = []
+    czesci_warunku = []
+    
+    if kraina is not None:
+        czesci_warunku.append("AND m.KRAINA_EN = :kraina_en")
         
-        if kraina is not None:
-            czesci_warunku.append("AND m.KRAINA_EN = :kraina_en")
-            
-        if fabula is not None:
-            czesci_warunku.append("AND m.NAZWA_LINII_FABULARNEJ_EN = :fabula_en")
+    if fabula is not None:
+        czesci_warunku.append("AND m.NAZWA_LINII_FABULARNEJ_EN = :fabula_en")
 
-        if dodatek is not None:
-            czesci_warunku.append("AND m.DODATEK_EN = :dodatek_en")
-        
-        if czesci_warunku:
-            warunki_sql = "\n        ".join(czesci_warunku)
-            return warunki_sql
-        else:
-            print("BŁĄD: Nie podano żadnych parametrów filtrowania (ID, Kraina, Fabuła lub Dodatek).")
-            return
+    if dodatek is not None:
+        czesci_warunku.append("AND m.DODATEK_EN = :dodatek_en")
+    
+    if czesci_warunku:
+        return "\n        ".join(czesci_warunku)
+
+    raise ValueError("Nie podano żadnych parametrów filtrowania (ID, Kraina, Fabuła lub Dodatek).")

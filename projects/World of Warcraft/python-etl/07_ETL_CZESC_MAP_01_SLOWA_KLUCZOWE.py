@@ -32,10 +32,10 @@ try:
     print(f"W Excelu znaleziono {len(zrobione_id)} unikalnych, przetworzonych misji.")
     
 except FileNotFoundError:
-    print("⚠️ Nie znaleziono pliku Excel - zakładam, że to pierwsze uruchomienie.")
+    print("Nie znaleziono pliku Excel.")
     zrobione_id = set()
 except ValueError:
-    print("⚠️ Arkusz lub kolumna nie istnieje - zakładam 0 zrobionych.")
+    print("Arkusz lub kolumna nie istnieje.")
     zrobione_id = set()
 
 id_do_przerobienia = sorted(list(set(wszystkie_id_sql) - zrobione_id))
@@ -49,14 +49,14 @@ def zadanie_dla_watku(paczka_id, indeks_startowy):
             lista_id_batch=paczka_id,
             nazwa_dodatku=NAZWA_DODATKU
         )
-        return f"✅ Zakończono paczkę od ID {paczka_id[0]} (rozmiar: {len(paczka_id)})"
+        return f"Zakończono paczkę od ID {paczka_id[0]} (rozmiar: {len(paczka_id)})"
     except Exception as e:
-        return f"❌ Błąd w paczce od indeksu {indeks_startowy}: {e}"
+        return f"Błąd w paczce od indeksu {indeks_startowy}: {e}"
 
 if liczba_misji == 0:
-    print(f"🎉 Wszystkie misje dla dodatku '{NAZWA_DODATKU}' są już w Excelu!")
+    print(f"Wszystkie misje dla dodatku '{NAZWA_DODATKU}' są już w Excelu!")
 else:
-    print(f"--- START ZADANIA ---")
+    print("--- START ZADANIA ---")
     print(f"Dodatek: {NAZWA_DODATKU}")
     print(f"W bazie łącznie: {len(wszystkie_id_sql)}")
     print(f"Pozostało do zrobienia: {liczba_misji}")

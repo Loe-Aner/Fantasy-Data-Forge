@@ -244,12 +244,12 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
         nr_bloku_dialogu_raw = el.get("id")
         try:
             nr_bloku_dialogu = int(str(nr_bloku_dialogu_raw).strip())
-        except Exception:
+        except (TypeError, ValueError):
             nr_bloku_dialogu = 1
 
         wyp = el.get(f"wypowiedzi_{jezyk}") or {}
         if not isinstance(wyp, dict) or len(wyp) == 0:
-            return
+            continue
 
         for nr_key, tresc in wyp.items():
             if tresc is None:
@@ -377,6 +377,6 @@ def zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, status):
 
     except Exception as e:
         print(f"\n!!! BŁĄD KRYTYCZNY PODCZAS ZAPISU DO BAZY:\n{e}")
-        raise e
+        raise
 
     print(f"--- [KONIEC] Sukces dla misji ID: {misja_id} ---\n")

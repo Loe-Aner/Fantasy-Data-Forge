@@ -18,8 +18,6 @@ from moduly.ai_prompty import (
 from moduly.sciezki import sciezka_excel_mappingi
 from scraper_wiki_main import parsuj_misje_z_url
 from moduly.utils import sklej_warunki_w_WHERE
-
-import json
 import zlib
 import base64
 
@@ -246,6 +244,13 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
                             WHERE ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK 
                               AND ms.STATUS = N'1_PRZETŁUMACZONO'
                           )
+          AND EXISTS (
+                            SELECT 1
+                            FROM dbo.MISJE_STATUSY AS ms
+                            WHERE 1=1
+                              AND ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+                              AND ms.STATUS = N'0_ORYGINAŁ'
+                     )
     )
     SELECT MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY 
     FROM hashe WHERE r = 1 
