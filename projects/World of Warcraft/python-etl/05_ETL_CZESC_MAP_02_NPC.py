@@ -1,4 +1,4 @@
-from moduly.ai_gemini import przetlumacz_nazwy_npc, zaladuj_api_i_klienta
+from moduly.ai import przetlumacz_nazwy_npc, zaladuj_api_i_klienta
 from moduly.db_core import utworz_engine_do_db
 
 silnik = utworz_engine_do_db()

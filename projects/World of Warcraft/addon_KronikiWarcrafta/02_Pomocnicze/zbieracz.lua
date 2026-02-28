@@ -24,6 +24,22 @@ local ipairs = ipairs
 local print = print
 local _G = _G
 
+local function BezpiecznyTrim(Tekst)
+   local Sukces, Wynik = pcall(string.match, Tekst, "^%s*(.-)%s*$")
+   if not Sukces then
+      return nil
+   end
+   return Wynik
+end
+
+local function BezpiecznyLower(Tekst)
+   local Sukces, Wynik = pcall(string.lower, Tekst)
+   if not Sukces then
+      return nil
+   end
+   return Wynik
+end
+
 -- === 1. DANE GRACZA ===
 local ImieGracza = UnitName("player")
 -- UnitRace zwraca: nazwa lokalna, nazwa angielska. Biore te druga (angielska) dla bezpieczenstwa
@@ -42,7 +58,11 @@ local function NormalizujTekst(Tekst)
        return "" 
     end
 
-    Tekst = string.match(Tekst, "^%s*(.-)%s*$")
+    Tekst = BezpiecznyTrim(Tekst)
+    if not Tekst or Tekst == "" then
+       return ""
+    end
+
     Tekst = string.gsub(Tekst, "%f[%a]" .. ImieGracza .. "%f[%A]", "{imie}")
 
     -- 2. Rasa
@@ -67,8 +87,12 @@ local function PodzielTekst(TekstOryginalny, sep)
    
    local TekstPodzielony = {}
    local Wzorzec = "([^" .. sep .. "]+)"
+   local Sukces, Iterator = pcall(string.gmatch, TekstOryginalny, Wzorzec)
+   if not Sukces or not Iterator then
+      return {}
+   end
    
-   for str in string.gmatch(TekstOryginalny, Wzorzec) do
+   for str in Iterator do
       table.insert(TekstPodzielony, str)
    end
    return TekstPodzielony
@@ -79,7 +103,7 @@ local function CzySensownyTekst(Tekst)
       return false
    end
 
-   Tekst = string.match(Tekst, "^%s*(.-)%s*$")
+   Tekst = BezpiecznyTrim(Tekst)
    if not Tekst or Tekst == "" then
       return false
    end
@@ -96,7 +120,11 @@ local function CzyTekstKampanii(Tekst)
       return false
    end
 
-   local MalaLitera = string.lower(Tekst)
+   local MalaLitera = BezpiecznyLower(Tekst)
+   if not MalaLitera then
+      return false
+   end
+
    return string.find(MalaLitera, "campaign", 1, true)
       or string.find(MalaLitera, "chapter", 1, true)
       or string.find(MalaLitera, "storyline", 1, true)
@@ -336,7 +364,7 @@ local function ZapiszPojedynczyTekst(RodzajTekstu, TypTekstu, TekstOryginalny, D
                   ["TEKST_ENG"] = TekstZnormalizowany, 
                   ["TEKST_RAW"] = PojedynczaLinia
                }
-               print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla misji: " .. HashTekstu)
+               -- print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla misji: " .. HashTekstu)
             end
          end
 
@@ -347,7 +375,7 @@ local function ZapiszPojedynczyTekst(RodzajTekstu, TypTekstu, TekstOryginalny, D
                   ["TEKST_ENG"] = TekstZnormalizowany, 
                   ["TEKST_RAW"] = PojedynczaLinia
                }
-               print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla gossipa: " .. HashTekstu)
+               -- print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla gossipa: " .. HashTekstu)
             end
          end
 
@@ -358,7 +386,7 @@ local function ZapiszPojedynczyTekst(RodzajTekstu, TypTekstu, TekstOryginalny, D
                   ["TEKST_ENG"] = TekstZnormalizowany, 
                   ["TEKST_RAW"] = PojedynczaLinia
                }
-               print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla dymku: " .. HashTekstu)
+               -- print("|cff00ccff[Kroniki]|r Dodano nowy nieprzetłumaczony rekord dla dymku: " .. HashTekstu)
             end
          end
       end

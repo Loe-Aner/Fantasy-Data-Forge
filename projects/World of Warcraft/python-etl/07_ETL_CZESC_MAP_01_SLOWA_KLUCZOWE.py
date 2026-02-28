@@ -3,7 +3,7 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from moduly.db_core import utworz_engine_do_db
 from moduly.repo_misje import pobierz_liste_id_dla_dodatku
-from moduly.ai_gemini import pobierz_przetworz_zapisz_batch_lista
+from moduly.ai import pobierz_przetworz_zapisz_batch_lista
 from moduly.sciezki import sciezka_excel_mappingi
 
 # OSTATNIE REVIEW: 22.01.2026 -> brak zmian

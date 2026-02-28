@@ -6,6 +6,6 @@ silnik = utworz_engine_do_db()
 
 stworz_excele_do_zatwierdzenia_tlumaczen(
     silnik, 
-    fabula="The Light's Summons",
-    sciezka=sciezka_excel_zatwierdzenia("The Light's Summons.xlsx")
+    dodatek="Midnight",
+    sciezka=sciezka_excel_zatwierdzenia("Midnight.xlsx")
 )

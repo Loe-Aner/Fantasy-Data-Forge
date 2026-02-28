@@ -9,6 +9,7 @@ local C_ChatBubbles = C_ChatBubbles
 local C_GossipInfo = C_GossipInfo
 local C_QuestLog = C_QuestLog
 local CampaignQuestObjectiveTracker = CampaignQuestObjectiveTracker
+local QuestObjectiveTracker = QuestObjectiveTracker
 local GossipFrame = GossipFrame
 local GossipGreetingText = GossipGreetingText
 local IsInInstance = IsInInstance
@@ -325,6 +326,31 @@ local function PrzetlumaczCeleQuestInfo(MisjaID)
    end
 end
 
+local TLUMACZENIA_STALYCH_ETYKIET_NAGROD = {
+   ["The following will be cast on you:"] = "Na ciebie zostanie rzucone:",
+   ["You will be able to choose one of these rewards:"] = "Będziesz w stanie wybrać jedną z poniższych nagród:",
+}
+
+local function PrzetlumaczStaleEtykietyWRegionach(Ramka, Font, RozmiarFontu, KolorR, KolorG, KolorB)
+   if not Ramka or not Ramka.GetRegions then
+      return
+   end
+
+   local Regiony = { Ramka:GetRegions() }
+   for _, Region in ipairs(Regiony) do
+      if Region
+         and Region.GetObjectType
+         and Region:GetObjectType() == "FontString"
+         and Region.GetText then
+         local TekstEN = Region:GetText()
+         local TekstPL = TLUMACZENIA_STALYCH_ETYKIET_NAGROD[TekstEN]
+         if TekstPL then
+            BezpiecznySetText(Region, TekstPL, Font, RozmiarFontu, KolorR, KolorG, KolorB, true)
+         end
+      end
+   end
+end
+
 local function TlumaczStaleEtykietyMisji()
    BezpiecznySetText(QuestInfoObjectivesHeader, "Cele misji", FontTytulu, 18, 0, 0, 0, true)
    BezpiecznySetText(QuestInfoDescriptionHeader, "Opis", FontTytulu, 18, 0, 0, 0, true)
@@ -332,7 +358,15 @@ local function TlumaczStaleEtykietyMisji()
    if QuestInfoRewardsFrame then
       BezpiecznySetText(QuestInfoRewardsFrame.Header, "Nagrody", FontTytulu, 18, 0, 0, 0, true)
       BezpiecznySetText(QuestInfoRewardsFrame.ItemReceiveText, "Otrzymasz:", FontTresci, 14, 0, 0, 0, true)
+      BezpiecznySetText(QuestInfoRewardsFrame.ItemChooseText, "Będziesz w stanie wybrać jedną z poniższych nagród:", FontTresci, 14, 0, 0, 0, true)
+      BezpiecznySetText(QuestInfoRewardsFrame.SpellLearnText, "Na ciebie zostanie rzucone:", FontTresci, 14, 0, 0, 0, true)
+      BezpiecznySetText(_G.QuestInfoSpellLearnText, "Na ciebie zostanie rzucone:", FontTresci, 14, 0, 0, 0, true)
+      BezpiecznySetText(_G.QuestInfoRewardFrameSpellLearnText, "Na ciebie zostanie rzucone:", FontTresci, 14, 0, 0, 0, true)
+      BezpiecznySetText(_G.QuestInfoRewardFrameItemChooseText, "Będziesz w stanie wybrać jedną z poniższych nagród:", FontTresci, 14, 0, 0, 0, true)
+      PrzetlumaczStaleEtykietyWRegionach(QuestInfoRewardsFrame, FontTresci, 14, 0, 0, 0)
    end
+
+   PrzetlumaczStaleEtykietyWRegionach(_G.QuestInfoRewardFrame, FontTresci, 14, 0, 0, 0)
 
    if QuestInfoXPFrame then
       BezpiecznySetText(QuestInfoXPFrame.ReceiveText, "Doswiadczenie:", FontTresci, 14, 0, 0, 0, true)
@@ -356,6 +390,7 @@ local function TlumaczStaleEtykietyMisji()
    local TlumaczeniaChoose = {
       ["You will receive:"] = "Otrzymasz przedmiot:",
       ["You will receive one of:"] = "Otrzymasz jeden z ponizszych:",
+      ["You will be able to choose one of these rewards:"] = "Będziesz w stanie wybrać jedną z poniższych nagród:",
    }
 
    if MapQuestInfoRewardsFrame and MapQuestInfoRewardsFrame.ItemReceiveText then
@@ -373,6 +408,8 @@ local function TlumaczStaleEtykietyMisji()
          BezpiecznySetText(MapQuestInfoRewardsFrame.ItemChooseText, TekstPL, FontTresci, 11, 0.85, 0.77, 0.60, true)
       end
    end
+
+   PrzetlumaczStaleEtykietyWRegionach(MapQuestInfoRewardsFrame, FontTresci, 11, 0.85, 0.77, 0.60)
 end
 
 local function TlumaczOpisIMainTeksty()
@@ -612,70 +649,75 @@ local function ZastosujHaczykNaTekst(ObiektTekstowy, MisjaID)
    end
 end
 
-local function TlumaczCelePoPrawejStronie()
-   local GlownaRamka = CampaignQuestObjectiveTracker and CampaignQuestObjectiveTracker.ContentsFrame
-   if not GlownaRamka then
-      return
-   end
+local function DlaKazdegoTrackeraMisji(Funkcja)
+   local Trackery = {CampaignQuestObjectiveTracker, QuestObjectiveTracker}
 
-   local WszystkieBlokiMisji = { GlownaRamka:GetChildren() }
-   for _, PojedynczyBlokMisji in ipairs(WszystkieBlokiMisji) do
-      local MisjaID = PojedynczyBlokMisji.id or PojedynczyBlokMisji.questID
-
-      if PojedynczyBlokMisji.HeaderText then
-         ZastosujHaczykNaTekst(PojedynczyBlokMisji.HeaderText, MisjaID)
-      end
-
-      local ElementyCelu = { PojedynczyBlokMisji:GetChildren() }
-      for _, Dziecko in ipairs(ElementyCelu) do
-         if Dziecko.Text then
-            ZastosujHaczykNaTekst(Dziecko.Text, MisjaID)
-         end
-
-         local Regiony = { Dziecko:GetRegions() }
-         for _, Region in ipairs(Regiony) do
-            if Region:GetObjectType() == "FontString" then
-               ZastosujHaczykNaTekst(Region, MisjaID)
-            end
-         end
+   for _, Tracker in ipairs(Trackery) do
+      local GlownaRamka = Tracker and Tracker.ContentsFrame
+      if GlownaRamka then
+         Funkcja(GlownaRamka)
       end
    end
 end
 
-local function TlumaczTrackerKampanii()
-   local GlownaRamka = CampaignQuestObjectiveTracker and CampaignQuestObjectiveTracker.ContentsFrame
-   if not GlownaRamka then
-      return
-   end
+local function TlumaczCelePoPrawejStronie()
+   DlaKazdegoTrackeraMisji(function(GlownaRamka)
+      local WszystkieBlokiMisji = {GlownaRamka:GetChildren()}
+      for _, PojedynczyBlokMisji in ipairs(WszystkieBlokiMisji) do
+         local MisjaID = PojedynczyBlokMisji.id or PojedynczyBlokMisji.questID
 
-   local WszystkieDzieci = { GlownaRamka:GetChildren() }
-   for _, PojedynczeDziecko in ipairs(WszystkieDzieci) do
-      if PojedynczeDziecko.HeaderText and PojedynczeDziecko.HeaderText.GetText then
-         local OryginalnyTekst = PojedynczeDziecko.HeaderText:GetText()
-         local PrzetlumaczonyTekst = PrzetlumaczJesliInny(OryginalnyTekst)
-         if PrzetlumaczonyTekst then
-            PojedynczeDziecko.HeaderText:SetText(PrzetlumaczonyTekst)
+         if PojedynczyBlokMisji.HeaderText then
+            ZastosujHaczykNaTekst(PojedynczyBlokMisji.HeaderText, MisjaID)
          end
-      end
 
-      local MisjaID = PojedynczeDziecko.questID or PojedynczeDziecko.id
-      local ElementyWSrodkuZadania = { PojedynczeDziecko:GetChildren() }
-      for _, Element in ipairs(ElementyWSrodkuZadania) do
-         if Element.Text and Element.Text.GetText then
-            local PelnyTekst = Element.Text:GetText()
-            if PelnyTekst then
-               local Licznik, TrescWlasciwa = RozdzielLicznikIOpis(PelnyTekst)
-               local PrzetlumaczonyTekstCelu = PrzetlumaczJesliInny(TrescWlasciwa)
+         local ElementyCelu = {PojedynczyBlokMisji:GetChildren()}
+         for _, Dziecko in ipairs(ElementyCelu) do
+            if Dziecko.Text then
+               ZastosujHaczykNaTekst(Dziecko.Text, MisjaID)
+            end
 
-               if PrzetlumaczonyTekstCelu then
-                  Element.Text:SetText(Licznik .. PrzetlumaczonyTekstCelu)
-               elseif MisjaID and MisjaID > 0 then
-                  ZbierajCelPodrzedny(MisjaID, TrescWlasciwa)
+            local Regiony = {Dziecko:GetRegions()}
+            for _, Region in ipairs(Regiony) do
+               if Region:GetObjectType() == "FontString" then
+                  ZastosujHaczykNaTekst(Region, MisjaID)
                end
             end
          end
       end
-   end
+   end)
+end
+
+local function TlumaczTrackerKampanii()
+   DlaKazdegoTrackeraMisji(function(GlownaRamka)
+      local WszystkieDzieci = { GlownaRamka:GetChildren() }
+      for _, PojedynczeDziecko in ipairs(WszystkieDzieci) do
+         if PojedynczeDziecko.HeaderText and PojedynczeDziecko.HeaderText.GetText then
+            local OryginalnyTekst = PojedynczeDziecko.HeaderText:GetText()
+            local PrzetlumaczonyTekst = PrzetlumaczJesliInny(OryginalnyTekst)
+            if PrzetlumaczonyTekst then
+               PojedynczeDziecko.HeaderText:SetText(PrzetlumaczonyTekst)
+            end
+         end
+
+         local MisjaID = PojedynczeDziecko.questID or PojedynczeDziecko.id
+         local ElementyWSrodkuZadania = { PojedynczeDziecko:GetChildren() }
+         for _, Element in ipairs(ElementyWSrodkuZadania) do
+            if Element.Text and Element.Text.GetText then
+               local PelnyTekst = Element.Text:GetText()
+               if PelnyTekst then
+                  local Licznik, TrescWlasciwa = RozdzielLicznikIOpis(PelnyTekst)
+                  local PrzetlumaczonyTekstCelu = PrzetlumaczJesliInny(TrescWlasciwa)
+
+                  if PrzetlumaczonyTekstCelu then
+                     Element.Text:SetText(Licznik .. PrzetlumaczonyTekstCelu)
+                  elseif MisjaID and MisjaID > 0 then
+                     ZbierajCelPodrzedny(MisjaID, TrescWlasciwa)
+                  end
+               end
+            end
+         end
+      end
+   end)
 end
 
 local function PodmienTekstLokacji(self, Tekst)

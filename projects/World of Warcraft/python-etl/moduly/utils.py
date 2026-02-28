@@ -1,6 +1,11 @@
 def generuj_hash_djb2(tekst):
+
+    tekst = str(tekst)
+    
     if not tekst:
         return None
+    
+    tekst = tekst.lower()
 
     hash_val = 5381
     hash_val_2 = 0

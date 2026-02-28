@@ -155,11 +155,7 @@ local function HookujSzczegolyMisji()
 end
 
 local function HookujTrackerKampanii()
-   if not CampaignQuestObjectiveTracker then
-      return
-   end
-
-   hooksecurefunc(CampaignQuestObjectiveTracker, "Update", function()
+   local function OpoznioneTlumaczenieTrackera()
       C_Timer.After(0.1, function()
          if TlumaczTrackerKampanii then
             TlumaczTrackerKampanii()
@@ -169,7 +165,18 @@ local function HookujTrackerKampanii()
             TlumaczCelePoPrawejStronie()
          end
       end)
-   end)
+   end
+
+   local function HookujPojedynczyTracker(Tracker)
+      if not Tracker then
+         return
+      end
+
+      hooksecurefunc(Tracker, "Update", OpoznioneTlumaczenieTrackera)
+   end
+
+   HookujPojedynczyTracker(CampaignQuestObjectiveTracker)
+   HookujPojedynczyTracker(QuestObjectiveTracker)
 end
 
 local function HookujOpisKampanii()

@@ -6,6 +6,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 from google import genai
+import anthropic
 
 from sqlalchemy import text, bindparam
 import pandas as pd
@@ -22,16 +23,36 @@ import zlib
 import base64
 
 def zaladuj_api_i_klienta(
-        nazwa_api: str
+        nazwa_api: str,
+        dostawca: str = "gemini"
     ):
     load_dotenv()
     API_KEY = os.environ.get(nazwa_api)
 
     if not API_KEY:
         raise ValueError("BRAK KLUCZA!")
-    else:
-        print("KLUCZ ZWARTY I GOTOWY!")
+    
+    print("KLUCZ ZWARTY I GOTOWY!")
+    
+    if dostawca == "gemini":
         return genai.Client(api_key=API_KEY)
+    elif dostawca == "claude":
+        return anthropic.Anthropic(api_key=API_KEY)
+    else:
+        raise ValueError(f"Nieznany dostawca: {dostawca}")
+
+def _wczytaj_json_z_odpowiedzi_claude(odpowiedz, etap: str):
+    bloki_tekstowe = [b.text for b in odpowiedz.content if b.type == "text"]
+    if not bloki_tekstowe:
+        raise ValueError(f"Pusta odpowiedź z modelu {etap} (Claude).")
+
+    czysty_tekst = "".join(bloki_tekstowe).strip()
+    if czysty_tekst.startswith("```"):
+        czysty_tekst = czysty_tekst.split("\n", 1)[1] if "\n" in czysty_tekst else ""
+    if czysty_tekst.endswith("```"):
+        czysty_tekst = czysty_tekst.rsplit("```", 1)[0]
+
+    return json.loads(czysty_tekst.strip())
 
 def pobierz_przetworz_zapisz_batch_lista(
         silnik, 
@@ -123,7 +144,7 @@ def pobierz_przetworz_zapisz_batch_lista(
         print(f"Błąd w batchu {min_b}-{max_b}: {e}")
         return None
 
-def przetworz_pojedyncza_misje(wiersz, silnik, klient):
+def przetworz_pojedyncza_misje(wiersz, silnik, klient_tlumacz, klient_redaktor, dostawca_redakcja):
     """
     Ta funkcja wykonuje całą pracę dla JEDNEJ misji.
     Będzie uruchamiana równolegle w wielu wątkach.
@@ -186,7 +207,7 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
 
             # ETAP 1: TŁUMACZENIE
             print(f"--- [ID: {misja_id}] Start Tłumaczenia... ---")
-            odp_tlumacz = klient.models.generate_content(
+            odp_tlumacz = klient_tlumacz.models.generate_content(
                 model="gemini-3.1-pro-preview",
                 contents=wsad_json,
                 config={"system_instruction": instrukcja_tlumacz(txt_npc, txt_sk), "response_mime_type": "application/json"}
@@ -199,12 +220,28 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient):
             # ETAP 2: REDAKCJA
             print(f"--- [ID: {misja_id}] Start Redakcji... ---")
             wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
-            odp_redaktor = klient.models.generate_content(
-                model="gemini-3.1-pro-preview",
-                contents=wsad_redakcja,
-                config={"system_instruction": instrukcja_redaktor(wsad_json, txt_npc, txt_sk), "response_mime_type": "application/json"}
-            )
-            zredagowane = json.loads(odp_redaktor.text)
+            if dostawca_redakcja == "gemini":
+                odp_redaktor = klient_redaktor.models.generate_content(
+                    model="gemini-3.1-pro-preview",
+                    contents=wsad_redakcja,
+                    config={"system_instruction": instrukcja_redaktor(wsad_json, txt_npc, txt_sk), "response_mime_type": "application/json"}
+                )
+                zredagowane = json.loads(odp_redaktor.text)
+            elif dostawca_redakcja == "claude":
+                with klient_redaktor.messages.stream(
+                    model="claude-opus-4-6",
+                    max_tokens=25000,
+                    thinking={"type": "adaptive"},
+                    system=instrukcja_redaktor(wsad_json, txt_npc, txt_sk),
+                    messages=[
+                        {"role": "user", "content": wsad_redakcja}
+                    ]
+                ) as stream:
+                    odp_redaktor = stream.get_final_message()
+
+                zredagowane = _wczytaj_json_z_odpowiedzi_claude(odp_redaktor, "redaktora")
+            else:
+                raise ValueError(f"Nieobsługiwany dostawca redakcji: {dostawca_redakcja}")
 
             # Zapis Etapu 2
             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, zredagowane, "2_ZREDAGOWANO")
@@ -220,9 +257,18 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
     fabula: str | None = None, 
     dodatek: str | None = None,
     id_misji: int | None = None, 
-    liczba_watkow: int = 4
+    liczba_watkow: int = 4,
+    dostawca_redakcja: str = "gemini"
 ):
-    klient = zaladuj_api_i_klienta("API_TLUMACZENIE")
+    dostawca_redakcja = dostawca_redakcja.lower().strip()
+    if dostawca_redakcja not in {"gemini", "claude"}:
+        raise ValueError("Parametr 'dostawca_redakcja' musi mieć wartość: 'gemini' albo 'claude'.")
+
+    klient_tlumacz = zaladuj_api_i_klienta("API_TLUMACZENIE", dostawca="gemini")
+    if dostawca_redakcja == "gemini":
+        klient_redaktor = klient_tlumacz
+    else:
+        klient_redaktor = zaladuj_api_i_klienta("API_REDAGOWANIE", dostawca="claude")
     
     warunki_sql = sklej_warunki_w_WHERE(kraina, fabula, dodatek, id_misji)
 
@@ -275,11 +321,19 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
         return
 
     print(f"Znaleziono {liczba_zadan} misji do przetworzenia. Uruchamiam {liczba_watkow} wątków...")
+    print(f"Dostawca redakcji: {dostawca_redakcja}")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
         futures = []
         for wiersz in lista_zadan:
-            future = executor.submit(przetworz_pojedyncza_misje, wiersz, silnik, klient)
+            future = executor.submit(
+                przetworz_pojedyncza_misje,
+                wiersz,
+                silnik,
+                klient_tlumacz,
+                klient_redaktor,
+                dostawca_redakcja
+            )
             futures.append(future)
         
         for future in concurrent.futures.as_completed(futures):
