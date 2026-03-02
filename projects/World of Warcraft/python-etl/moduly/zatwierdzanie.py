@@ -156,6 +156,13 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
             .reset_index(drop=True)
             [kolejnosc_kolumn_koniec]
         )
+
+    tagi_zmiana = {
+        "<Name>":  r"{imie}", 
+        "<Class>": r"{klasa=wolacz}",
+        "<Race>":  r"{rasa=wolacz}"
+    }
+    df_polaczone["TRESC"] = df_polaczone["TRESC"].str.replace(tagi_zmiana, regex=False)
     
     with pd.ExcelWriter(sciezka, engine="xlsxwriter") as zapis:
             df_polaczone.to_excel(zapis, sheet_name="Tlumaczenia", index=False)

@@ -7,7 +7,7 @@ silnik = utworz_engine_do_db()
 # TŁUMACZY A POTEM REDAGUJE, ZAPISUJĄC DO BAZY DANYCH Z ODPOWIEDNIMI STATUSAMI
 # MOŻNA PODAĆ DOWOLNIE KTORY PARAMETR
 # BIERZE POD UWAGE TYLKO MISJE Z TRESCIA
-misje_dialogi_po_polsku_zapisz_do_db_multithread(silnik, dodatek="Shadowlands", liczba_watkow=4, 
+misje_dialogi_po_polsku_zapisz_do_db_multithread(silnik, dodatek="Shadowlands", liczba_watkow=6, 
                                                  dostawca_tlumaczenie="gemini", dostawca_redakcja="gemini")
 
 # KOREKTA MISJI - JEŻELI NP. DWIE MISJE O ID 37, 38 MAJĄ TEN SAM TYTUŁ PO ENG, ALE INNY PO PL, TO WYBIERAM PIERWSZY TYTUŁ
