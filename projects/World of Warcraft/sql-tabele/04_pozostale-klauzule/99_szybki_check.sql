@@ -5,8 +5,8 @@ WHERE 1=1
   --AND MISJA_TYTUL_EN = 'Warming Up'
   --AND MISJA_ID_Z_GRY != 123456789
   --AND DODATEK_EN = 'Midnight'
-  AND MISJA_ID_Z_GRY = 90959
-  AND MISJA_ID_MOJE_PK /*IN (129, 130, 131)*/ = 3099
+  --AND MISJA_ID_Z_GRY = 90959
+  AND MISJA_ID_MOJE_PK /*IN (129, 130, 131)*/ = 4540
   --AND KRAINA_EN = 'Exile''s Reach'
   --AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
   --AND MISJA_TYTUL_EN = 'The Divine''s Shield'
@@ -21,7 +21,7 @@ WHERE 1=1
   --AND YEAR(ms.DATA_STATUS) = 2026
   --AND MONTH(ms.DATA_STATUS) = 2
   --AND DAY(ms.DATA_STATUS) = 20
-  AND m.MISJA_ID_MOJE_PK = 6810
+  AND m.MISJA_ID_MOJE_PK = 4407
   --AND m.KRAINA_EN = 'Exile''s Reach'
 ;
 

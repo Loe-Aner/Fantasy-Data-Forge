@@ -41,10 +41,10 @@ def zaladuj_api_i_klienta(
     else:
         raise ValueError(f"Nieznany dostawca: {dostawca}")
 
-def _wczytaj_json_z_odpowiedzi_claude(odpowiedz, etap: str):
+def wczytaj_json_z_odpowiedzi_claude(odpowiedz, etap: str):
     bloki_tekstowe = [b.text for b in odpowiedz.content if b.type == "text"]
     if not bloki_tekstowe:
-        raise ValueError(f"Pusta odpowiedź z modelu {etap} (Claude).")
+        raise ValueError(f"Pusta odpowiedź z modelu {etap} Claude.")
 
     czysty_tekst = "".join(bloki_tekstowe).strip()
     if czysty_tekst.startswith("```"):
@@ -93,7 +93,7 @@ def pobierz_przetworz_zapisz_batch_lista(
         ON m.MISJA_ID_MOJE_PK = d.MISJA_ID_MOJE_FK
     WHERE m.DODATEK_EN = :dodatek
       AND m.MISJA_ID_MOJE_PK IN :lista_id
-    """).bindparams(bindparam('lista_id', expanding=True))
+    """).bindparams(bindparam("lista_id", expanding=True))
 
     with silnik.connect() as conn:
         slownik = conn.execute(q, {
@@ -124,16 +124,16 @@ def pobierz_przetworz_zapisz_batch_lista(
         wynik_lista = json.loads(odpowiedz.text)
 
         df = pd.DataFrame(wynik_lista)
-        df_exploded = df.explode("extracted")
-        df_exploded = df_exploded.dropna(subset=["extracted"])
+        df_rozbite = df.explode("extracted")
+        df_rozbite = df_rozbite.dropna(subset=["extracted"])
 
-        if df_exploded.empty:
+        if df_rozbite.empty:
             print(f"Batch {min_b}-{max_b} przetworzony, ale nie znaleziono słów kluczowych.")
             return None
 
-        dane_szczegolowe = df_exploded["extracted"].apply(pd.Series)
+        dane_szczegolowe = df_rozbite["extracted"].apply(pd.Series)
         
-        df_final = pd.concat([df_exploded["quest_id"], dane_szczegolowe], axis=1)
+        df_final = pd.concat([df_rozbite["quest_id"], dane_szczegolowe], axis=1)
         df_final.to_csv(pelna_sciezka, index=False, encoding="utf-8-sig", sep=";")
         
         print(f"Zapisano: {nazwa_pliku} (Ilość wierszy: {len(df_final)})")
@@ -144,9 +144,16 @@ def pobierz_przetworz_zapisz_batch_lista(
         print(f"Błąd w batchu {min_b}-{max_b}: {e}")
         return None
 
-def przetworz_pojedyncza_misje(wiersz, silnik, klient_tlumacz, klient_redaktor, dostawca_redakcja):
+def przetworz_pojedyncza_misje(
+    wiersz,
+    silnik,
+    klient_tlumacz,
+    klient_redaktor,
+    dostawca_tlumaczenie,
+    dostawca_redakcja
+):
     """
-    Ta funkcja wykonuje całą pracę dla JEDNEJ misji.
+    Ta funkcja wykonuje całą pracę dla jednej misji.
     Będzie uruchamiana równolegle w wielu wątkach.
     """
     misja_id = wiersz["MISJA_ID_MOJE_PK"]
@@ -207,14 +214,29 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient_tlumacz, klient_redaktor, 
 
             # ETAP 1: TŁUMACZENIE
             print(f"--- [ID: {misja_id}] Start Tłumaczenia... ---")
-            odp_tlumacz = klient_tlumacz.models.generate_content(
-                model="gemini-3.1-pro-preview",
-                contents=wsad_json,
-                config={"system_instruction": instrukcja_tlumacz(txt_npc, txt_sk), "response_mime_type": "application/json"}
-            )
-            przetlumaczone = json.loads(odp_tlumacz.text)
+            if dostawca_tlumaczenie == "gemini":
+                odp_tlumacz = klient_tlumacz.models.generate_content(
+                    model="gemini-3.1-pro-preview",
+                    contents=wsad_json,
+                    config={"system_instruction": instrukcja_tlumacz(txt_npc, txt_sk), "response_mime_type": "application/json"}
+                )
+                przetlumaczone = json.loads(odp_tlumacz.text)
+            elif dostawca_tlumaczenie == "claude":
+                with klient_tlumacz.messages.stream(
+                    model="claude-opus-4-6",
+                    max_tokens=25000,
+                    thinking={"type": "adaptive"},
+                    system=instrukcja_tlumacz(txt_npc, txt_sk),
+                    messages=[
+                        {"role": "user", "content": wsad_json}
+                    ]
+                ) as stream:
+                    odp_tlumacz = stream.get_final_message()
+
+                przetlumaczone = wczytaj_json_z_odpowiedzi_claude(odp_tlumacz, "tłumacza")
+            else:
+                raise ValueError(f"Nieobsługiwany dostawca tłumaczenia: {dostawca_tlumaczenie}")
             
-            # Zapis Etapu 1
             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
 
             # ETAP 2: REDAKCJA
@@ -239,11 +261,10 @@ def przetworz_pojedyncza_misje(wiersz, silnik, klient_tlumacz, klient_redaktor, 
                 ) as stream:
                     odp_redaktor = stream.get_final_message()
 
-                zredagowane = _wczytaj_json_z_odpowiedzi_claude(odp_redaktor, "redaktora")
+                zredagowane = wczytaj_json_z_odpowiedzi_claude(odp_redaktor, "redaktora")
             else:
                 raise ValueError(f"Nieobsługiwany dostawca redakcji: {dostawca_redakcja}")
-
-            # Zapis Etapu 2
+            
             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, zredagowane, "2_ZREDAGOWANO")
             
             print(f"+++ [ID: {misja_id}] GOTOWE (Tłumaczenie + Redakcja) +++")
@@ -258,17 +279,24 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
     dodatek: str | None = None,
     id_misji: int | None = None, 
     liczba_watkow: int = 4,
-    dostawca_redakcja: str = "gemini"
+    dostawca_redakcja: str = "gemini",
+    dostawca_tlumaczenie: str = "gemini"
 ):
+    dostawca_tlumaczenie = dostawca_tlumaczenie.lower().strip()
     dostawca_redakcja = dostawca_redakcja.lower().strip()
+
+    if dostawca_tlumaczenie not in {"gemini", "claude"}:
+        raise ValueError("Parametr 'dostawca_tlumaczenie' musi mieć wartość: 'gemini' albo 'claude'.")
     if dostawca_redakcja not in {"gemini", "claude"}:
         raise ValueError("Parametr 'dostawca_redakcja' musi mieć wartość: 'gemini' albo 'claude'.")
 
-    klient_tlumacz = zaladuj_api_i_klienta("API_TLUMACZENIE", dostawca="gemini")
-    if dostawca_redakcja == "gemini":
+    klucz_tlumaczenie = "API_TLUMACZENIE_CLAUDE" if dostawca_tlumaczenie == "claude" else "API_TLUMACZENIE"
+    klient_tlumacz = zaladuj_api_i_klienta(klucz_tlumaczenie, dostawca=dostawca_tlumaczenie)
+    if dostawca_redakcja == dostawca_tlumaczenie:
         klient_redaktor = klient_tlumacz
     else:
-        klient_redaktor = zaladuj_api_i_klienta("API_REDAGOWANIE", dostawca="claude")
+        klucz_redakcja = "API_REDAGOWANIE_CLAUDE" if dostawca_redakcja == "claude" else "API_REDAGOWANIE"
+        klient_redaktor = zaladuj_api_i_klienta(klucz_redakcja, dostawca=dostawca_redakcja)
     
     warunki_sql = sklej_warunki_w_WHERE(kraina, fabula, dodatek, id_misji)
 
@@ -321,6 +349,7 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
         return
 
     print(f"Znaleziono {liczba_zadan} misji do przetworzenia. Uruchamiam {liczba_watkow} wątków...")
+    print(f"Dostawca tłumaczenia: {dostawca_tlumaczenie}")
     print(f"Dostawca redakcji: {dostawca_redakcja}")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
@@ -332,6 +361,7 @@ def misje_dialogi_po_polsku_zapisz_do_db_multithread(
                 silnik,
                 klient_tlumacz,
                 klient_redaktor,
+                dostawca_tlumaczenie,
                 dostawca_redakcja
             )
             futures.append(future)
@@ -370,7 +400,6 @@ def tych_npcow_nie_tlumacz(silnik, klient):
         
         batch_seria = df["NAZWA"].iloc[start:koniec]
         dfj = batch_seria.to_json(force_ascii=False)
-
 
         print(f"   -> Wysyłam zapytanie do API (rozmiar JSON: {len(dfj)} znaków)...")
         start_czas = time.time()

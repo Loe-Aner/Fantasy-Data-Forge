@@ -2,6 +2,7 @@
 .env.*
 *.pem
 *.key
+.git
 
 __pycache__/
 *.pyc
@@ -45,3 +46,4 @@ tempCodeRunnerFile.lua
 
 projects/World of Warcraft/addon_KronikiWarcrafta/01_BazaDanych
 projects/World of Warcraft/excel-zatwierdzenia
+projects/World of Warcraft/addon_KronikiWarcrafta/saved_variables_zrzuty

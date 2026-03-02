@@ -32,7 +32,7 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
         INNER JOIN dbo.NPC_STATUSY AS ns1
            ON ns1.NPC_ID_FK = m.NPC_START_ID
           AND ns1.STATUS = '3_ZATWIERDZONO'
-        LEFT OUTER JOIN dbo.NPC_STATUSY AS ns2
+        LEFT JOIN dbo.NPC_STATUSY AS ns2
           ON ns2.NPC_ID_FK = m.NPC_KONIEC_ID
          AND ns2.STATUS = '3_ZATWIERDZONO'
         WHERE MISJA_ID_MOJE_PK IN :misje_id
@@ -43,7 +43,7 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
         SELECT 
         ds.MISJA_ID_MOJE_FK, ds.SEGMENT, ds.STATUS, ds.NR_BLOKU_DIALOGU, ds.NR_WYPOWIEDZI, ds.TRESC, ns.NAZWA AS NAZWA_NPC_START
         FROM [dbo].[DIALOGI_STATUSY] AS ds
-        LEFT OUTER JOIN dbo.NPC_STATUSY AS ns
+        LEFT JOIN dbo.NPC_STATUSY AS ns
           ON ns.NPC_ID_FK = ds.NPC_ID_FK
          AND ns.STATUS = '3_ZATWIERDZONO'
         WHERE MISJA_ID_MOJE_FK IN :misje_id
@@ -77,7 +77,6 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
     df_misje_dialogi = pd.DataFrame(misje_dialogi)
     df_misje_tresci = pd.DataFrame(misje_tresci)
 
-    # Słowniki mapujące NPC z pobranych tytułów
     mapa_npc_start = df_tytuly.set_index("MISJA_ID_MOJE_PK")["NAZWA_NPC_START"].to_dict()
     mapa_npc_koniec = df_tytuly.set_index("MISJA_ID_MOJE_PK")["NAZWA_NPC_KONIEC"].to_dict()
 

@@ -301,8 +301,15 @@ def zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, status):
         print(f"!!! BŁĄD: Nieprawidłowy status: {status}")
         return
 
-    q_select_npc = text("SELECT NPC_ID_FK FROM dbo.NPC_STATUSY WHERE NAZWA = :nazwa AND STATUS = '3_ZATWIERDZONO'")
-    q_update_tytul = text("UPDATE dbo.MISJE SET MISJA_TYTUL_PL = :tytul_pl WHERE MISJA_ID_MOJE_PK = :misja_id")
+    q_select_npc = text("""SELECT NPC_ID_FK 
+                           FROM dbo.NPC_STATUSY 
+                           WHERE NAZWA = :nazwa 
+                             AND STATUS = '3_ZATWIERDZONO'""")
+    
+    q_update_tytul = text("""UPDATE dbo.MISJE
+                             SET MISJA_TYTUL_PL = :tytul_pl,
+                                 STATUS_MISJI = :status
+                             WHERE MISJA_ID_MOJE_PK = :misja_id""")
     
     q_insert_misje = text("""
         INSERT INTO dbo.MISJE_STATUSY (MISJA_ID_MOJE_FK, SEGMENT, PODSEGMENT, STATUS, NR, TRESC)
@@ -346,7 +353,7 @@ def zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, status):
     try:
         with silnik.begin() as conn:
             if tytul_pl:
-                conn.execute(q_update_tytul, {"tytul_pl": tytul_pl, "misja_id": misja_id})
+                conn.execute(q_update_tytul, {"tytul_pl": tytul_pl, "misja_id": misja_id, "status": int(status[:1])})
                 print(f"-> Zaktualizowano tytuł na: '{tytul_pl}'")
 
             if "Dialogi_PL" in przetlumaczone and przetlumaczone["Dialogi_PL"]["Gossipy_Dymki_PL"]:
