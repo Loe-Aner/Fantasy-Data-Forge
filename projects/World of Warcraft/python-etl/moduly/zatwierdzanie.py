@@ -256,6 +256,17 @@ def zatwierdz_tlumaczenia(silnik, sciezka):
         )
         print(f"Przerzucono do bazy misje: {liczba_misji}/{liczba_misji}.")
 
+        with silnik.begin() as conn:
+            misje_id = df_misje["MISJA_ID"].unique().tolist()
+            q_update_status = text("""
+                UPDATE dbo.MISJE
+                SET STATUS_MISJI = 3
+                WHERE MISJA_ID_MOJE_PK IN :misje_id
+            """).bindparams(bindparam("misje_id", expanding=True))
+
+            conn.execute(q_update_status, {"misje_id": misje_id})
+            print(f"Dodano status dla misji: {liczba_misji}/{liczba_misji}")
+
     except IntegrityError as e:
         print(f"--- BŁĄD integralności danych przy misjach: {e}")
 

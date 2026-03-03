@@ -272,7 +272,7 @@ def przetworz_pojedyncza_misje(
         except Exception as e:
             print(f"!!! BŁĄD przy misji {misja_id}: {e}")
 
-def misje_dialogi_po_polsku_zapisz_do_db_multithread(
+def misje_dialogi_przetlumacz_zredaguj_zapisz(
     silnik, 
     kraina: str | None = None, 
     fabula: str | None = None, 

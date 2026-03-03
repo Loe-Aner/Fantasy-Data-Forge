@@ -11,18 +11,29 @@ SELECT MISJA_ID_MOJE_FK
 INTO #misje_bez_redakcji
 FROM statusy_liczby
 GROUP BY MISJA_ID_MOJE_FK
-HAVING SUM(status_liczba) = 1;
+HAVING SUM(status_liczba) = 1
+;
+
+SELECT *
+FROM #misje_bez_redakcji
 
 DELETE cel
-FROM dbo.MISJE_STATUSY cel
+FROM dbo.MISJE_STATUSY AS cel
 INNER JOIN #misje_bez_redakcji zrodlo 
   ON cel.MISJA_ID_MOJE_FK = zrodlo.MISJA_ID_MOJE_FK
-WHERE cel.STATUS = '1_PRZET£UMACZONO';
+WHERE cel.STATUS = '1_PRZET£UMACZONO'
+;
 
 DELETE cel
-FROM dbo.DIALOGI_STATUSY cel
+FROM dbo.DIALOGI_STATUSY AS cel
 INNER JOIN #misje_bez_redakcji zrodlo 
   ON cel.MISJA_ID_MOJE_FK = zrodlo.MISJA_ID_MOJE_FK
-WHERE cel.STATUS = '1_PRZET£UMACZONO';
+WHERE cel.STATUS = '1_PRZET£UMACZONO'
+;
+
+UPDATE dbo.MISJE
+SET STATUS_MISJI = 0
+WHERE MISJA_ID_MOJE_PK IN (SELECT MISJA_ID_MOJE_FK  FROM #misje_bez_redakcji)
+;
 
 DROP TABLE #misje_bez_redakcji;
