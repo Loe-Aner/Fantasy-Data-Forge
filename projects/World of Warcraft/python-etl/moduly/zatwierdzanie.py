@@ -1,4 +1,5 @@
 from sqlalchemy import text, bindparam
+from sqlalchemy.exc import IntegrityError, DBAPIError, SQLAlchemyError
 import pandas as pd
 
 from moduly.utils import sklej_warunki_w_WHERE
@@ -207,3 +208,78 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
             })
 
     return df_polaczone
+
+def zatwierdz_tlumaczenia(silnik, sciezka):
+    df = pd.read_excel(sciezka, usecols=["MISJA_ID", "SEGMENT", "PODSEGMENT", "NR_BLOKU", "NR_WYP", "STATUS", "TRESC", "NAZWA_NPC_START"])
+    tylko_zatwierdzone = df.loc[:, "STATUS"] == "3_ZATWIERDZONO"
+    bez_tytulu = df.loc[:, "SEGMENT"] != "TYTUL"
+
+    df_zatw = (
+        df
+        [tylko_zatwierdzone]
+        [bez_tytulu]
+    )
+    kolumny_misje = {
+        "MISJA_ID": "MISJA_ID_MOJE_FK",
+        "NR_BLOKU": "NR"
+    }
+    kolumny_dialogi = {
+        "MISJA_ID": "MISJA_ID_MOJE_FK",
+        "NR_BLOKU": "NR_BLOKU_DIALOGU",
+        "NR_WYP": "NR_WYPOWIEDZI",
+        "NAZWA_NPC_START": "NPC_ID_FK"
+    }
+
+    with silnik.connect() as conn:
+        npc = df_zatw["NAZWA_NPC_START"].unique().tolist()
+        q_select_npcid = text("""
+            SELECT NAZWA, NPC_ID_FK
+            FROM dbo.NPC_STATUSY
+            WHERE NAZWA IN :npc_pl
+        """).bindparams(bindparam("npc_pl", expanding=True))
+
+        npc_id = conn.execute(q_select_npcid, {"npc_pl": npc}).mappings().all()
+        npc_id_slw = {wiersz["NAZWA"]: wiersz["NPC_ID_FK"] for wiersz in npc_id}
+        #print(npc_id_slw)
+
+    df_misje   = df_zatw.loc[:, ["MISJA_ID", "SEGMENT", "PODSEGMENT", "NR_BLOKU", "STATUS", "TRESC"]]
+    df_dialogi = df_zatw.loc[:, ["MISJA_ID", "SEGMENT", "NR_BLOKU", "NR_WYP", "STATUS", "NAZWA_NPC_START", "TRESC"]]
+    bez_dialogow = ~df_misje.loc[:, "SEGMENT"].isin(["DYMEK", "GOSSIP"])
+    liczba_misji = int(bez_dialogow.sum())
+    liczba_dialogow = int((~bez_dialogow).sum())
+    try:
+        (
+            df_misje
+            [bez_dialogow]
+            .rename(columns=kolumny_misje)
+            .to_sql(schema="dbo", name="MISJE_STATUSY", con=silnik, if_exists="append", index=False)
+        )
+        print(f"Przerzucono do bazy misje: {liczba_misji}/{liczba_misji}.")
+
+    except IntegrityError as e:
+        print(f"--- BŁĄD integralności danych przy misjach: {e}")
+
+    except DBAPIError as e:
+        print(f"--- BŁĄD DB/API przy misjach: {e}")
+
+    except SQLAlchemyError as e:
+        print(f"--- BŁĄD SQLAlchemy przy misjach: {e}")
+
+    try:
+        (
+            df_dialogi
+            [~bez_dialogow]
+            .rename(columns=kolumny_dialogi)
+            .assign(NPC_ID_FK=lambda x: x["NPC_ID_FK"].map(npc_id_slw))
+            .to_sql(schema="dbo", name="DIALOGI_STATUSY", con=silnik, if_exists="append", index=False)
+        )
+        print(f"Przerzucono do bazy dialogi: {liczba_dialogow}/{liczba_dialogow}.")
+
+    except IntegrityError as e:
+        print(f"--- BŁĄD integralności danych przy dialogach: {e}")
+
+    except DBAPIError as e:
+        print(f"--- BŁĄD DB/API przy dialogach: {e}")
+
+    except SQLAlchemyError as e:
+        print(f"--- BŁĄD SQLAlchemy przy dialogach: {e}")
