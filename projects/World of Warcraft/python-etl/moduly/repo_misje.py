@@ -134,9 +134,9 @@ def pobierz_liste_id_dla_dodatku(silnik, nazwa_dodatku: str):
 
 def ustaw_id_misji_duble_123456789(silnik):
     """
-    Koryguje ID misji z wowheada. Czasami ID się dublują przez podobną nazwę.
-    Skrypt koryguje to podstawiając pod niektóre id = 123456789.
-    W kolejnych skryptach takie misje nie będą brane pod uwagę, by nie zaśmiecać bazy danych.
+    Czasami ID się dublują przez podobną nazwę. Skrypt koryguje to podstawiając pod niektóre id = 123456789. 
+    W kolejnych skryptach takie misje nie będą brane pod uwagę, by nie zaśmiecać bazy danych. 
+    Na koncu aktualizuje status misji na -1 (dla id jak wyzej).
     """
     q_select = text("""
     WITH ile_razy_wystepuje AS (
@@ -159,23 +159,32 @@ def ustaw_id_misji_duble_123456789(silnik):
             MIN(LEN(MISJA_URL_WIKI)) OVER (PARTITION BY MISJA_ID_Z_GRY) AS MIN_DLUGOSC
         FROM ile_razy_wystepuje
         WHERE CNT > 1
+    ),
+
+    wyliczone_id AS (
+        SELECT
+            MISJA_ID_MOJE_PK,
+            CASE
+                WHEN CNT = 2 AND DLUGOSC_URL = MIN_DLUGOSC THEN 123456789
+                WHEN CNT = 2 THEN MISJA_ID_Z_GRY
+                WHEN CNT >= 3 AND DLUGOSC_URL = MIN_DLUGOSC THEN MISJA_ID_Z_GRY
+                WHEN CNT >= 3 THEN 123456789
+                ELSE MISJA_ID_Z_GRY
+            END AS MISJA_ID_Z_GRY
+        FROM cnt_i_dlugosc
     )
 
     SELECT
         MISJA_ID_MOJE_PK,
-        CASE
-            WHEN CNT = 2 AND DLUGOSC_URL = MIN_DLUGOSC THEN '123456789'
-            WHEN CNT = 2 THEN MISJA_ID_Z_GRY
-            WHEN CNT >= 3 AND DLUGOSC_URL = MIN_DLUGOSC THEN MISJA_ID_Z_GRY
-            WHEN CNT >= 3 THEN '123456789'
-            ELSE MISJA_ID_Z_GRY
-        END AS MISJA_ID_Z_GRY
-    FROM cnt_i_dlugosc
+        MISJA_ID_Z_GRY
+    FROM wyliczone_id
+    WHERE MISJA_ID_Z_GRY = 123456789
     """)
 
     q_update = text("""
         UPDATE dbo.MISJE
-        SET MISJA_ID_Z_GRY = :MISJA_ID_Z_GRY
+        SET MISJA_ID_Z_GRY = :MISJA_ID_Z_GRY,
+            STATUS_MISJI = -1
         WHERE MISJA_ID_MOJE_PK = :MISJA_ID_MOJE_PK
     """)
 
@@ -183,7 +192,7 @@ def ustaw_id_misji_duble_123456789(silnik):
         w = conn.execute(q_select).mappings().all()
         if len(w) > 0:
             wynik = conn.execute(q_update, w)
-            print(f"Zaktualizowano: {wynik.rowcount} wierszy.")
+            print(f"Zaktualizowano: {wynik.rowcount} wierszy na ID 123456789 i zmieniono statusy na '-1'.")
         else:
             print("Brak danych do dodania.")
 

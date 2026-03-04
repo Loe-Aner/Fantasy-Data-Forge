@@ -20,8 +20,8 @@ def generuj_hash_djb2(tekst):
 
 # if __name__ == "__main__":
 #     przyklady = [
-#         ("kikikiki123", "11d253cbea07cd3a"),
-#         ("Slay 7 Quilboar within the Quilboar Briarpatch.", "be2dd595083a6236")
+#         ("If we are to save my people, then we need to clear an evacuation path. We cannot leave them to fend for themselves.", "0698a88a3cd23ce7"),
+#         ("By the Light! We cannot win this battle. Our only hope lies in the Sunwell!", "a45e0f3d8dbb6100")
 #     ]
 
 #     print("\n" + "=" * 50)

@@ -161,7 +161,11 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
     tagi_zmiana = {
         "<Name>":  r"{imie}", 
         "<Class>": r"{klasa=wolacz}",
-        "<Race>":  r"{rasa=wolacz}"
+        "<Race>":  r"{rasa=wolacz}",
+        # nwm na ile ponizsze potrzebne sa, ale dodaje w razie w
+        "<name>":  r"{imie}", 
+        "<class>": r"{klasa=wolacz}",
+        "<race>":  r"{rasa=wolacz}"
     }
     df_polaczone["TRESC"] = df_polaczone["TRESC"].str.replace(tagi_zmiana, regex=False)
     

@@ -7,12 +7,19 @@ WITH statusy_liczby AS (
     FROM dbo.MISJE_STATUSY
     GROUP BY MISJA_ID_MOJE_FK, STATUS
 )
-SELECT MISJA_ID_MOJE_FK
-INTO #misje_z_redakcja
-FROM statusy_liczby
-GROUP BY MISJA_ID_MOJE_FK
-HAVING SUM(status_liczba) = 6
-;
+--SELECT MISJA_ID_MOJE_FK
+--INTO #misje_z_redakcja
+--FROM statusy_liczby
+--GROUP BY MISJA_ID_MOJE_FK
+--HAVING SUM(status_liczba) = 6
+--;
 
-SELECT *
-FROM #misje_z_redakcja
+--UPDATE dbo.MISJE
+--SET STATUS_MISJI = 0
+--WHERE STATUS_MISJI IS NULL
+--;
+
+UPDATE dbo.MISJE
+SET STATUS_MISJI = -1
+WHERE MISJA_ID_Z_GRY = 123456789
+;
