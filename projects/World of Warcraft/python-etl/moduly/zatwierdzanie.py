@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError, DBAPIError, SQLAlchemyError
 import pandas as pd
 
 from moduly.utils import sklej_warunki_w_WHERE
+from moduly.utils import generuj_hash_djb2
 
 def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = None, dodatek = None, sciezka = None):
 
@@ -214,9 +215,21 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
     return df_polaczone
 
 def zatwierdz_tlumaczenia(silnik, sciezka):
-    df = pd.read_excel(sciezka, usecols=["MISJA_ID", "SEGMENT", "PODSEGMENT", "NR_BLOKU", "NR_WYP", "STATUS", "TRESC", "NAZWA_NPC_START"])
-    tylko_zatwierdzone = df.loc[:, "STATUS"] == "3_ZATWIERDZONO"
+    df = pd.read_excel(
+        sciezka,
+        usecols=["MISJA_ID", "SEGMENT", "PODSEGMENT", "NR_BLOKU", "NR_WYP", "STATUS", "TRESC", "NAZWA_NPC_START"]
+    )
+    tylko_zatwierdzone = df.loc[:, "STATUS"].isin(["0_ORYGINAŁ", "3_ZATWIERDZONO"])
     bez_tytulu = df.loc[:, "SEGMENT"] != "TYTUL"
+
+    df_tytul_en = (
+        df.loc[
+            (df["SEGMENT"] == "TYTUL") & (df["STATUS"] == "0_ORYGINAŁ"),
+            ["MISJA_ID", "TRESC"]
+        ]
+        .drop_duplicates(subset=["MISJA_ID"])
+        .assign(HASH_EN=lambda x: x["TRESC"].apply(generuj_hash_djb2))
+    )
 
     df_zatw = (
         df
@@ -235,7 +248,7 @@ def zatwierdz_tlumaczenia(silnik, sciezka):
     }
 
     with silnik.connect() as conn:
-        npc = df_zatw["NAZWA_NPC_START"].unique().tolist()
+        npc = df_zatw["NAZWA_NPC_START"].dropna().unique().tolist()
         q_select_npcid = text("""
             SELECT NAZWA, NPC_ID_FK
             FROM dbo.NPC_STATUSY
@@ -244,24 +257,51 @@ def zatwierdz_tlumaczenia(silnik, sciezka):
 
         npc_id = conn.execute(q_select_npcid, {"npc_pl": npc}).mappings().all()
         npc_id_slw = {wiersz["NAZWA"]: wiersz["NPC_ID_FK"] for wiersz in npc_id}
-        #print(npc_id_slw)
 
-    df_misje   = df_zatw.loc[:, ["MISJA_ID", "SEGMENT", "PODSEGMENT", "NR_BLOKU", "STATUS", "TRESC"]]
+    df_misje = df_zatw.loc[:, ["MISJA_ID", "SEGMENT", "PODSEGMENT", "NR_BLOKU", "STATUS", "TRESC"]]
     df_dialogi = df_zatw.loc[:, ["MISJA_ID", "SEGMENT", "NR_BLOKU", "NR_WYP", "STATUS", "NAZWA_NPC_START", "TRESC"]]
     bez_dialogow = ~df_misje.loc[:, "SEGMENT"].isin(["DYMEK", "GOSSIP"])
-    liczba_misji = int(bez_dialogow.sum())
-    liczba_dialogow = int((~bez_dialogow).sum())
+
+    df_misje_baza = (
+        df_misje
+        [bez_dialogow]
+        .rename(columns=kolumny_misje)
+        .sort_values(by=["MISJA_ID_MOJE_FK", "SEGMENT", "PODSEGMENT", "NR", "STATUS"])
+    )
+
+    df_oryginal = (
+        df_misje_baza
+        [df_misje_baza["STATUS"] == "0_ORYGINAŁ"]
+        .reset_index(drop=True)
+        .assign(HASH_EN=lambda x: x["TRESC"].apply(generuj_hash_djb2))
+    )
+
+    df_zatwierdzono = (
+        df_misje_baza
+        [df_misje_baza["STATUS"] == "3_ZATWIERDZONO"]
+        .reset_index(drop=True)
+    )
+
+    if len(df_oryginal) != len(df_zatwierdzono):
+        print(f"--- BŁĄD: Rozjazd liczby wierszy MISJE (0_ORYGINAŁ={len(df_oryginal)} vs 3_ZATWIERDZONO={len(df_zatwierdzono)})")
+        return
+
+    df_misje_final = df_zatwierdzono.copy()
+    df_misje_final["HASH_EN"] = df_oryginal["HASH_EN"].to_numpy()
+
+    liczba_misji = int(len(df_misje_final))
+    liczba_dialogow = int((df_dialogi[~bez_dialogow]["STATUS"] == "3_ZATWIERDZONO").sum())
+
     try:
         (
-            df_misje
-            [bez_dialogow]
-            .rename(columns=kolumny_misje)
+            df_misje_final
             .to_sql(schema="dbo", name="MISJE_STATUSY", con=silnik, if_exists="append", index=False)
         )
         print(f"Przerzucono do bazy misje: {liczba_misji}/{liczba_misji}.")
 
         with silnik.begin() as conn:
-            misje_id = df_misje["MISJA_ID"].unique().tolist()
+            misje_id = df_misje_final["MISJA_ID_MOJE_FK"].unique().tolist()
+
             q_update_status = text("""
                 UPDATE dbo.MISJE
                 SET STATUS_MISJI = 3
@@ -269,7 +309,22 @@ def zatwierdz_tlumaczenia(silnik, sciezka):
             """).bindparams(bindparam("misje_id", expanding=True))
 
             conn.execute(q_update_status, {"misje_id": misje_id})
-            print(f"Dodano status dla misji: {liczba_misji}/{liczba_misji}")
+            print(f"Dodano status dla misji: {len(misje_id)}/{len(misje_id)}")
+
+            q_update_hash_tytul = text("""
+                UPDATE dbo.MISJE
+                SET HASH_EN = :hash_en
+                WHERE MISJA_ID_MOJE_PK = :misja_id
+            """)
+
+            parametry_hash = [
+                {"misja_id": int(w["MISJA_ID"]), "hash_en": w["HASH_EN"]}
+                for w in df_tytul_en.loc[df_tytul_en["MISJA_ID"].isin(misje_id), ["MISJA_ID", "HASH_EN"]].to_dict("records")
+                if w["HASH_EN"] is not None
+            ]
+
+            if parametry_hash:
+                conn.execute(q_update_hash_tytul, parametry_hash)
 
     except IntegrityError as e:
         print(f"--- BŁĄD integralności danych przy misjach: {e}")
@@ -280,12 +335,37 @@ def zatwierdz_tlumaczenia(silnik, sciezka):
     except SQLAlchemyError as e:
         print(f"--- BŁĄD SQLAlchemy przy misjach: {e}")
 
+    df_dialogi_baza = (
+        df_dialogi
+        [~bez_dialogow]
+        .rename(columns=kolumny_dialogi)
+        .sort_values(by=["MISJA_ID_MOJE_FK", "SEGMENT", "NR_BLOKU_DIALOGU", "NR_WYPOWIEDZI", "STATUS"])
+    )
+
+    df_dialogi_oryginal = (
+        df_dialogi_baza
+        [df_dialogi_baza["STATUS"] == "0_ORYGINAŁ"]
+        .reset_index(drop=True)
+        .assign(HASH_EN=lambda x: x["TRESC"].apply(generuj_hash_djb2))
+    )
+
+    df_dialogi_zatwierdzono = (
+        df_dialogi_baza
+        [df_dialogi_baza["STATUS"] == "3_ZATWIERDZONO"]
+        .reset_index(drop=True)
+        .assign(NPC_ID_FK=lambda x: x["NPC_ID_FK"].map(npc_id_slw))
+    )
+
+    if len(df_dialogi_oryginal) != len(df_dialogi_zatwierdzono):
+        print(f"--- BŁĄD: Rozjazd liczby wierszy DIALOGI (0_ORYGINAŁ={len(df_dialogi_oryginal)} vs 3_ZATWIERDZONO={len(df_dialogi_zatwierdzono)})")
+        return
+
+    df_dialogi_final = df_dialogi_zatwierdzono.copy()
+    df_dialogi_final["HASH_EN"] = df_dialogi_oryginal["HASH_EN"].to_numpy()
+
     try:
         (
-            df_dialogi
-            [~bez_dialogow]
-            .rename(columns=kolumny_dialogi)
-            .assign(NPC_ID_FK=lambda x: x["NPC_ID_FK"].map(npc_id_slw))
+            df_dialogi_final
             .to_sql(schema="dbo", name="DIALOGI_STATUSY", con=silnik, if_exists="append", index=False)
         )
         print(f"Przerzucono do bazy dialogi: {liczba_dialogow}/{liczba_dialogow}.")

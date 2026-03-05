@@ -20,8 +20,7 @@ def generuj_hash_djb2(tekst):
 
 # if __name__ == "__main__":
 #     przyklady = [
-#         ("If we are to save my people, then we need to clear an evacuation path. We cannot leave them to fend for themselves.", "0698a88a3cd23ce7"),
-#         ("By the Light! We cannot win this battle. Our only hope lies in the Sunwell!", "a45e0f3d8dbb6100")
+#         ("Apocalyptic threats have taken many forms in Azeroth's history, but today we face Xal'atath and her Twilight's Blade.", "6b7431ab582fdb80")
 #     ]
 
 #     print("\n" + "=" * 50)
