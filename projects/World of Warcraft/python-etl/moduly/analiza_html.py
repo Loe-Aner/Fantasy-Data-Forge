@@ -1,3 +1,9 @@
+import pandas as pd
+from datetime import datetime
+import re
+
+from scraper_wiki_main import pobierz_soup
+
 def wyscrapuj_linki_z_kategorii_wiki(tresc) -> list[str]:
     """
     Wyciąga linki /wiki/... z div.mw-category (kategorie questów) i zwraca pełne URL-e.
@@ -51,3 +57,37 @@ def wyszukaj_link_nastepnej_strony_kategorii(tresc) -> str | None:
             return href
 
     return None
+
+def pobierz_przerzuc_questy_per_lvle(silnik, url: str):
+    soup = pobierz_soup(url)
+    if soup is None:
+        print("Błąd w zupce!")
+        return
+
+    wyniki = []
+
+    for item in soup.select("div.CategoryTreeItem"):
+        link = item.select_one("bdi a")
+        span = item.select_one("span[dir='ltr']")
+
+        if not link or not span:
+            continue
+
+        match_zakres = re.search(r"Quests at (\d+(?:-\d+)?)$", link.get_text(strip=True))
+        match_liczba = re.search(r"\(([\d,]+)\s*P\)", span.get_text(strip=True))
+
+        if match_zakres and match_liczba:
+            wyniki.append({
+                "zakres": match_zakres.group(1),
+                "liczba_misji": int(match_liczba.group(1).replace(",", ""))
+            })
+
+    try:
+        (
+        pd.DataFrame(wyniki)
+        .assign(DATA_STATUS=datetime.now().replace(microsecond=0))
+        .rename(columns={"zakres": "ZAKRES", "liczba_misji": "LICZBA_MISJI"})
+        .to_sql(schema="dbo", name="MISJE_ZMIANY_WIKI", con=silnik, if_exists="append", index=False)
+        )
+    except Exception as e:
+        print(f"--- Błąd podczas przerzucania danych: {e}")
