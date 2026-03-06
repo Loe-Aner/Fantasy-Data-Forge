@@ -7,9 +7,9 @@ from moduly.repo_NPC import (
 )
 from moduly.repo_misje import (
     zapewnij_misje_i_pobierz_id,
-    dodaj_status_misji
+    dodaj_statusy_misji_batch
 )
-from moduly.repo_dialogi import dodaj_status_dialogu
+from moduly.repo_dialogi import dodaj_statusy_dialogu_batch
 
 def zapisz_npc_i_status_do_db_z_wyniku(
         silnik,
@@ -109,6 +109,7 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
         misja_id = misja_id_pl
 
     sekcje_do_statusow = [f"Cele_{jezyk}", f"Treść_{jezyk}", f"Postęp_{jezyk}", f"Zakończenie_{jezyk}", f"Nagrody_{jezyk}"]
+    wszystkie_wiersze_misje = []
 
     for segment in sekcje_do_statusow:
         segment_db = mapa_segment.get(segment)
@@ -137,16 +138,14 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
                     except ValueError:
                         nr = 1
 
-                    dodaj_status_misji(
-                        silnik=silnik,
-                        tabela_misje_statusy=tabela_misje_statusy,
-                        misja_id=misja_id,
-                        segment=segment_db,
-                        podsegment=podsegment_db,
-                        nr=nr,
-                        status=status,
-                        tresc=tresc
-                    )
+                    wszystkie_wiersze_misje.append({
+                        "misja_id": misja_id,
+                        "segment": segment_db,
+                        "podsegment": podsegment_db,
+                        "nr": nr,
+                        "status": status,
+                        "tresc": tresc
+                    })
         else:
             for nr_key, tresc in segment_dict.items():
                 if tresc is None:
@@ -160,16 +159,20 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
                 except ValueError:
                     nr = 1
 
-                dodaj_status_misji(
-                    silnik=silnik,
-                    tabela_misje_statusy=tabela_misje_statusy,
-                    misja_id=misja_id,
-                    segment=segment_db,
-                    podsegment=None,
-                    nr=nr,
-                    status=status,
-                    tresc=tresc
-                )
+                wszystkie_wiersze_misje.append({
+                    "misja_id": misja_id,
+                    "segment": segment_db,
+                    "podsegment": None,
+                    "nr": nr,
+                    "status": status,
+                    "tresc": tresc
+                })
+
+    dodaj_statusy_misji_batch(
+        silnik=silnik,
+        tabela_misje_statusy=tabela_misje_statusy,
+        rekordy=wszystkie_wiersze_misje
+    )
 
     return misja_id
 
@@ -222,6 +225,8 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
     if not isinstance(sequence, list) or len(sequence) == 0:
         return
 
+    wszystkie_wiersze_dialogi = []
+
     for el in sequence:
         typ = (el.get("typ") or "").strip()
         segment_db = mapa_segment.get(typ)
@@ -263,17 +268,21 @@ def zapisz_dialogi_statusy_do_db_z_wyniku(
             except ValueError:
                 nr_wypowiedzi = 1
 
-            dodaj_status_dialogu(
-                silnik=silnik,
-                tabela_dialogi_statusy=tabela_dialogi_statusy,
-                misja_id=misja_id,
-                segment=segment_db,
-                nr_bloku_dialogu=nr_bloku_dialogu,
-                nr_wypowiedzi=nr_wypowiedzi,
-                npc_id_fk=npc_id_fk,
-                status=status,
-                tresc=tresc
-            )
+            wszystkie_wiersze_dialogi.append({
+                "misja_id_fk": misja_id,
+                "segment": segment_db,
+                "status": status,
+                "nr_bloku_dialogu": nr_bloku_dialogu,
+                "nr_wypowiedzi": nr_wypowiedzi,
+                "npc_id_fk": npc_id_fk,
+                "tresc": tresc
+            })
+
+    dodaj_statusy_dialogu_batch(
+        silnik=silnik,
+        tabela_dialogi_statusy=tabela_dialogi_statusy,
+        rekordy=wszystkie_wiersze_dialogi
+    )
 
 def przefiltruj_dane_misji(dane_wejsciowe, jezyk: str = "EN"):
     sekcja_misje = dane_wejsciowe.get(f"Misje_{jezyk}", {})

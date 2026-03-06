@@ -2,8 +2,8 @@ DECLARE @sciezka_pliku NVARCHAR(256);
 DECLARE @data_tekst NVARCHAR(20);
 
 SET @data_tekst = FORMAT(GETDATE(), 'ddMMyyyy');
-SET @sciezka_pliku = 'D:\' + @data_tekst + '.bak';
---SET @sciezka_pliku = 'C:\SQLBACKUP\' + @data_tekst + '.bak';
+--SET @sciezka_pliku = 'D:\' + @data_tekst + '.bak';
+SET @sciezka_pliku = 'C:\SQLBACKUP\' + @data_tekst + '.bak';
 
 BACKUP DATABASE WoW_PL
 TO DISK = @sciezka_pliku

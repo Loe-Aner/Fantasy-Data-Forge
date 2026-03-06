@@ -20,12 +20,13 @@ from scraper_wiki_main import parsuj_misje_z_url, dekompresuj_html
 
 # BAZA
 kategorie = [
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_1-80",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_10-80",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_20-80",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_30-80",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_40-80",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_50-80"
+    "https://warcraft.wiki.gg/wiki/Category:Quests_at_25"
+    # "https://warcraft.wiki.gg/wiki/Category:Quests_at_1-80",
+    # "https://warcraft.wiki.gg/wiki/Category:Quests_at_10-80",
+    # "https://warcraft.wiki.gg/wiki/Category:Quests_at_20-80",
+    # "https://warcraft.wiki.gg/wiki/Category:Quests_at_30-80",
+    # "https://warcraft.wiki.gg/wiki/Category:Quests_at_40-80",
+    # "https://warcraft.wiki.gg/wiki/Category:Quests_at_50-80"
 
     # "https://warcraft.wiki.gg/wiki/Category:Quests_at_25-80"
     # "https://warcraft.wiki.gg/wiki/Category:Quests_at_90",

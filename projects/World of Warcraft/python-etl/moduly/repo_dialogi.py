@@ -3,6 +3,20 @@ from sqlalchemy.exc import IntegrityError
 
 from moduly.db_core import _czy_duplikat
 
+def pobierz_sql_insert_status_dialogu(tabela_dialogi_statusy: str):
+    return text(f"""
+        INSERT INTO {tabela_dialogi_statusy} (
+            MISJA_ID_MOJE_FK, SEGMENT, STATUS,
+            NR_BLOKU_DIALOGU, NR_WYPOWIEDZI, NPC_ID_FK,
+            TRESC
+        )
+        VALUES (
+            :misja_id_fk, :segment, :status,
+            :nr_bloku_dialogu, :nr_wypowiedzi, :npc_id_fk,
+            :tresc
+        );
+    """)
+
 def dodaj_status_dialogu(
         silnik,
         tabela_dialogi_statusy: str,
@@ -15,18 +29,7 @@ def dodaj_status_dialogu(
         tresc: str
     ) -> None:
 
-    q_insert_status = text(f"""
-        INSERT INTO {tabela_dialogi_statusy} (
-            MISJA_ID_MOJE_FK, SEGMENT, STATUS,
-            NR_BLOKU_DIALOGU, NR_WYPOWIEDZI, NPC_ID_FK,
-            TRESC
-        )
-        VALUES (
-            :misja_id_fk, :segment, :status,
-            :nr_bloku_dialogu, :nr_wypowiedzi, :npc_id_fk,
-            :tresc
-        );
-    """)
+    q_insert_status = pobierz_sql_insert_status_dialogu(tabela_dialogi_statusy)
 
     try:
         with silnik.begin() as conn:
@@ -46,3 +49,34 @@ def dodaj_status_dialogu(
         if _czy_duplikat(e):
             return
         raise
+
+def dodaj_statusy_dialogu_batch(
+        silnik,
+        tabela_dialogi_statusy: str,
+        rekordy: list[dict]
+    ) -> None:
+
+    if not rekordy:
+        return
+
+    q_insert_status = pobierz_sql_insert_status_dialogu(tabela_dialogi_statusy)
+
+    try:
+        with silnik.begin() as conn:
+            conn.execute(q_insert_status, rekordy)
+    except IntegrityError as e:
+        if not _czy_duplikat(e):
+            raise
+
+        for rekord in rekordy:
+            dodaj_status_dialogu(
+                silnik=silnik,
+                tabela_dialogi_statusy=tabela_dialogi_statusy,
+                misja_id=rekord["misja_id_fk"],
+                segment=rekord["segment"],
+                nr_bloku_dialogu=rekord["nr_bloku_dialogu"],
+                nr_wypowiedzi=rekord["nr_wypowiedzi"],
+                npc_id_fk=rekord["npc_id_fk"],
+                status=rekord["status"],
+                tresc=rekord["tresc"]
+            )

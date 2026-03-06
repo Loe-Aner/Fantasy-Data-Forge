@@ -3,6 +3,14 @@ from sqlalchemy.exc import IntegrityError
 
 from moduly.db_core import _czy_duplikat
 
+def pobierz_sql_insert_status_misji(tabela_misje_statusy: str):
+    return text(f"""
+        INSERT INTO {tabela_misje_statusy} (
+            MISJA_ID_MOJE_FK, SEGMENT, PODSEGMENT, STATUS, NR, TRESC
+        )
+        VALUES (:misja_id, :segment, :podsegment, :status, :nr, :tresc);
+    """)
+
 def zapewnij_misje_i_pobierz_id(
         silnik,
         tabela_npc: str,
@@ -91,12 +99,7 @@ def dodaj_status_misji(
         tresc: str
     ) -> None:
 
-    q_insert_status = text(f"""
-        INSERT INTO {tabela_misje_statusy} (
-            MISJA_ID_MOJE_FK, SEGMENT, PODSEGMENT, STATUS, NR, TRESC
-        )
-        VALUES (:misja_id, :segment, :podsegment, :status, :nr, :tresc);
-    """)
+    q_insert_status = pobierz_sql_insert_status_misji(tabela_misje_statusy)
 
     try:
         with silnik.begin() as conn:
@@ -115,6 +118,36 @@ def dodaj_status_misji(
         if _czy_duplikat(e):
             return
         raise
+
+def dodaj_statusy_misji_batch(
+        silnik,
+        tabela_misje_statusy: str,
+        rekordy: list[dict]
+    ) -> None:
+
+    if not rekordy:
+        return
+
+    q_insert_status = pobierz_sql_insert_status_misji(tabela_misje_statusy)
+
+    try:
+        with silnik.begin() as conn:
+            conn.execute(q_insert_status, rekordy)
+    except IntegrityError as e:
+        if not _czy_duplikat(e):
+            raise
+
+        for rekord in rekordy:
+            dodaj_status_misji(
+                silnik=silnik,
+                tabela_misje_statusy=tabela_misje_statusy,
+                misja_id=rekord["misja_id"],
+                segment=rekord["segment"],
+                podsegment=rekord["podsegment"],
+                nr=rekord["nr"],
+                status=rekord["status"],
+                tresc=rekord["tresc"]
+            )
 
 def pobierz_liste_id_dla_dodatku(silnik, nazwa_dodatku: str):
     """
