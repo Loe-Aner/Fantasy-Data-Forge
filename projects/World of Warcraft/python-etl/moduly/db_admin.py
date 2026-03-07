@@ -10,7 +10,8 @@ LISTA_PLIKOW = [
     sciezka_sql_tabele("6_tabela_dialogi.sql"),
     sciezka_sql_tabele("7_tabela_linki_do_scrapowania.sql"),
     sciezka_sql_tabele("8_tabela_slowa_kluczowe.sql"),
-    sciezka_sql_tabele("9_tabela_misje_slowa_kluczowe.sql")
+    sciezka_sql_tabele("9_tabela_misje_slowa_kluczowe.sql"),
+    sciezka_sql_tabele("10_tabela_misje_zmiany_wiki.sql")
 ]
 
 def czerwony_przycisk(
