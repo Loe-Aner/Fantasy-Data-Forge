@@ -396,3 +396,50 @@ def zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, status):
         raise
 
     print(f"--- [KONIEC] Sukces dla misji ID: {misja_id} ---\n")
+
+def usun_niezredagowane(silnik):
+    q_select_drop_misje = text("""
+    DROP TABLE IF EXISTS #misje_bez_redakcji;
+
+    WITH statusy_liczby AS (
+        SELECT
+            MISJA_ID_MOJE_FK,
+            CAST(SUBSTRING(STATUS, 1, CHARINDEX('_', STATUS) - 1) AS INT) AS status_liczba
+        FROM dbo.MISJE_STATUSY
+        GROUP BY MISJA_ID_MOJE_FK, STATUS
+    )
+    SELECT MISJA_ID_MOJE_FK
+    INTO #misje_bez_redakcji
+    FROM statusy_liczby
+    GROUP BY MISJA_ID_MOJE_FK
+    HAVING SUM(status_liczba) = 1
+    ;
+
+    DELETE cel
+    FROM dbo.MISJE_STATUSY AS cel
+    INNER JOIN #misje_bez_redakcji zrodlo 
+    ON cel.MISJA_ID_MOJE_FK = zrodlo.MISJA_ID_MOJE_FK
+    WHERE cel.STATUS = '1_PRZETŁUMACZONO'
+    ;
+
+    DELETE cel
+    FROM dbo.DIALOGI_STATUSY AS cel
+    INNER JOIN #misje_bez_redakcji zrodlo 
+    ON cel.MISJA_ID_MOJE_FK = zrodlo.MISJA_ID_MOJE_FK
+    WHERE cel.STATUS = '1_PRZETŁUMACZONO'
+    ;
+
+    UPDATE dbo.MISJE
+    SET STATUS_MISJI = 0
+    WHERE MISJA_ID_MOJE_PK IN (SELECT MISJA_ID_MOJE_FK  FROM #misje_bez_redakcji)
+    ;
+
+    DROP TABLE #misje_bez_redakcji;
+    """)
+
+    try:
+        with silnik.begin() as conn:
+            conn.execute(q_select_drop_misje)
+    except Exception as e:
+        print(f"--- Błąd podczas usuwania misji: {e}")
+        raise

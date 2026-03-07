@@ -1,6 +1,7 @@
 from moduly.ai import misje_dialogi_przetlumacz_zredaguj_zapisz
 from moduly.db_core import utworz_engine_do_db
 from moduly.repo_misje import ujednolic_tytuly_misji
+from moduly.services_persist_wynik import usun_niezredagowane
 
 silnik = utworz_engine_do_db()
 
@@ -15,3 +16,4 @@ ujednolic_tytuly_misji(silnik)
 
 # TUTAJ SKRYPT USUWAJACY MISJE (ZE STATUSEM PRZETLUMACZONE), KTORE DOSTALY BLAD PRZY REDAKCJI
 # DLA BEZPIECZENSTWA NIECH WYKONA PROCES JESZCZE RAZ
+usun_niezredagowane(silnik)

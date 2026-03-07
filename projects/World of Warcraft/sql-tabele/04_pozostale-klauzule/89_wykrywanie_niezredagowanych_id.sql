@@ -14,21 +14,18 @@ GROUP BY MISJA_ID_MOJE_FK
 HAVING SUM(status_liczba) = 1
 ;
 
-SELECT *
-FROM #misje_bez_redakcji
-
 DELETE cel
 FROM dbo.MISJE_STATUSY AS cel
 INNER JOIN #misje_bez_redakcji zrodlo 
   ON cel.MISJA_ID_MOJE_FK = zrodlo.MISJA_ID_MOJE_FK
-WHERE cel.STATUS = '1_PRZET£UMACZONO'
+WHERE cel.STATUS = '1_PRZETï¿½UMACZONO'
 ;
 
 DELETE cel
 FROM dbo.DIALOGI_STATUSY AS cel
 INNER JOIN #misje_bez_redakcji zrodlo 
   ON cel.MISJA_ID_MOJE_FK = zrodlo.MISJA_ID_MOJE_FK
-WHERE cel.STATUS = '1_PRZET£UMACZONO'
+WHERE cel.STATUS = '1_PRZETï¿½UMACZONO'
 ;
 
 UPDATE dbo.MISJE

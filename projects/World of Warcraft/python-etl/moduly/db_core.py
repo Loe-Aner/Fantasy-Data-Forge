@@ -1,17 +1,20 @@
 import os
+import time
 
 from dotenv import load_dotenv
 from sqlalchemy.engine import URL, Engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy import create_engine
 
 load_dotenv()
+
 
 def pobierz_pierwsza_wartosc(*wartosci):
     for wartosc in wartosci:
         if wartosc not in (None, ""):
             return wartosc
     return None
+
 
 def pobierz_wartosc_env(nazwa: str, tryb: str) -> str | None:
     klucze = []
@@ -30,6 +33,7 @@ def pobierz_wartosc_env(nazwa: str, tryb: str) -> str | None:
 
     return None
 
+
 def normalizuj_bool_na_yes_no(wartosc) -> str | None:
     if wartosc in (None, ""):
         return None
@@ -47,15 +51,66 @@ def normalizuj_bool_na_yes_no(wartosc) -> str | None:
 
     return str(wartosc)
 
+
+def _dodaj_auto_wybudzanie_azure(
+    silnik: Engine,
+    tryb: str,
+    zapytanie_wybudzajace: str,
+    opoznienie_s: int = 10,
+    maks_liczba_prob: int | None = None
+) -> Engine:
+    if tryb != "azure":
+        return silnik
+
+    oryginalne_connect = silnik.connect
+
+    def connect_z_wybudzeniem(*args, **kwargs):
+        proba = 0
+
+        while True:
+            proba += 1
+
+            try:
+                conn = oryginalne_connect(*args, **kwargs)
+
+                try:
+                    conn.exec_driver_sql(zapytanie_wybudzajace)
+                    return conn
+                except OperationalError:
+                    conn.close()
+                    raise
+                except Exception:
+                    conn.close()
+                    raise
+
+            except OperationalError as e:
+                if maks_liczba_prob is not None and proba >= maks_liczba_prob:
+                    raise
+
+                print(
+                    f"--- Azure SQL jeszcze śpi... "
+                    f"Próba {proba} nieudana. "
+                    f"Kolejna próba za {opoznienie_s} s.\n{e}"
+                )
+                time.sleep(opoznienie_s)
+
+    silnik.connect = connect_z_wybudzeniem
+    return silnik
+
+
 def utworz_engine_do_db(
-        tryb: str | None = None,
-        sterownik: str | None = None,
-        uzytkownik: str | None = None,
-        haslo: str | None = None,
-        host: str | None = None,
-        port: int | None = None,
-        nazwa_db: str | None = None,
-        dbapi: dict | None = None
+    tryb: str | None = None,
+    sterownik: str | None = None,
+    uzytkownik: str | None = None,
+    haslo: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    nazwa_db: str | None = None,
+    dbapi: dict | None = None,
+    zapytanie_wybudzajace: str = "SELECT TOP 1 MISJA_ID_MOJE_FK FROM dbo.MISJE_STATUSY",
+    opoznienie_wybudzania_s: int = 10,
+    maks_liczba_prob_wybudzania: int | None = None,
+    timeout_polaczenia_s: int | None = None
 ) -> Engine:
 
     tryb = str(pobierz_pierwsza_wartosc(tryb, os.getenv("DB_TARGET"), "azure")).strip().lower()
@@ -85,7 +140,10 @@ def utworz_engine_do_db(
         czy_polaczenie_lokalne = str(host).strip().lower() in lokalne_hosty
 
         dbapi = {
-            "driver": pobierz_pierwsza_wartosc(pobierz_wartosc_env("ODBC_DRIVER", tryb), "ODBC Driver 18 for SQL Server")
+            "driver": pobierz_pierwsza_wartosc(
+                pobierz_wartosc_env("ODBC_DRIVER", tryb),
+                "ODBC Driver 18 for SQL Server"
+            )
         }
 
         zaufane = normalizuj_bool_na_yes_no(pobierz_wartosc_env("TRUSTED_CONNECTION", tryb))
@@ -110,7 +168,31 @@ def utworz_engine_do_db(
         query=dbapi
     )
 
-    return create_engine(polaczenie, echo=False, future=True)
+    connect_args = {}
+    if timeout_polaczenia_s is None:
+        timeout_polaczenia_s = 60 if tryb == "azure" else None
+
+    if timeout_polaczenia_s is not None:
+        connect_args["timeout"] = int(timeout_polaczenia_s)
+
+    silnik = create_engine(
+        polaczenie,
+        echo=False,
+        future=True,
+        pool_pre_ping=(tryb == "azure"),
+        connect_args=connect_args
+    )
+
+    silnik = _dodaj_auto_wybudzanie_azure(
+        silnik=silnik,
+        tryb=tryb,
+        zapytanie_wybudzajace=zapytanie_wybudzajace,
+        opoznienie_s=opoznienie_wybudzania_s,
+        maks_liczba_prob=maks_liczba_prob_wybudzania
+    )
+
+    return silnik
+
 
 def _czy_duplikat(e: IntegrityError) -> bool:
     if not e.orig:
