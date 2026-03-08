@@ -23,6 +23,7 @@ bin/
 obj/
 packages/
 TestResults/
+images/
 
 *.log
 *.docx

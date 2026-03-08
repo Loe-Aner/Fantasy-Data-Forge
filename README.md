@@ -85,24 +85,24 @@ Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fan
 
 ---
 
-## 🏗️ Projekty Inżynierskie & Backend
+## 🏗️ Projekty Data Engineering i Automatyzacja
 
 > *Tutaj dzieje się magia "pod maską". Skrypty, automatyzacja, bazy danych.*
 
 ### ⚔️ World of Warcraft `Work in Progress`
 Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy WoW'a.
 
-- ⚙️ **Technologia:** `Python` `SQL Server` `LUA`
+- ⚙️ **Technologia:** `Python` `SQL Server` `Lua`
 - 📂 **Lokalizacja:** `projects/World of Warcraft/`
 
-#### 🔄 Workflow & Architektura:
+#### 🔄 Workflow i architektura rozwiązania:
 1.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Database:** Projekt relacyjnej struktury danych (NPC, Questy, Wypowiedzi, Słowa Kluczowe).
-2.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **ETL:** Zescrapowanie danych (Wiki/Wowhead), czyszczenie, transformacja i zapis do SQL Server.
+2.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **ETL:** Zescrapowanie danych (Wiki/Wowhead), czyszczenie, transformacja i zapis do Azure SQL Database.
 3.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Mappings:** Słowniki i mapowanie nazw własnych (NPC, Lokacje) w celu zachowania absolutnej spójności ze światem gry. Exceli nie publikuję.
-4.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Preliminary Process Review (ETL):** Przechodzę wstępnie przez procesy i koryguję to co można lepiej zrobić.
+4.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Preliminary Process Review:** Przechodzę wstępnie przez procesy i koryguję to co można lepiej zrobić.
 5.  ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Translation & Editing:** Proces generowania tłumaczeń i redagowania tekstów.
-6.  ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Logic Injection & Approval:** Ręczna weryfikacja (status "3_ZATWIERDZONO") oraz implementacja składni dla LUA. Obsługa zmiennych dynamicznych (płeć gracz, rasa, oryginalne nazwy w nawiasach), by tekst reagował na kontekst w grze.
-7.  ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Game Integration (Addon):** Stworzenie addonu w LUA, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
+6.  ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Logic Injection & Approval:** Ręczna weryfikacja (status "3_ZATWIERDZONO") oraz implementacja składni dla Lua. Obsługa zmiennych dynamicznych (płeć gracza, rasa, oryginalne nazwy w nawiasach), by tekst reagował na kontekst w grze.
+7.  ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Game Integration (Addon):** Stworzenie addonu w Lua, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
 8.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **Preliminary Process Review (Addon):** Przejść przez kod i logikę, ewentualnie skorygować, by było wydajniej i zgodnie z najlepszymi praktykami.
 9.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **BI Reporting:** Stworzenie raportowania statusu tłumaczeń oraz kondycji bazy danych w Power BI.
 10.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **Final Review:** Planuję przejść przez wszystkie procesy po przetłumaczeniu kilku dodatków, tak aby nazbierało się tego trochę po drodze.
@@ -128,7 +128,7 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 
 ## 🧩 Code Challenges & Nauka
 
-Tutaj eksperymentuje na platformach e-learningowych np. DataLemur, HackerRank, Codewars.
+Tutaj eksperymentuję na platformach e-learningowych np. DataLemur, HackerRank, Codewars.
 - **Python:** Algorytmy, struktury danych.
 - **SQL:** Rozwiązania zadań.
 - **LUA:** Nauka pod projekty.
@@ -137,5 +137,3 @@ Tutaj eksperymentuje na platformach e-learningowych np. DataLemur, HackerRank, C
 ### 📫 Kontakt
 Masz uwagi do kodu lub pomysł na wspólny projekt z gier?  
 Śmiało uderzaj na LinkedIn (link na górze) lub na discordzie (link w moim profilu). 😊
-
-![Tak ta kuźnia wygląda...😊](images/main.png)
