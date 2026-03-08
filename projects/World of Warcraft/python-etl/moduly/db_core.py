@@ -3,7 +3,7 @@ import time
 
 from dotenv import load_dotenv
 from sqlalchemy.engine import URL, Engine
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError
 from sqlalchemy import create_engine
 
 load_dotenv()
@@ -52,7 +52,45 @@ def normalizuj_bool_na_yes_no(wartosc) -> str | None:
     return str(wartosc)
 
 
-def _dodaj_auto_wybudzanie_azure(
+KODY_BLEDOW_AZURE_PRZEJSCIOWE = (
+    "40613",
+    "40197",
+    "40501",
+    "49918",
+    "49919",
+    "49920",
+    "10928",
+    "10929",
+)
+
+FRAZY_BLEDOW_AZURE_PRZEJSCIOWE = (
+    "database is not currently available",
+    "please retry the connection later",
+    "service is currently busy",
+)
+
+
+def czy_azure_blad_przejsciowy(blad: Exception) -> bool:
+    fragmenty = []
+
+    for zrodlo in (blad, getattr(blad, "orig", None)):
+        if not zrodlo:
+            continue
+
+        fragmenty.append(str(zrodlo))
+
+        argumenty = getattr(zrodlo, "args", [])
+        fragmenty.extend(str(argument) for argument in argumenty if argument is not None)
+
+    opis_bledu = " | ".join(fragmenty).lower()
+
+    if any(kod in opis_bledu for kod in KODY_BLEDOW_AZURE_PRZEJSCIOWE):
+        return True
+
+    return any(fraza in opis_bledu for fraza in FRAZY_BLEDOW_AZURE_PRZEJSCIOWE)
+
+
+def dodaj_auto_wybudzanie_azure(
     silnik: Engine,
     tryb: str,
     zapytanie_wybudzajace: str,
@@ -75,15 +113,20 @@ def _dodaj_auto_wybudzanie_azure(
 
                 try:
                     conn.exec_driver_sql(zapytanie_wybudzajace)
+                    if conn.in_transaction():
+                        conn.rollback()
                     return conn
-                except OperationalError:
+                except (OperationalError, DBAPIError):
                     conn.close()
                     raise
                 except Exception:
                     conn.close()
                     raise
 
-            except OperationalError as e:
+            except (OperationalError, DBAPIError) as e:
+                if not czy_azure_blad_przejsciowy(e):
+                    raise
+
                 if maks_liczba_prob is not None and proba >= maks_liczba_prob:
                     raise
 
@@ -183,7 +226,7 @@ def utworz_engine_do_db(
         connect_args=connect_args
     )
 
-    silnik = _dodaj_auto_wybudzanie_azure(
+    silnik = dodaj_auto_wybudzanie_azure(
         silnik=silnik,
         tryb=tryb,
         zapytanie_wybudzajace=zapytanie_wybudzajace,
