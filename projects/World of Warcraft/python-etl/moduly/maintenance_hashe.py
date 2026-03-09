@@ -1,4 +1,5 @@
 from sqlalchemy import text
+import pandas as pd
 from sqlalchemy.exc import IntegrityError
 
 from moduly.db_core import _czy_duplikat
@@ -74,8 +75,8 @@ def roznice_hashe_usun_rekordy_z_db(
 
     q_select_data = text("""
         SELECT m.MISJA_URL_WIKI, z.HTML_SKOMPRESOWANY
-        FROM dbo.MISJE m
-        LEFT JOIN dbo.ZRODLO z ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+        FROM dbo.MISJE AS m
+        LEFT JOIN dbo.ZRODLO AS z ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
         WHERE m.MISJA_ID_MOJE_PK = :misja_id
         ORDER BY z.DATA_WYSCRAPOWANIA DESC
     """)
@@ -118,6 +119,53 @@ def roznice_hashe_usun_rekordy_z_db(
                     print("      - już było w kolejce (duplikat)")
                 else:
                     raise
+
+            q_select_archiwizuj_misje = text("""
+                SELECT 
+                    'MISJE_STATUSY' AS TABELA, 
+                    m.MISJA_ID_Z_GRY, ms.SEGMENT, ms.PODSEGMENT, ms.STATUS,
+                    ms.NR, NULL AS NR_WYPOWIEDZI, m.NPC_START_ID AS NPC_ID_FK,
+                    ms.TRESC
+                FROM dbo.MISJE_STATUSY AS ms
+                INNER JOIN dbo.MISJE AS m
+                  ON ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+                WHERE 1=1
+                  AND m.MISJA_ID_MOJE_PK = :m
+            """)
+
+            q_select_archiwizuj_dialogi = text("""
+                SELECT 
+                    'DIALOGI_STATUSY' AS TABELA, 
+                    m.MISJA_ID_Z_GRY, ds.SEGMENT, NULL AS PODSEGMENT, ds.STATUS,
+                    ds.NR_BLOKU_DIALOGU AS NR, ds.NR_WYPOWIEDZI, ds.NPC_ID_FK, ds.TRESC
+                FROM dbo.DIALOGI_STATUSY AS ds
+                INNER JOIN dbo.MISJE AS m
+                  ON ds.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+                WHERE 1=1
+                  AND m.MISJA_ID_MOJE_PK = :m
+            """)
+
+            wynik_arch_misje = pd.read_sql_query(
+                q_select_archiwizuj_misje,
+                conn,
+                params={"m": m}
+            )
+            wynik_arch_dialogi = pd.read_sql_query(
+                q_select_archiwizuj_dialogi,
+                conn,
+                params={"m": m}
+            )
+            wynik_total = pd.concat([wynik_arch_misje, wynik_arch_dialogi], ignore_index=True)
+
+            if not wynik_total.empty:
+                wynik_total.to_sql(
+                    schema="dbo",
+                    name="ARCHIWUM_MISJE_DIALOGI",
+                    con=conn,
+                    if_exists="append",
+                    index=False
+                )
+                print(f"    + Zarchiwizowano {len(wynik_total)} wierszy")
 
             for tabela in tabele_do_skanowania:
                 kolumna = "MISJA_ID_MOJE_PK" if tabela == "dbo.MISJE" else "MISJA_ID_MOJE_FK"
