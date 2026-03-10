@@ -225,7 +225,7 @@ def ustaw_id_misji_duble_123456789(silnik):
         w = conn.execute(q_select).mappings().all()
         if len(w) > 0:
             wynik = conn.execute(q_update, w)
-            print(f"Zaktualizowano: {wynik.rowcount} wierszy na ID 123456789 i zmieniono statusy na '-1'.")
+            print(f"Zaktualizowano: {len(w)} wierszy na ID 123456789 i zmieniono statusy na '-1'.")
         else:
             print("Brak danych do dodania.")
 

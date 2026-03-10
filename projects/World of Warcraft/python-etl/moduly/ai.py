@@ -6,6 +6,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types as genai_types
 import anthropic
 
 from sqlalchemy import text, bindparam
@@ -13,14 +14,34 @@ import pandas as pd
 
 from moduly.services_persist_wynik import przefiltruj_dane_misji, zapisz_misje_dialogi_ai_do_db
 from moduly.ai_prompty import (
-    instrukcja_slowa_kluczowe, instrukcja_tlumacz, instrukcja_redaktor, instrukcja_tych_npc_nie,
-    instrukcja_tlumacz_npc
+    dodatek_cache_claude_lokalizacja,
+    instrukcja_redaktor,
+    instrukcja_redaktor_stala,
+    instrukcja_redaktor_zmienna,
+    instrukcja_slowa_kluczowe,
+    instrukcja_tlumacz,
+    instrukcja_tlumacz_npc,
+    instrukcja_tlumacz_stala,
+    instrukcja_tlumacz_zmienna,
+    instrukcja_tych_npc_nie,
 )
 from moduly.sciezki import sciezka_excel_mappingi
 from scraper_wiki_main import parsuj_misje_z_url
 from moduly.utils import sklej_warunki_w_WHERE
 import zlib
 import base64
+
+MODEL_GEMINI_GLOWNY = "gemini-3.1-pro-preview"
+MODEL_GEMINI_POMOCNICZY = "gemini-3.1-flash-lite-preview"
+MODEL_CLAUDE_GLOWNY = "claude-opus-4-6"
+TTL_CACHE_GEMINI = "10800s"
+TEKST_WARMUP_CACHE = "Warmup techniczny. Odpowiedz jednym słowem: OK."
+CACHE_DEBUG = False
+
+
+def log_cache_debug(tekst: str):
+    if CACHE_DEBUG:
+        print(tekst)
 
 def zaladuj_api_i_klienta(
         nazwa_api: str,
@@ -53,6 +74,253 @@ def wczytaj_json_z_odpowiedzi_claude(odpowiedz, etap: str):
         czysty_tekst = czysty_tekst.rsplit("```", 1)[0]
 
     return json.loads(czysty_tekst.strip())
+
+
+def minimalny_prog_cache_claude(model: str) -> int:
+    model = (model or "").lower()
+    modele_4096 = (
+        "claude-opus-4-6",
+        "claude-sonnet-4-5",
+        "claude-haiku-4-5",
+    )
+    if any(alias in model for alias in modele_4096):
+        return 4096
+    return 1024
+
+
+def pobierz_prompt_staly(etap: str) -> str:
+    if etap == "tlumacz":
+        return instrukcja_tlumacz_stala()
+    if etap == "redaktor":
+        return instrukcja_redaktor_stala()
+    raise ValueError(f"Nieznany etap promptu: {etap}")
+
+
+def zbuduj_wiadomosc_tlumaczenia(txt_npc: str, txt_sk: str, wsad_json: str) -> str:
+    return "\n\n".join(
+        [
+            instrukcja_tlumacz_zmienna(txt_npc, txt_sk),
+            "JSON MISJI DO PRZETLUMACZENIA:",
+            wsad_json,
+        ]
+    )
+
+
+def zbuduj_wiadomosc_redakcji(
+    tekst_oryginalny: str,
+    txt_npc: str,
+    txt_sk: str,
+    wsad_redakcja: str,
+) -> str:
+    return "\n\n".join(
+        [
+            instrukcja_redaktor_zmienna(tekst_oryginalny, txt_npc, txt_sk),
+            "WERSJA ROBOCZA JSON DO REDAKCJI:",
+            wsad_redakcja,
+        ]
+    )
+
+
+def policz_tokeny_systemu_claude(klient, model: str, prompt_staly: str) -> int:
+    wynik = klient.messages.count_tokens(
+        model=model,
+        system=[{"type": "text", "text": prompt_staly}],
+        messages=[{"role": "user", "content": "."}],
+        thinking={"type": "adaptive"},
+    )
+    return wynik.input_tokens
+
+
+def przygotuj_prompt_staly_dla_claude(klient, etap: str) -> tuple[str, int, bool]:
+    prompt_staly = pobierz_prompt_staly(etap)
+    prog_cache = minimalny_prog_cache_claude(MODEL_CLAUDE_GLOWNY)
+
+    try:
+        tokeny = policz_tokeny_systemu_claude(klient, MODEL_CLAUDE_GLOWNY, prompt_staly)
+    except Exception as e:
+        print(f"[CACHE][Claude][{etap}] Nie udalo sie policzyc tokenow promptu stalego: {e}")
+        prompt_staly = f"{prompt_staly}\n\n{dodatek_cache_claude_lokalizacja()}"
+        return prompt_staly, -1, True
+
+    if tokeny >= prog_cache:
+        return prompt_staly, tokeny, False
+
+    prompt_rozszerzony = f"{prompt_staly}\n\n{dodatek_cache_claude_lokalizacja()}"
+    tokeny_rozszerzone = policz_tokeny_systemu_claude(klient, MODEL_CLAUDE_GLOWNY, prompt_rozszerzony)
+    return prompt_rozszerzony, tokeny_rozszerzone, True
+
+
+def policz_tokeny_promptu_gemini(klient, prompt_staly: str) -> int:
+    try:
+        wynik = klient.models.count_tokens(
+            model=MODEL_GEMINI_GLOWNY,
+            contents=".",
+            config=genai_types.CountTokensConfig(
+                system_instruction=prompt_staly,
+            ),
+        )
+        return wynik.total_tokens
+    except Exception as e:
+        log_cache_debug(
+            "[CACHE][Gemini] CountTokens dla system_instruction nie jest wspierany w tym API. "
+            f"Wracam do przyblizenia przez contents. Blad: {e}"
+        )
+        wynik = klient.models.count_tokens(
+            model=MODEL_GEMINI_GLOWNY,
+            contents=prompt_staly,
+        )
+        return wynik.total_tokens
+
+
+def wygeneruj_json_gemini(klient, konfiguracja: dict, contents: str, etap: str, misja_id: int | None = None):
+    config = {"response_mime_type": "application/json"}
+    cached_content = konfiguracja.get("cached_content")
+
+    if cached_content:
+        config["cached_content"] = cached_content
+        try:
+            return klient.models.generate_content(
+                model=konfiguracja["model"],
+                contents=contents,
+                config=config,
+            )
+        except Exception as e:
+            prefix = f"[ID: {misja_id}] " if misja_id is not None else ""
+            print(
+                f"[CACHE][Gemini][{etap}] {prefix}Blad podczas uzycia cached_content. "
+                f"Powtarzam bez cache. Blad: {e}"
+            )
+
+    config.pop("cached_content", None)
+    config["system_instruction"] = konfiguracja["prompt_staly"]
+    return klient.models.generate_content(
+        model=konfiguracja["model"],
+        contents=contents,
+        config=config,
+    )
+
+
+def przygotuj_prompt_staly_dla_gemini(klient, etap: str) -> tuple[str, int, bool]:
+    prompt_staly = pobierz_prompt_staly(etap)
+
+    try:
+        tokeny = policz_tokeny_promptu_gemini(klient, prompt_staly)
+    except Exception as e:
+        print(f"[CACHE][Gemini][{etap}] Nie udalo sie policzyc tokenow promptu stalego: {e}")
+        prompt_staly = f"{prompt_staly}\n\n{dodatek_cache_claude_lokalizacja()}"
+        return prompt_staly, -1, True
+
+    if tokeny >= 1024:
+        return prompt_staly, tokeny, False
+
+    prompt_rozszerzony = f"{prompt_staly}\n\n{dodatek_cache_claude_lokalizacja()}"
+    tokeny_rozszerzone = policz_tokeny_promptu_gemini(klient, prompt_rozszerzony)
+    return prompt_rozszerzony, tokeny_rozszerzone, True
+
+
+def potwierdz_cache_gemini(klient, nazwa_cache: str, etap: str):
+    odpowiedz = klient.models.generate_content(
+        model=MODEL_GEMINI_GLOWNY,
+        contents=TEKST_WARMUP_CACHE,
+        config=genai_types.GenerateContentConfig(cached_content=nazwa_cache),
+    )
+    usage = getattr(odpowiedz, "usage_metadata", None)
+    cached_tokens = getattr(usage, "cached_content_token_count", 0) if usage else 0
+    print(f"[CACHE][Gemini][{etap}] cached_content={nazwa_cache}, cached_tokens={cached_tokens}")
+
+
+def potwierdz_cache_claude(klient, system_blocks, etap: str):
+    warmup = klient.messages.create(
+        model=MODEL_CLAUDE_GLOWNY,
+        max_tokens=8,
+        thinking={"type": "adaptive"},
+        system=system_blocks,
+        messages=[{"role": "user", "content": TEKST_WARMUP_CACHE}],
+    )
+    weryfikacja = klient.messages.create(
+        model=MODEL_CLAUDE_GLOWNY,
+        max_tokens=8,
+        thinking={"type": "adaptive"},
+        system=system_blocks,
+        messages=[{"role": "user", "content": TEKST_WARMUP_CACHE}],
+    )
+
+    usage_warmup = warmup.usage
+    usage_weryfikacja = weryfikacja.usage
+    print(
+        f"[CACHE][Claude][{etap}] "
+        f"cache_creation_input_tokens={usage_warmup.cache_creation_input_tokens}, "
+        f"cache_read_input_tokens={usage_weryfikacja.cache_read_input_tokens}"
+    )
+
+
+def przygotuj_konfiguracje_promptu(klient, dostawca: str, etap: str) -> dict:
+    if dostawca == "gemini":
+        prompt_staly, tokeny_systemu, czy_dodano_aneks = przygotuj_prompt_staly_dla_gemini(klient, etap)
+        print(
+            f"[CACHE][Gemini][{etap}] tokeny_prefiksu={tokeny_systemu}, "
+            f"dodano_aneks={'TAK' if czy_dodano_aneks else 'NIE'}"
+        )
+        try:
+            cache = klient.caches.create(
+                model=MODEL_GEMINI_GLOWNY,
+                config=genai_types.CreateCachedContentConfig(
+                    display_name=f"wow-{etap}-{int(time.time())}",
+                    system_instruction=prompt_staly,
+                    ttl=TTL_CACHE_GEMINI,
+                ),
+            )
+            potwierdz_cache_gemini(klient, cache.name, etap)
+            cached_content = cache.name
+        except Exception as e:
+            print(f"[CACHE][Gemini][{etap}] Nie udalo sie utworzyc cache. Fallback bez cache. Blad: {e}")
+            cached_content = None
+
+        return {
+            "dostawca": dostawca,
+            "etap": etap,
+            "model": MODEL_GEMINI_GLOWNY,
+            "prompt_staly": prompt_staly,
+            "cached_content": cached_content,
+        }
+
+    if dostawca == "claude":
+        try:
+            prompt_staly, tokeny_systemu, czy_dodano_aneks = przygotuj_prompt_staly_dla_claude(klient, etap)
+            system_blocks = [
+                {
+                    "type": "text",
+                    "text": prompt_staly,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ]
+            print(
+                f"[CACHE][Claude][{etap}] tokeny_prefiksu={tokeny_systemu}, "
+                f"dodano_aneks={'TAK' if czy_dodano_aneks else 'NIE'}"
+            )
+            potwierdz_cache_claude(klient, system_blocks, etap)
+        except Exception as e:
+            prompt_staly = pobierz_prompt_staly(etap)
+            system_blocks = [{"type": "text", "text": prompt_staly}]
+            print(f"[CACHE][Claude][{etap}] Nie udalo sie aktywowac cache. Fallback bez cache. Blad: {e}")
+
+        return {
+            "dostawca": dostawca,
+            "etap": etap,
+            "model": MODEL_CLAUDE_GLOWNY,
+            "system_blocks": system_blocks,
+            "prompt_staly": prompt_staly,
+        }
+
+    raise ValueError(f"Nieobslugiwany dostawca: {dostawca}")
+
+
+def wyczysc_cache_gemini(klient, nazwa_cache: str, etap: str):
+    try:
+        klient.caches.delete(name=nazwa_cache)
+        print(f"[CACHE][Gemini][{etap}] Usunieto cache: {nazwa_cache}")
+    except Exception as e:
+        print(f"[CACHE][Gemini][{etap}] Nie udalo sie usunac cache {nazwa_cache}: {e}")
 
 def pobierz_przetworz_zapisz_batch_lista(
         silnik, 
@@ -144,13 +412,141 @@ def pobierz_przetworz_zapisz_batch_lista(
         print(f"Błąd w batchu {min_b}-{max_b}: {e}")
         return None
 
+# def przetworz_pojedyncza_misje(
+#     wiersz,
+#     silnik,
+#     klient_tlumacz,
+#     klient_redaktor,
+#     dostawca_tlumaczenie,
+#     dostawca_redakcja
+# ):
+#     """
+#     Ta funkcja wykonuje całą pracę dla jednej misji.
+#     Będzie uruchamiana równolegle w wielu wątkach.
+#     """
+#     misja_id = wiersz["MISJA_ID_MOJE_PK"]
+#     zakodowane_dane = wiersz["HTML_SKOMPRESOWANY"]
+    
+#     with silnik.connect() as conn:
+#         try:
+#             q_select_npc = text("""
+#             WITH wszystkie_idki AS (
+#                 SELECT tabela_wartosci.ID_NPC 
+#                 FROM dbo.MISJE AS m
+#                 CROSS APPLY (VALUES (m.NPC_START_ID), (m.NPC_KONIEC_ID)) AS tabela_wartosci (ID_NPC)
+#                 WHERE m.MISJA_ID_MOJE_PK = :misja_id
+                                
+#                 UNION
+                                
+#                 SELECT ds.NPC_ID_FK 
+#                 FROM dbo.DIALOGI_STATUSY AS ds 
+#                 WHERE ds.MISJA_ID_MOJE_FK = :misja_id
+#             ),
+#             oczyszczone_dane AS (
+#                 SELECT wi.ID_NPC, ns.STATUS,
+#                 CASE WHEN CHARINDEX('[', ns.NAZWA) > 0 THEN RTRIM(LEFT(ns.NAZWA, CHARINDEX('[', ns.NAZWA) - 1)) ELSE ns.NAZWA END AS CZYSTA_NAZWA
+#                 FROM wszystkie_idki AS wi
+#                 INNER JOIN dbo.NPC_STATUSY AS ns ON wi.ID_NPC = ns.NPC_ID_FK
+#             )
+#                 SELECT DISTINCT pvt.[0_ORYGINAŁ], pvt.[3_ZATWIERDZONO]
+#                 FROM oczyszczone_dane
+#                 PIVOT (MAX(CZYSTA_NAZWA) FOR STATUS IN ([0_ORYGINAŁ], [3_ZATWIERDZONO])) AS pvt;
+#             """)
+
+#             q_select_sk = text("""
+#                 SELECT sk.SLOWO_EN, sk.SLOWO_PL 
+#                 FROM dbo.MISJE_SLOWA_KLUCZOWE AS msk
+#                 INNER JOIN dbo.SLOWA_KLUCZOWE AS sk 
+#                    ON msk.SLOWO_ID = sk.SLOWO_ID_PK
+#                 WHERE msk.MISJA_ID_MOJE_FK = :misja_id
+#             """)
+
+#             npc_z_bazy = conn.execute(q_select_npc, {"misja_id": misja_id}).all()
+#             slowa_kluczowe_z_bazy = conn.execute(q_select_sk, {"misja_id": misja_id}).all()
+
+#             if not zakodowane_dane:
+#                 print(f"SKIP [ID: {misja_id}] - Brak danych.")
+#                 return
+
+#             skompresowane_bajty = base64.b64decode(zakodowane_dane)
+#             tekst_html = zlib.decompress(skompresowane_bajty).decode("utf-8")
+#             surowe_dane = parsuj_misje_z_url(None, html_content=tekst_html)
+#             przetworzone_dane = przefiltruj_dane_misji(surowe_dane, jezyk="EN")
+
+#             wsad_npc = set(n for n in npc_z_bazy)
+#             wsad_sk = set(s for s in slowa_kluczowe_z_bazy)
+#             wsad_json = json.dumps(przetworzone_dane, indent=4, ensure_ascii=False)
+            
+#             txt_npc = "\n".join([f"- {n[0]} -> {n[1]}" for n in wsad_npc if n[0] and n[1]])
+#             txt_sk = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_sk if k[0] and k[1]])
+
+#             # ETAP 1: TŁUMACZENIE
+#             print(f"--- [ID: {misja_id}] Start Tłumaczenia... ---")
+#             if dostawca_tlumaczenie == "gemini":
+#                 odp_tlumacz = klient_tlumacz.models.generate_content(
+#                     model="gemini-3.1-pro-preview",
+#                     contents=wsad_json,
+#                     config={"system_instruction": instrukcja_tlumacz(txt_npc, txt_sk), "response_mime_type": "application/json"}
+#                 )
+#                 przetlumaczone = json.loads(odp_tlumacz.text)
+#             elif dostawca_tlumaczenie == "claude":
+#                 with klient_tlumacz.messages.stream(
+#                     model="claude-opus-4-6",
+#                     max_tokens=25000,
+#                     thinking={"type": "adaptive"},
+#                     system=instrukcja_tlumacz(txt_npc, txt_sk),
+#                     messages=[
+#                         {"role": "user", "content": wsad_json}
+#                     ]
+#                 ) as stream:
+#                     odp_tlumacz = stream.get_final_message()
+
+#                 przetlumaczone = wczytaj_json_z_odpowiedzi_claude(odp_tlumacz, "tłumacza")
+#             else:
+#                 raise ValueError(f"Nieobsługiwany dostawca tłumaczenia: {dostawca_tlumaczenie}")
+            
+#             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
+
+#             # ETAP 2: REDAKCJA
+#             print(f"--- [ID: {misja_id}] Start Redakcji... ---")
+#             wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
+#             if dostawca_redakcja == "gemini":
+#                 odp_redaktor = klient_redaktor.models.generate_content(
+#                     model="gemini-3.1-pro-preview",
+#                     contents=wsad_redakcja,
+#                     config={"system_instruction": instrukcja_redaktor(wsad_json, txt_npc, txt_sk), "response_mime_type": "application/json"}
+#                 )
+#                 zredagowane = json.loads(odp_redaktor.text)
+#             elif dostawca_redakcja == "claude":
+#                 with klient_redaktor.messages.stream(
+#                     model="claude-opus-4-6",
+#                     max_tokens=25000,
+#                     thinking={"type": "adaptive"},
+#                     system=instrukcja_redaktor(wsad_json, txt_npc, txt_sk),
+#                     messages=[
+#                         {"role": "user", "content": wsad_redakcja}
+#                     ]
+#                 ) as stream:
+#                     odp_redaktor = stream.get_final_message()
+
+#                 zredagowane = wczytaj_json_z_odpowiedzi_claude(odp_redaktor, "redaktora")
+#             else:
+#                 raise ValueError(f"Nieobsługiwany dostawca redakcji: {dostawca_redakcja}")
+            
+#             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, zredagowane, "2_ZREDAGOWANO")
+            
+#             print(f"+++ [ID: {misja_id}] GOTOWE (Tłumaczenie + Redakcja) +++")
+
+#         except Exception as e:
+#             print(f"!!! BŁĄD przy misji {misja_id}: {e}")
+
 def przetworz_pojedyncza_misje(
     wiersz,
     silnik,
     klient_tlumacz,
     klient_redaktor,
-    dostawca_tlumaczenie,
-    dostawca_redakcja
+    konfiguracja_tlumaczenie,
+    konfiguracja_redakcja,
 ):
     """
     Ta funkcja wykonuje całą pracę dla jednej misji.
@@ -158,20 +554,20 @@ def przetworz_pojedyncza_misje(
     """
     misja_id = wiersz["MISJA_ID_MOJE_PK"]
     zakodowane_dane = wiersz["HTML_SKOMPRESOWANY"]
-    
+
     with silnik.connect() as conn:
         try:
             q_select_npc = text("""
             WITH wszystkie_idki AS (
-                SELECT tabela_wartosci.ID_NPC 
+                SELECT tabela_wartosci.ID_NPC
                 FROM dbo.MISJE AS m
                 CROSS APPLY (VALUES (m.NPC_START_ID), (m.NPC_KONIEC_ID)) AS tabela_wartosci (ID_NPC)
                 WHERE m.MISJA_ID_MOJE_PK = :misja_id
-                                
+
                 UNION
-                                
-                SELECT ds.NPC_ID_FK 
-                FROM dbo.DIALOGI_STATUSY AS ds 
+
+                SELECT ds.NPC_ID_FK
+                FROM dbo.DIALOGI_STATUSY AS ds
                 WHERE ds.MISJA_ID_MOJE_FK = :misja_id
             ),
             oczyszczone_dane AS (
@@ -186,9 +582,9 @@ def przetworz_pojedyncza_misje(
             """)
 
             q_select_sk = text("""
-                SELECT sk.SLOWO_EN, sk.SLOWO_PL 
+                SELECT sk.SLOWO_EN, sk.SLOWO_PL
                 FROM dbo.MISJE_SLOWA_KLUCZOWE AS msk
-                INNER JOIN dbo.SLOWA_KLUCZOWE AS sk 
+                INNER JOIN dbo.SLOWA_KLUCZOWE AS sk
                    ON msk.SLOWO_ID = sk.SLOWO_ID_PK
                 WHERE msk.MISJA_ID_MOJE_FK = :misja_id
             """)
@@ -208,69 +604,72 @@ def przetworz_pojedyncza_misje(
             wsad_npc = set(n for n in npc_z_bazy)
             wsad_sk = set(s for s in slowa_kluczowe_z_bazy)
             wsad_json = json.dumps(przetworzone_dane, indent=4, ensure_ascii=False)
-            
+
             txt_npc = "\n".join([f"- {n[0]} -> {n[1]}" for n in wsad_npc if n[0] and n[1]])
             txt_sk = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_sk if k[0] and k[1]])
 
-            # ETAP 1: TŁUMACZENIE
-            print(f"--- [ID: {misja_id}] Start Tłumaczenia... ---")
-            if dostawca_tlumaczenie == "gemini":
-                odp_tlumacz = klient_tlumacz.models.generate_content(
-                    model="gemini-3.1-pro-preview",
-                    contents=wsad_json,
-                    config={"system_instruction": instrukcja_tlumacz(txt_npc, txt_sk), "response_mime_type": "application/json"}
+            print(f"--- [ID: {misja_id}] Start Tlumaczenia... ---")
+            wiadomosc_tlumaczenia = zbuduj_wiadomosc_tlumaczenia(txt_npc, txt_sk, wsad_json)
+
+            if konfiguracja_tlumaczenie["dostawca"] == "gemini":
+                odp_tlumacz = wygeneruj_json_gemini(
+                    klient_tlumacz,
+                    konfiguracja_tlumaczenie,
+                    wiadomosc_tlumaczenia,
+                    "tlumacz",
+                    misja_id=misja_id,
                 )
                 przetlumaczone = json.loads(odp_tlumacz.text)
-            elif dostawca_tlumaczenie == "claude":
-                with klient_tlumacz.messages.stream(
-                    model="claude-opus-4-6",
+            elif konfiguracja_tlumaczenie["dostawca"] == "claude":
+                odp_tlumacz = klient_tlumacz.messages.create(
+                    model=konfiguracja_tlumaczenie["model"],
                     max_tokens=25000,
                     thinking={"type": "adaptive"},
-                    system=instrukcja_tlumacz(txt_npc, txt_sk),
-                    messages=[
-                        {"role": "user", "content": wsad_json}
-                    ]
-                ) as stream:
-                    odp_tlumacz = stream.get_final_message()
-
+                    system=konfiguracja_tlumaczenie["system_blocks"],
+                    messages=[{"role": "user", "content": wiadomosc_tlumaczenia}],
+                )
                 przetlumaczone = wczytaj_json_z_odpowiedzi_claude(odp_tlumacz, "tłumacza")
             else:
-                raise ValueError(f"Nieobsługiwany dostawca tłumaczenia: {dostawca_tlumaczenie}")
-            
+                raise ValueError(
+                    f"Nieobsługiwany dostawca tłumaczenia: {konfiguracja_tlumaczenie['dostawca']}"
+                )
+
             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
 
-            # ETAP 2: REDAKCJA
             print(f"--- [ID: {misja_id}] Start Redakcji... ---")
             wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
-            if dostawca_redakcja == "gemini":
-                odp_redaktor = klient_redaktor.models.generate_content(
-                    model="gemini-3.1-pro-preview",
-                    contents=wsad_redakcja,
-                    config={"system_instruction": instrukcja_redaktor(wsad_json, txt_npc, txt_sk), "response_mime_type": "application/json"}
+            wiadomosc_redakcji = zbuduj_wiadomosc_redakcji(wsad_json, txt_npc, txt_sk, wsad_redakcja)
+
+            if konfiguracja_redakcja["dostawca"] == "gemini":
+                odp_redaktor = wygeneruj_json_gemini(
+                    klient_redaktor,
+                    konfiguracja_redakcja,
+                    wiadomosc_redakcji,
+                    "redaktor",
+                    misja_id=misja_id,
                 )
                 zredagowane = json.loads(odp_redaktor.text)
-            elif dostawca_redakcja == "claude":
-                with klient_redaktor.messages.stream(
-                    model="claude-opus-4-6",
+            elif konfiguracja_redakcja["dostawca"] == "claude":
+                odp_redaktor = klient_redaktor.messages.create(
+                    model=konfiguracja_redakcja["model"],
                     max_tokens=25000,
                     thinking={"type": "adaptive"},
-                    system=instrukcja_redaktor(wsad_json, txt_npc, txt_sk),
-                    messages=[
-                        {"role": "user", "content": wsad_redakcja}
-                    ]
-                ) as stream:
-                    odp_redaktor = stream.get_final_message()
-
+                    system=konfiguracja_redakcja["system_blocks"],
+                    messages=[{"role": "user", "content": wiadomosc_redakcji}],
+                )
                 zredagowane = wczytaj_json_z_odpowiedzi_claude(odp_redaktor, "redaktora")
             else:
-                raise ValueError(f"Nieobsługiwany dostawca redakcji: {dostawca_redakcja}")
-            
+                raise ValueError(
+                    f"Nieobsługiwany dostawca redakcji: {konfiguracja_redakcja['dostawca']}"
+                )
+
             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, zredagowane, "2_ZREDAGOWANO")
-            
-            print(f"+++ [ID: {misja_id}] GOTOWE (Tłumaczenie + Redakcja) +++")
+
+            print(f"+++ [ID: {misja_id}] GOTOWE (Tlumaczenie + Redakcja) +++")
 
         except Exception as e:
-            print(f"!!! BŁĄD przy misji {misja_id}: {e}")
+            print(f"!!! BLAD przy misji {misja_id}: {e}")
+
 
 def misje_dialogi_przetlumacz_zredaguj_zapisz(
     silnik, 
@@ -352,6 +751,17 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
     print(f"Dostawca tłumaczenia: {dostawca_tlumaczenie}")
     print(f"Dostawca redakcji: {dostawca_redakcja}")
 
+    konfiguracja_tlumaczenie = przygotuj_konfiguracje_promptu(
+        klient_tlumacz,
+        dostawca_tlumaczenie,
+        "tlumacz",
+    )
+    konfiguracja_redakcja = przygotuj_konfiguracje_promptu(
+        klient_redaktor,
+        dostawca_redakcja,
+        "redaktor",
+    )
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
         futures = []
         for wiersz in lista_zadan:
@@ -361,11 +771,11 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
                 silnik,
                 klient_tlumacz,
                 klient_redaktor,
-                dostawca_tlumaczenie,
-                dostawca_redakcja
+                konfiguracja_tlumaczenie,
+                konfiguracja_redakcja
             )
             futures.append(future)
-        
+
         for future in concurrent.futures.as_completed(futures):
             pass
 
@@ -405,7 +815,7 @@ def tych_npcow_nie_tlumacz(silnik, klient):
         start_czas = time.time()
         
         odpowiedz = klient.models.generate_content(
-            model="gemini-3-flash-preview",
+            model="gemini-3.1-flash-lite-preview",
             contents=dfj,
             config={
                 "system_instruction": instrukcja_tych_npc_nie(), 
