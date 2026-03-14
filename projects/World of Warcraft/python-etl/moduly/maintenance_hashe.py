@@ -70,8 +70,8 @@ def roznice_hashe_usun_rekordy_z_db(
         print(f"  • {hash_typ}: {len(lista_id)} misji")
         misje.update(lista_id)
 
-    print(f"\n▶ Łącznie misji do czyszczenia: {len(misje)}")
-    print(f"▶ ID misji: {sorted(misje)}\n")
+    print(f"\nŁącznie misji do czyszczenia: {len(misje)}")
+    print(f"ID misji: {sorted(misje)}\n")
 
     q_select_data = text("""
         SELECT m.MISJA_URL_WIKI, z.HTML_SKOMPRESOWANY

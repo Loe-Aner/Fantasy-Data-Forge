@@ -15,6 +15,5 @@ pobierz_przerzuc_questy_per_lvle(
 # CZYLI NAJNOWSZE (POWYZSZA FUNKCJA) VS POPRZEDNIE
 # W BAZIE DANYCH ZATRZYMYWANE SA TYLKO DWA OSTATNIE SCRAPOWANIA, PONIEWAZ NIE MA SENSU WIECEJ
 # CELEM JEST SPRAWDZENIE GDZIE DOSZLY MISJE I WYSCRAPOWANIE ICH
-usun_stare_daty_pokaz_zmiany(
-    silnik
-)
+df_zmiany = usun_stare_daty_pokaz_zmiany(silnik)
+print(df_zmiany.to_string(index=False))

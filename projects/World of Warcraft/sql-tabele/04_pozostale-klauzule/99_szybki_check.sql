@@ -6,7 +6,7 @@ WHERE 1=1
   --AND MISJA_ID_Z_GRY != 123456789
   --AND DODATEK_EN = 'Midnight'
   --AND MISJA_ID_Z_GRY = 90959
-  AND MISJA_ID_MOJE_PK /*IN (129, 130, 131)*/ = 8521
+  AND MISJA_ID_MOJE_PK /*IN (129, 130, 131)*/ = 8510
   --AND KRAINA_EN = 'Exile''s Reach'
   --AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
   --AND MISJA_TYTUL_EN = 'The Divine''s Shield'
@@ -18,7 +18,7 @@ FROM dbo.MISJE_STATUSY AS ms
 INNER JOIN dbo.MISJE AS m
   ON ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
 WHERE 1=1
-  AND m.MISJA_ID_MOJE_PK = 8521
+  AND m.MISJA_ID_MOJE_PK = 8510
   --AND ms.STATUS = '3_ZATWIERDZONO'
   --AND m.KRAINA_EN = 'Exile''s Reach'
 ;
@@ -45,7 +45,7 @@ INNER JOIN dbo.MISJE AS m
   ON ds.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
 WHERE 1=1
   --AND m.KRAINA_EN = 'Exile''s Reach'
-  AND m.MISJA_ID_MOJE_PK = 8521
+  AND m.MISJA_ID_MOJE_PK = 8510
 ;
 
 SELECT 'ZRODLO', *

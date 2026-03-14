@@ -6,6 +6,6 @@ silnik = utworz_engine_do_db()
 
 stworz_excele_do_zatwierdzenia_tlumaczen(
     silnik, 
-    fabula="Rooted In Traditions",
-    sciezka=sciezka_excel_zatwierdzenia("Rooted In Traditions.xlsx")
+    dodatek="Midnight",
+    sciezka=sciezka_excel_zatwierdzenia("Midnight.xlsx")
 )

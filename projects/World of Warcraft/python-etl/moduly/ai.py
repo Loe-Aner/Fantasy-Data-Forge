@@ -33,7 +33,7 @@ import base64
 
 MODEL_GEMINI_GLOWNY = "gemini-3.1-pro-preview"
 MODEL_GEMINI_POMOCNICZY = "gemini-3.1-flash-lite-preview"
-MODEL_CLAUDE_GLOWNY = "claude-opus-4-6"
+MODEL_CLAUDE_GLOWNY = "claude-sonnet-4-6"
 TTL_CACHE_GEMINI = "10800s"
 TEKST_WARMUP_CACHE = "Warmup techniczny. Odpowiedz jednym słowem: OK."
 CACHE_DEBUG = False
@@ -198,6 +198,17 @@ def wygeneruj_json_gemini(klient, konfiguracja: dict, contents: str, etap: str, 
         contents=contents,
         config=config,
     )
+
+
+def wygeneruj_json_claude_stream(klient, konfiguracja: dict, contents: str):
+    with klient.messages.stream(
+        model=konfiguracja["model"],
+        max_tokens=25000,
+        thinking={"type": "adaptive"},
+        system=konfiguracja["system_blocks"],
+        messages=[{"role": "user", "content": contents}],
+    ) as stream:
+        return stream.get_final_message()
 
 
 def przygotuj_prompt_staly_dla_gemini(klient, etap: str) -> tuple[str, int, bool]:
@@ -621,12 +632,10 @@ def przetworz_pojedyncza_misje(
                 )
                 przetlumaczone = json.loads(odp_tlumacz.text)
             elif konfiguracja_tlumaczenie["dostawca"] == "claude":
-                odp_tlumacz = klient_tlumacz.messages.create(
-                    model=konfiguracja_tlumaczenie["model"],
-                    max_tokens=25000,
-                    thinking={"type": "adaptive"},
-                    system=konfiguracja_tlumaczenie["system_blocks"],
-                    messages=[{"role": "user", "content": wiadomosc_tlumaczenia}],
+                odp_tlumacz = wygeneruj_json_claude_stream(
+                    klient_tlumacz,
+                    konfiguracja_tlumaczenie,
+                    wiadomosc_tlumaczenia,
                 )
                 przetlumaczone = wczytaj_json_z_odpowiedzi_claude(odp_tlumacz, "tłumacza")
             else:
@@ -650,12 +659,10 @@ def przetworz_pojedyncza_misje(
                 )
                 zredagowane = json.loads(odp_redaktor.text)
             elif konfiguracja_redakcja["dostawca"] == "claude":
-                odp_redaktor = klient_redaktor.messages.create(
-                    model=konfiguracja_redakcja["model"],
-                    max_tokens=25000,
-                    thinking={"type": "adaptive"},
-                    system=konfiguracja_redakcja["system_blocks"],
-                    messages=[{"role": "user", "content": wiadomosc_redakcji}],
+                odp_redaktor = wygeneruj_json_claude_stream(
+                    klient_redaktor,
+                    konfiguracja_redakcja,
+                    wiadomosc_redakcji,
                 )
                 zredagowane = wczytaj_json_z_odpowiedzi_claude(odp_redaktor, "redaktora")
             else:
