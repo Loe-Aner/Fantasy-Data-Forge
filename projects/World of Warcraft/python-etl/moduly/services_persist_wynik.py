@@ -2,7 +2,7 @@ from sqlalchemy import text
 import re
 
 from moduly.repo_NPC import (
-    zapisz_npc_i_status_do_db,
+    zapisz_npc_i_status_do_db as repo_zapisz_npc_i_status_do_db,
     zapewnij_npc_i_pobierz_id
 )
 from moduly.repo_misje import (
@@ -11,7 +11,7 @@ from moduly.repo_misje import (
 )
 from moduly.repo_dialogi import dodaj_statusy_dialogu_batch
 
-def zapisz_npc_i_status_do_db_z_wyniku(
+def zapisz_npc_i_status_do_db(
         silnik,
         tabela_npc: str,
         tabela_npc_statusy: str,
@@ -37,7 +37,7 @@ def zapisz_npc_i_status_do_db_z_wyniku(
         if npc == "":
             npc = "Brak Nazwy"
 
-        zapisz_npc_i_status_do_db(
+        repo_zapisz_npc_i_status_do_db(
             silnik=silnik,
             tabela_npc=tabela_npc,
             tabela_npc_statusy=tabela_npc_statusy,
@@ -46,7 +46,7 @@ def zapisz_npc_i_status_do_db_z_wyniku(
             status=status
         )
 
-def zapisz_misje_i_statusy_do_db_z_wyniku(
+def zapisz_misje_i_statusy_do_db(
         silnik,
         wynik: dict,
         tabela_npc: str,
@@ -176,7 +176,7 @@ def zapisz_misje_i_statusy_do_db_z_wyniku(
 
     return misja_id
 
-def zaktualizuj_misje_z_wowhead_w_db_z_wyniku(
+def zaktualizuj_misje_z_wowhead_w_db(
         silnik,
         wynik: dict,
         misja_id: int,
@@ -202,7 +202,7 @@ def zaktualizuj_misje_z_wowhead_w_db_z_wyniku(
             "misja_id": misja_id
         })
 
-def zapisz_dialogi_statusy_do_db_z_wyniku(
+def zapisz_dialogi_statusy_do_db(
         silnik,
         wynik: dict,
         misja_id: int,

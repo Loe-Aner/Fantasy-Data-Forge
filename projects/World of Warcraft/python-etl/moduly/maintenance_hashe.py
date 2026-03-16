@@ -45,8 +45,8 @@ def roznice_hashe (
                   AND POPRZ IS NOT NULL
                   AND NAJN <> POPRZ;
                 """)
-            r = conn.execute(roznice).scalars().all()
-            hash_roznice[hash_typ] = r
+            roznica = conn.execute(roznice).scalars().all()
+            hash_roznice[hash_typ] = roznica
     return hash_roznice
 
 def hash_typ_lista():
@@ -58,6 +58,10 @@ def roznice_hashe_usun_rekordy_z_db(
         silnik,
         zrodlo_insert_url: str
     ):
+    """
+    NA PRZYSZLOSC: CZY NIE LEPIEJ TUTAJ DORZUCIC LICZENIE WSKAZNIKOW PRZY ARCHIWIZACJI?
+    WYMAGALOBY TO ZMIANY NA ID MISJI Z GRY, A NIE MOJE ID.
+    """
 
     print("▶ Szukam różnic w hashach...")
     hash_slownik = roznice_hashe(

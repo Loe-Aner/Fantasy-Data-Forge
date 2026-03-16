@@ -9,10 +9,10 @@ from moduly.repo_zrodlo import zapisz_zrodlo_do_db
 from moduly.scraping_jobs import hashuj_kategorie_i_zapisz_zrodlo
 from moduly.maintenance_hashe import roznice_hashe_usun_rekordy_z_db
 from moduly.services_persist_wynik import (
-    zapisz_npc_i_status_do_db_z_wyniku,
-    zapisz_misje_i_statusy_do_db_z_wyniku,
-    zaktualizuj_misje_z_wowhead_w_db_z_wyniku,
-    zapisz_dialogi_statusy_do_db_z_wyniku
+    zapisz_npc_i_status_do_db,
+    zapisz_misje_i_statusy_do_db,
+    zaktualizuj_misje_z_wowhead_w_db,
+    zapisz_dialogi_statusy_do_db
 )
 from scraper_wiki_async import parsuj_wiele_misji_async
 from scraper_wiki_main import parsuj_misje_z_url, dekompresuj_html
@@ -114,7 +114,7 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
             continue
 
         try:
-            zapisz_npc_i_status_do_db_z_wyniku(
+            zapisz_npc_i_status_do_db(
                 silnik=silnik,
                 tabela_npc="dbo.NPC",
                 tabela_npc_statusy="dbo.NPC_STATUSY",
@@ -125,7 +125,7 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 jezyk="EN"
             )
 
-            misja_id = zapisz_misje_i_statusy_do_db_z_wyniku(
+            misja_id = zapisz_misje_i_statusy_do_db(
                 silnik=silnik,
                 wynik=wynik,
                 tabela_npc="dbo.NPC",
@@ -135,14 +135,14 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 jezyk="EN"
             )
 
-            zaktualizuj_misje_z_wowhead_w_db_z_wyniku(
+            zaktualizuj_misje_z_wowhead_w_db(
                 silnik=silnik,
                 wynik=wynik,
                 misja_id=misja_id,
                 tabela_misje="dbo.MISJE"
             )
 
-            zapisz_dialogi_statusy_do_db_z_wyniku(
+            zapisz_dialogi_statusy_do_db(
                 silnik=silnik,
                 wynik=wynik,
                 misja_id=misja_id,
