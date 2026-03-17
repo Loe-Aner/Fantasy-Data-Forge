@@ -443,3 +443,298 @@ def usun_niezredagowane(silnik):
     except Exception as e:
         print(f"--- Błąd podczas usuwania misji: {e}")
         raise
+
+def policz_zapisz_wskazniki(silnik, misja: int):
+    """
+    Przelicza wskazniki a nastepnie robi zapis do tabel:
+    a. dbo.MISJE_WSKAZNIKI_ZGODNOSCI (tylko najnowsze dane)
+    b. dbo.MISJE (status globalny dla danej misji)
+    """
+    q_delete = text("""
+        DELETE FROM dbo.MISJE_WSKAZNIKI_ZGODNOSCI
+        WHERE MISJA_ID_MOJE_FK = :m
+        ;
+    """) # mnie interesuja tylko wskazniki dla najnowszych misji, co bylo kiedys w tym przypadku to strata miejsca
+
+    q_insert = text("""
+        ;WITH ARCH_LAST AS (
+            SELECT
+                M.MISJA_ID_Z_GRY,
+                M.MISJA_ID_MOJE_PK,
+                A.TABELA,
+                MAX(CAST(A.DATA_ARCHIWIZACJI AS DATETIME2(0))) AS DATA_ARCHIWIZACJI
+            FROM dbo.ARCHIWUM_MISJE_DIALOGI AS A
+            INNER JOIN dbo.MISJE AS M
+              ON A.MISJA_ID_Z_GRY = M.MISJA_ID_Z_GRY
+            WHERE 1=1
+              AND A.STATUS = N'0_ORYGINAŁ'
+              AND M.MISJA_ID_Z_GRY IS NOT NULL
+              AND M.MISJA_ID_Z_GRY <> 123456789
+              AND M.MISJA_ID_MOJE_PK = :m
+            GROUP BY
+                M.MISJA_ID_Z_GRY,
+                M.MISJA_ID_MOJE_PK,
+                A.TABELA
+        ),
+
+        ARCH_NORM AS (
+            SELECT
+                A.TABELA,
+                AL.MISJA_ID_MOJE_PK,
+                CASE
+                    WHEN A.SEGMENT = N'CEL' AND A.PODSEGMENT = N'GŁÓWNY_CEL' THEN N'GŁÓWNY_CEL'
+                    WHEN A.SEGMENT = N'CEL' AND A.PODSEGMENT = N'PODRZĘDNY_CEL' THEN N'PODRZĘDNY_CEL'
+                    ELSE A.SEGMENT
+                END AS SEGMENT,
+                A.TRESC
+            FROM dbo.ARCHIWUM_MISJE_DIALOGI AS A
+            INNER JOIN ARCH_LAST AS AL
+              ON A.MISJA_ID_Z_GRY = AL.MISJA_ID_Z_GRY
+             AND A.TABELA = AL.TABELA
+             AND CAST(A.DATA_ARCHIWIZACJI AS DATETIME2(0)) = AL.DATA_ARCHIWIZACJI
+            WHERE 1=1
+              AND A.STATUS = N'0_ORYGINAŁ'
+        ),
+
+        TERAZ_MISJE_NORM AS (
+            SELECT
+                N'MISJE_STATUSY' AS TABELA,
+                M.MISJA_ID_MOJE_PK,
+                CASE
+                    WHEN MS.SEGMENT = N'CEL' AND MS.PODSEGMENT = N'GŁÓWNY_CEL' THEN N'GŁÓWNY_CEL'
+                    WHEN MS.SEGMENT = N'CEL' AND MS.PODSEGMENT = N'PODRZĘDNY_CEL' THEN N'PODRZĘDNY_CEL'
+                    ELSE MS.SEGMENT
+                END AS SEGMENT,
+                MS.TRESC
+            FROM dbo.MISJE_STATUSY AS MS
+            INNER JOIN dbo.MISJE AS M
+             ON MS.MISJA_ID_MOJE_FK = M.MISJA_ID_MOJE_PK
+            WHERE 1=1
+              AND M.MISJA_ID_Z_GRY IS NOT NULL
+              AND M.MISJA_ID_Z_GRY <> 123456789
+              AND MS.STATUS = N'0_ORYGINAŁ'
+              AND M.MISJA_ID_MOJE_PK = :m
+        ),
+
+        TERAZ_DIALOGI_NORM AS (
+            SELECT
+                N'DIALOGI_STATUSY' AS TABELA,
+                M.MISJA_ID_MOJE_PK,
+                DS.SEGMENT,
+                DS.TRESC
+            FROM dbo.DIALOGI_STATUSY AS DS
+            INNER JOIN dbo.MISJE AS M
+              ON DS.MISJA_ID_MOJE_FK = M.MISJA_ID_MOJE_PK
+            WHERE 1=1
+              AND M.MISJA_ID_Z_GRY IS NOT NULL
+              AND M.MISJA_ID_Z_GRY <> 123456789
+              AND DS.STATUS = N'0_ORYGINAŁ'
+              AND M.MISJA_ID_MOJE_PK = :m
+        ),
+
+        TERAZ_NORM AS (
+            SELECT *
+            FROM TERAZ_MISJE_NORM
+
+            UNION ALL
+
+            SELECT *
+            FROM TERAZ_DIALOGI_NORM
+        ),
+
+        TERAZ AS (
+            SELECT
+                T.MISJA_ID_MOJE_PK,
+                T.SEGMENT,
+                SUM(CAST(LEN(T.TRESC) AS BIGINT)) AS ZNAKI_TERAZ,
+                COUNT_BIG(*) AS ZDANIA_TERAZ
+            FROM TERAZ_NORM AS T
+            GROUP BY
+                T.MISJA_ID_MOJE_PK,
+                T.SEGMENT
+        ),
+
+        ARCHIWUM AS (
+            SELECT
+                A.MISJA_ID_MOJE_PK,
+                A.SEGMENT,
+                SUM(CAST(LEN(A.TRESC) AS BIGINT)) AS ZNAKI_ARCH,
+                COUNT_BIG(*) AS ZDANIA_ARCH
+            FROM ARCH_NORM AS A
+            GROUP BY
+                A.MISJA_ID_MOJE_PK,
+                A.SEGMENT
+        ),
+
+        TERAZ_TXT AS (
+            SELECT
+                T.TABELA,
+                T.MISJA_ID_MOJE_PK,
+                T.SEGMENT,
+                T.TRESC,
+                COUNT_BIG(*) AS ILE_TERAZ
+            FROM TERAZ_NORM AS T
+            GROUP BY
+                T.TABELA,
+                T.MISJA_ID_MOJE_PK,
+                T.SEGMENT,
+                T.TRESC
+        ),
+
+        ARCH_TXT AS (
+            SELECT
+                A.TABELA,
+                A.MISJA_ID_MOJE_PK,
+                A.SEGMENT,
+                A.TRESC,
+                COUNT_BIG(*) AS ILE_ARCH
+            FROM ARCH_NORM AS A
+            GROUP BY
+                A.TABELA,
+                A.MISJA_ID_MOJE_PK,
+                A.SEGMENT,
+                A.TRESC
+        ),
+
+        WSPOLNE AS (
+            SELECT
+                T.MISJA_ID_MOJE_PK,
+                T.SEGMENT,
+                SUM(
+                    CAST(LEN(T.TRESC) AS BIGINT) *
+                    CASE
+                        WHEN T.ILE_TERAZ < A.ILE_ARCH THEN T.ILE_TERAZ
+                        ELSE A.ILE_ARCH
+                    END
+                ) AS ZNAKI_WSPOLNE,
+                SUM(
+                    CASE
+                        WHEN T.ILE_TERAZ < A.ILE_ARCH THEN T.ILE_TERAZ
+                        ELSE A.ILE_ARCH
+                    END
+                ) AS ZDANIA_WSPOLNE
+            FROM TERAZ_TXT AS T
+            INNER JOIN ARCH_TXT AS A
+              ON T.TABELA = A.TABELA
+             AND T.MISJA_ID_MOJE_PK = A.MISJA_ID_MOJE_PK
+             AND T.SEGMENT = A.SEGMENT
+             AND T.TRESC = A.TRESC
+            GROUP BY
+                T.MISJA_ID_MOJE_PK,
+                T.SEGMENT
+        ),
+
+        BAZA AS (
+            SELECT
+                T.MISJA_ID_MOJE_PK,
+                T.SEGMENT,
+                T.ZNAKI_TERAZ,
+                COALESCE(A.ZNAKI_ARCH, 0) AS ZNAKI_ARCH,
+                COALESCE(W.ZNAKI_WSPOLNE, 0) AS ZNAKI_WSPOLNE,
+                T.ZDANIA_TERAZ,
+                COALESCE(A.ZDANIA_ARCH, 0) AS ZDANIA_ARCH,
+                COALESCE(W.ZDANIA_WSPOLNE, 0) AS ZDANIA_WSPOLNE
+            FROM TERAZ AS T
+            LEFT JOIN ARCHIWUM AS A
+              ON T.MISJA_ID_MOJE_PK = A.MISJA_ID_MOJE_PK
+             AND T.SEGMENT = A.SEGMENT
+            LEFT JOIN WSPOLNE AS W
+              ON T.MISJA_ID_MOJE_PK = W.MISJA_ID_MOJE_PK
+             AND T.SEGMENT = W.SEGMENT
+        ),
+
+        KPI AS (
+            SELECT
+                B.MISJA_ID_MOJE_PK,
+                B.SEGMENT,
+
+                B.ZNAKI_TERAZ,
+                B.ZNAKI_ARCH,
+                B.ZNAKI_WSPOLNE,
+
+                CAST(
+                    COALESCE(1.0 * B.ZNAKI_WSPOLNE / NULLIF(B.ZNAKI_TERAZ, 0), 0)
+                    AS DECIMAL(10, 4)
+                ) AS PROC_WSPOLNYCH_ZNAKOW,
+
+                B.ZDANIA_TERAZ,
+                B.ZDANIA_ARCH,
+                B.ZDANIA_WSPOLNE,
+
+                CAST(
+                    COALESCE(1.0 * B.ZDANIA_WSPOLNE / NULLIF(B.ZDANIA_TERAZ, 0), 0)
+                    AS DECIMAL(10, 4)
+                ) AS PROC_WSPOLNYCH_ZDAN,
+
+                CASE
+                    WHEN B.ZNAKI_TERAZ = B.ZNAKI_ARCH THEN N'TYLE SAMO'
+                    WHEN B.ZNAKI_TERAZ > B.ZNAKI_ARCH THEN N'WIECEJ TERAZ'
+                    ELSE N'MNIEJ TERAZ'
+                END AS KIERUNEK_ZMIANY_ZNAKI,
+
+                CASE
+                    WHEN B.ZDANIA_TERAZ = B.ZDANIA_ARCH THEN N'TYLE SAMO'
+                    WHEN B.ZDANIA_TERAZ > B.ZDANIA_ARCH THEN N'WIECEJ TERAZ'
+                    ELSE N'MNIEJ TERAZ'
+                END AS KIERUNEK_ZMIANY_LICZBY_ZDAN
+            FROM BAZA AS B
+        )
+
+        INSERT INTO dbo.MISJE_WSKAZNIKI_ZGODNOSCI (
+            MISJA_ID_MOJE_FK,
+            SEGMENT,
+            WSKAZNIK_ZGODNOSCI,
+            PROC_WSPOLNYCH_ZNAKOW,
+            PROC_WSPOLNYCH_ZDAN,
+            ZNAKI_TERAZ,
+            ZNAKI_ARCH,
+            ZNAKI_WSPOLNE,
+            ZDANIA_TERAZ,
+            ZDANIA_ARCH,
+            ZDANIA_WSPOLNE,
+            KIERUNEK_ZMIANY_ZNAKI,
+            KIERUNEK_ZMIANY_LICZBY_ZDAN
+        )
+        SELECT
+            K.MISJA_ID_MOJE_PK AS MISJA_ID_MOJE_FK,
+            K.SEGMENT,
+            CAST(
+                0.7 * K.PROC_WSPOLNYCH_ZNAKOW
+            + 0.3 * K.PROC_WSPOLNYCH_ZDAN
+                AS DECIMAL(10, 4)
+            ) AS WSKAZNIK_ZGODNOSCI,
+            K.PROC_WSPOLNYCH_ZNAKOW,
+            K.PROC_WSPOLNYCH_ZDAN,
+            K.ZNAKI_TERAZ,
+            K.ZNAKI_ARCH,
+            K.ZNAKI_WSPOLNE,
+            K.ZDANIA_TERAZ,
+            K.ZDANIA_ARCH,
+            K.ZDANIA_WSPOLNE,
+            K.KIERUNEK_ZMIANY_ZNAKI,
+            K.KIERUNEK_ZMIANY_LICZBY_ZDAN
+        FROM KPI AS K;
+    """)
+
+    q_update = text("""
+        WITH X AS (
+    SELECT
+        MISJA_ID_MOJE_FK,
+        SUM(WSKAZNIK_ZGODNOSCI * ZNAKI_TERAZ) / NULLIF(SUM(ZNAKI_TERAZ), 0) AS WSKAZNIK_GLOBALNY
+    FROM dbo.MISJE_WSKAZNIKI_ZGODNOSCI
+    WHERE MISJA_ID_MOJE_FK = :m
+    GROUP BY
+        MISJA_ID_MOJE_FK
+    )
+    UPDATE M
+    SET M.WSKAZNIK_ZGODNOSCI = X.WSKAZNIK_GLOBALNY
+    FROM dbo.MISJE AS M
+    INNER JOIN X
+      ON M.MISJA_ID_MOJE_PK = X.MISJA_ID_MOJE_FK
+    WHERE M.MISJA_ID_MOJE_PK = :m;
+    """)
+
+    with silnik.begin() as conn:
+        conn.execute(q_delete, {"m": misja})
+        conn.execute(q_insert, {"m": misja})
+        conn.execute(q_update, {"m": misja})

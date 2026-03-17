@@ -12,7 +12,8 @@ from moduly.services_persist_wynik import (
     zapisz_npc_i_status_do_db,
     zapisz_misje_i_statusy_do_db,
     zaktualizuj_misje_z_wowhead_w_db,
-    zapisz_dialogi_statusy_do_db
+    zapisz_dialogi_statusy_do_db,
+    policz_zapisz_wskazniki
 )
 from scraper_wiki_async import parsuj_wiele_misji_async
 from scraper_wiki_main import parsuj_misje_z_url, dekompresuj_html
@@ -29,7 +30,7 @@ kategorie = [
 
     # "https://warcraft.wiki.gg/wiki/Category:Quests_at_25-80"
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_90",
-    "https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
+    #"https://warcraft.wiki.gg/wiki/Category:Quests_at_80",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-83",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_80-90",
     "https://warcraft.wiki.gg/wiki/Category:Quests_at_83-88",
@@ -162,7 +163,10 @@ for batch_nr, batch in enumerate(chunks(linki_z_kolejki, BATCH_SIZE), start=1):
                 zrodlo="wiki",
             )
 
-            
+            policz_zapisz_wskazniki(
+                silnik=silnik,
+                misja=misja_id
+            )
 
             print(f"OK - zapisano MISJA_ID = {misja_id}")
             usun_link_z_kolejki(silnik, url)
