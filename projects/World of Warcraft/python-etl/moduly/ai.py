@@ -711,11 +711,16 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
         SELECT m.MISJA_ID_MOJE_PK, z.HTML_SKOMPRESOWANY,
             ROW_NUMBER() OVER (PARTITION BY z.MISJA_ID_MOJE_FK ORDER BY z.DATA_WYSCRAPOWANIA DESC) AS r
         FROM dbo.ZRODLO AS z
-        INNER JOIN dbo.MISJE AS m ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
+        INNER JOIN dbo.MISJE AS m 
+          ON z.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
         WHERE 1=1 
           AND m.MISJA_ID_Z_GRY IS NOT NULL 
           AND m.MISJA_ID_Z_GRY <> 123456789
-        
+          AND (
+            m.WSKAZNIK_ZGODNOSCI <= 0.70000
+            OR m.WSKAZNIK_ZGODNOSCI IS NULL
+            )
+                          
         {warunki_sql}
         
           AND NOT EXISTS (
@@ -733,7 +738,8 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
                      )
     )
     SELECT MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY 
-    FROM hashe WHERE r = 1 
+    FROM hashe 
+    WHERE r = 1 
     ORDER BY MISJA_ID_MOJE_PK;
     """)
 
