@@ -4,8 +4,10 @@ from moduly.sciezki import sciezka_excel_zatwierdzenia
 
 silnik = utworz_engine_do_db()
 
+# SKRYPT GENERUJACY PRZYGOTOWANEGO EXCELA Z FORMATOWANIEM DO ZATWIERDZENIA TEKSTU
+# TUTAJ TLUMACZE NOWOSCI
 stworz_excele_do_zatwierdzenia_tlumaczen(
     silnik, 
-    dodatek="Midnight",
-    sciezka=sciezka_excel_zatwierdzenia("Midnight.xlsx")
+    fabula="Path of de Hash'ey",
+    sciezka=sciezka_excel_zatwierdzenia("Path of de Hash'ey.xlsx")
 )
