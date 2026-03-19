@@ -11,6 +11,15 @@ from moduly.repo_misje import (
 )
 from moduly.repo_dialogi import dodaj_statusy_dialogu_batch
 
+def normalizuj_nazwe_npc(npc: str | None) -> str:
+    if npc is None:
+        return ""
+
+    npc = str(npc)
+    npc = re.sub(r"\[.*?\]|\(.*?\)", "", npc)
+    npc = re.sub(r"\s+", " ", npc).strip()
+    return npc
+
 def zapisz_npc_i_status_do_db(
         silnik,
         tabela_npc: str,
@@ -25,14 +34,7 @@ def zapisz_npc_i_status_do_db(
 
     for klucz in szukaj_wg:
         npc = podsumowanie.get(klucz)
-
-        if npc is None:
-            npc = ""
-        else:
-            npc = str(npc)
-
-        npc = re.sub(r"\[.*?\]|\(.*?\)", "", npc)
-        npc = re.sub(r"\s+", " ", npc).strip()
+        npc = normalizuj_nazwe_npc(npc)
 
         if npc == "":
             npc = "Brak Nazwy"
@@ -76,8 +78,8 @@ def zapisz_misje_i_statusy_do_db(
     url = wynik.get("Źródło", {}).get("url")
     tytul = (podsumowanie.get("Tytuł") or "").strip()
 
-    npc_start = (podsumowanie.get("Start_NPC") or "").strip()
-    npc_koniec = (podsumowanie.get("Koniec_NPC") or "").strip()
+    npc_start = normalizuj_nazwe_npc(podsumowanie.get("Start_NPC"))
+    npc_koniec = normalizuj_nazwe_npc(podsumowanie.get("Koniec_NPC"))
 
     nastepna_misja = podsumowanie.get("Następna_Misja")
     poprzednia_misja = podsumowanie.get("Poprzednia_Misja")

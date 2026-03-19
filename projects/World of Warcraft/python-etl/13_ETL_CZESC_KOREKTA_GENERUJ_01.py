@@ -4,8 +4,11 @@ from moduly.sciezki import sciezka_excel_zatwierdzenia
 
 silnik = utworz_engine_do_db()
 
+# TUTAJ JEST PROCES, W KTORYM GENERUJE TLUMACZENIA, DLA KTORYCH WSKAZNIK CZESCI WSPOLNEJ (TZN LICZBA ZNAKOW I ZDAN Z NOWO WYSCRAPOWANEJ TRESCI VS ARCHIWUM) 
+# JEST WIEKSZA NIZ 0.7000
+# ZMIAN JEST MALO, DLATEGO RECZNIE TO TLUMACZE
 stworz_excele_do_recznych_tlumaczen(
     silnik,
-    fabula="Midnight",
-    sciezka=sciezka_excel_zatwierdzenia("Midnight_RECZNE.xlsx")
+    fabula="Path of de Hash'ey",
+    sciezka=sciezka_excel_zatwierdzenia("Path of de Hash'ey_RECZNE.xlsx")
 )
