@@ -425,7 +425,7 @@ def pobierz_przetworz_zapisz_batch_lista(
 
     try:
         odpowiedz = klient.models.generate_content(
-                    model="gemini-3.1-pro-preview",
+                    model=MODEL_GEMINI_GLOWNY,
                     contents=json.dumps(wsad_dla_geminisia),
                     config={
                         "system_instruction": instrukcja_slowa_kluczowe(),
@@ -869,7 +869,7 @@ def tych_npcow_nie_tlumacz(silnik, klient):
         start_czas = time.time()
         
         odpowiedz = klient.models.generate_content(
-            model="gemini-3.1-flash-lite-preview",
+            model=MODEL_GEMINI_POMOCNICZY,
             contents=dfj,
             config={
                 "system_instruction": instrukcja_tych_npc_nie(), 
@@ -931,7 +931,7 @@ def przetlumacz_nazwy_npc(silnik, klient):
         
         try:
             odpowiedz = klient.models.generate_content(
-                model="gemini-3.1-pro-preview",
+                model=MODEL_GEMINI_GLOWNY,
                 contents=dfj,
                 config={
                     "system_instruction": instrukcja_tlumacz_npc(), 
