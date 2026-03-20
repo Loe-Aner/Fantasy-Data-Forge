@@ -35,6 +35,7 @@ MODEL_GEMINI_GLOWNY = "gemini-3.1-pro-preview"
 MODEL_GEMINI_POMOCNICZY = "gemini-3.1-flash-lite-preview"
 MODEL_CLAUDE_GLOWNY = "claude-sonnet-4-6"
 TTL_CACHE_GEMINI = "10800s"
+MIN_CACHE_TOKENS_GEMINI = 4096
 TEKST_WARMUP_CACHE = "Warmup techniczny. Odpowiedz jednym słowem: OK."
 CACHE_DEBUG = False
 
@@ -179,11 +180,13 @@ def wygeneruj_json_gemini(klient, konfiguracja: dict, contents: str, etap: str, 
     if cached_content:
         config["cached_content"] = cached_content
         try:
-            return klient.models.generate_content(
+            odpowiedz = klient.models.generate_content(
                 model=konfiguracja["model"],
                 contents=contents,
                 config=config,
             )
+            zaloguj_uzycie_cache_gemini(odpowiedz, etap, misja_id=misja_id, konfiguracja_cache=True)
+            return odpowiedz
         except Exception as e:
             prefix = f"[ID: {misja_id}] " if misja_id is not None else ""
             print(
@@ -193,11 +196,13 @@ def wygeneruj_json_gemini(klient, konfiguracja: dict, contents: str, etap: str, 
 
     config.pop("cached_content", None)
     config["system_instruction"] = konfiguracja["prompt_staly"]
-    return klient.models.generate_content(
+    odpowiedz = klient.models.generate_content(
         model=konfiguracja["model"],
         contents=contents,
         config=config,
     )
+    zaloguj_uzycie_cache_gemini(odpowiedz, etap, misja_id=misja_id, konfiguracja_cache=False)
+    return odpowiedz
 
 
 def wygeneruj_json_claude_stream(klient, konfiguracja: dict, contents: str):
@@ -221,7 +226,7 @@ def przygotuj_prompt_staly_dla_gemini(klient, etap: str) -> tuple[str, int, bool
         prompt_staly = f"{prompt_staly}\n\n{dodatek_cache_claude_lokalizacja()}"
         return prompt_staly, -1, True
 
-    if tokeny >= 1024:
+    if tokeny >= MIN_CACHE_TOKENS_GEMINI:
         return prompt_staly, tokeny, False
 
     prompt_rozszerzony = f"{prompt_staly}\n\n{dodatek_cache_claude_lokalizacja()}"
@@ -229,15 +234,33 @@ def przygotuj_prompt_staly_dla_gemini(klient, etap: str) -> tuple[str, int, bool
     return prompt_rozszerzony, tokeny_rozszerzone, True
 
 
-def potwierdz_cache_gemini(klient, nazwa_cache: str, etap: str):
-    odpowiedz = klient.models.generate_content(
-        model=MODEL_GEMINI_GLOWNY,
-        contents=TEKST_WARMUP_CACHE,
-        config=genai_types.GenerateContentConfig(cached_content=nazwa_cache),
+def potwierdz_cache_gemini(cache, etap: str):
+    usage = getattr(cache, "usage_metadata", None)
+    cached_tokens = getattr(usage, "total_token_count", 0) if usage else 0
+    print(
+        f"[CACHE][Gemini][{etap}] cached_content={cache.name}, "
+        f"cached_tokens={cached_tokens}, expire_time={getattr(cache, 'expire_time', None)}"
     )
+
+
+def zaloguj_uzycie_cache_gemini(
+    odpowiedz,
+    etap: str,
+    misja_id: int | None = None,
+    konfiguracja_cache: bool = False,
+):
     usage = getattr(odpowiedz, "usage_metadata", None)
-    cached_tokens = getattr(usage, "cached_content_token_count", 0) if usage else 0
-    print(f"[CACHE][Gemini][{etap}] cached_content={nazwa_cache}, cached_tokens={cached_tokens}")
+    if not usage:
+        return
+
+    prefix = f"[ID: {misja_id}] " if misja_id is not None else ""
+    prompt_tokens = getattr(usage, "prompt_token_count", 0)
+    cached_tokens = getattr(usage, "cached_content_token_count", 0)
+    output_tokens = getattr(usage, "candidates_token_count", 0)
+    print(
+        f"[CACHE][Gemini][{etap}] {prefix}konfiguracja_cache={'TAK' if konfiguracja_cache else 'NIE'}, "
+        f"prompt_tokens={prompt_tokens}, cached_tokens={cached_tokens}, output_tokens={output_tokens}"
+    )
 
 
 def potwierdz_cache_claude(klient, system_blocks, etap: str):
@@ -281,7 +304,7 @@ def przygotuj_konfiguracje_promptu(klient, dostawca: str, etap: str) -> dict:
                     ttl=TTL_CACHE_GEMINI,
                 ),
             )
-            potwierdz_cache_gemini(klient, cache.name, etap)
+            potwierdz_cache_gemini(cache, etap)
             cached_content = cache.name
         except Exception as e:
             print(f"[CACHE][Gemini][{etap}] Nie udalo sie utworzyc cache. Fallback bez cache. Blad: {e}")
@@ -333,6 +356,17 @@ def wyczysc_cache_gemini(klient, nazwa_cache: str, etap: str):
     except Exception as e:
         print(f"[CACHE][Gemini][{etap}] Nie udalo sie usunac cache {nazwa_cache}: {e}")
 
+
+def wyczysc_cache_gemini_dla_konfiguracji(klient, konfiguracja: dict | None):
+    if not konfiguracja or konfiguracja.get("dostawca") != "gemini":
+        return
+
+    nazwa_cache = konfiguracja.get("cached_content")
+    if not nazwa_cache:
+        return
+
+    wyczysc_cache_gemini(klient, nazwa_cache, konfiguracja.get("etap", "nieznany"))
+
 def pobierz_przetworz_zapisz_batch_lista(
         silnik, 
         lista_id_batch, 
@@ -367,9 +401,9 @@ def pobierz_przetworz_zapisz_batch_lista(
         m.MISJA_TYTUL_EN + '. ' + COALESCE(s.TRESC_STATUSOW, '') + '. ' + COALESCE(d.TRESC_DIALOGOW, '') AS PELNY_TEKST
     FROM dbo.MISJE AS m
     LEFT JOIN Statusy_Agg AS s 
-        ON m.MISJA_ID_MOJE_PK = s.MISJA_ID_MOJE_FK
+      ON m.MISJA_ID_MOJE_PK = s.MISJA_ID_MOJE_FK
     LEFT JOIN Dialogi_Agg d 
-        ON m.MISJA_ID_MOJE_PK = d.MISJA_ID_MOJE_FK
+      ON m.MISJA_ID_MOJE_PK = d.MISJA_ID_MOJE_FK
     WHERE m.DODATEK_EN = :dodatek
       AND m.MISJA_ID_MOJE_PK IN :lista_id
     """).bindparams(bindparam("lista_id", expanding=True))
@@ -739,7 +773,7 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
     )
     SELECT MISJA_ID_MOJE_PK, HTML_SKOMPRESOWANY 
     FROM hashe 
-    WHERE r = 1 
+    WHERE r=1 
     ORDER BY MISJA_ID_MOJE_PK;
     """)
 
@@ -764,33 +798,40 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
     print(f"Dostawca tłumaczenia: {dostawca_tlumaczenie}")
     print(f"Dostawca redakcji: {dostawca_redakcja}")
 
-    konfiguracja_tlumaczenie = przygotuj_konfiguracje_promptu(
-        klient_tlumacz,
-        dostawca_tlumaczenie,
-        "tlumacz",
-    )
-    konfiguracja_redakcja = przygotuj_konfiguracje_promptu(
-        klient_redaktor,
-        dostawca_redakcja,
-        "redaktor",
-    )
+    konfiguracja_tlumaczenie = None
+    konfiguracja_redakcja = None
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
-        futures = []
-        for wiersz in lista_zadan:
-            future = executor.submit(
-                przetworz_pojedyncza_misje,
-                wiersz,
-                silnik,
-                klient_tlumacz,
-                klient_redaktor,
-                konfiguracja_tlumaczenie,
-                konfiguracja_redakcja
-            )
-            futures.append(future)
+    try:
+        konfiguracja_tlumaczenie = przygotuj_konfiguracje_promptu(
+            klient_tlumacz,
+            dostawca_tlumaczenie,
+            "tlumacz",
+        )
+        konfiguracja_redakcja = przygotuj_konfiguracje_promptu(
+            klient_redaktor,
+            dostawca_redakcja,
+            "redaktor",
+        )
 
-        for future in concurrent.futures.as_completed(futures):
-            pass
+        with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
+            futures = []
+            for wiersz in lista_zadan:
+                future = executor.submit(
+                    przetworz_pojedyncza_misje,
+                    wiersz,
+                    silnik,
+                    klient_tlumacz,
+                    klient_redaktor,
+                    konfiguracja_tlumaczenie,
+                    konfiguracja_redakcja
+                )
+                futures.append(future)
+
+            for future in concurrent.futures.as_completed(futures):
+                pass
+    finally:
+        wyczysc_cache_gemini_dla_konfiguracji(klient_tlumacz, konfiguracja_tlumaczenie)
+        wyczysc_cache_gemini_dla_konfiguracji(klient_redaktor, konfiguracja_redakcja)
 
     print("\n--- ZAKOŃCZONO PRZETWARZANIE WIELOWĄTKOWE ---")
 
