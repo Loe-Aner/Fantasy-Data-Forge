@@ -21,6 +21,8 @@ from moduly.ai_prompty import (
     instrukcja_tlumacz_stala,
     instrukcja_tlumacz_zmienna,
     instrukcja_tych_npc_nie,
+    instrukcja_dane_npc_stala,
+    instrukcja_dane_npc_zmienna
 )
 from moduly.sciezki import sciezka_excel_mappingi
 from scraper_wiki_main import parsuj_misje_z_url
@@ -38,6 +40,7 @@ CACHE_DEBUG = False
 def log_cache_debug(tekst: str):
     if CACHE_DEBUG:
         print(tekst)
+
 
 def zaladuj_api_i_klienta(
         nazwa_api: str,
@@ -367,9 +370,15 @@ def przetworz_pojedyncza_misje(
                 FROM wszystkie_idki AS wi
                 INNER JOIN dbo.NPC_STATUSY AS ns ON wi.ID_NPC = ns.NPC_ID_FK
             )
-                SELECT DISTINCT pvt.[0_ORYGINAŁ], pvt.[3_ZATWIERDZONO]
+                SELECT DISTINCT
+                    pvt.[0_ORYGINAŁ],
+                    pvt.[3_ZATWIERDZONO],
+                    n.PLEC,
+                    n.RASA
                 FROM oczyszczone_dane
-                PIVOT (MAX(CZYSTA_NAZWA) FOR STATUS IN ([0_ORYGINAŁ], [3_ZATWIERDZONO])) AS pvt;
+                PIVOT (MAX(CZYSTA_NAZWA) FOR STATUS IN ([0_ORYGINAŁ], [3_ZATWIERDZONO])) AS pvt
+                LEFT JOIN dbo.NPC AS n
+                  ON n.NPC_ID_MOJE_PK = pvt.ID_NPC;
             """)
 
             q_select_sk = text("""
@@ -396,7 +405,7 @@ def przetworz_pojedyncza_misje(
             wsad_sk = set(s for s in slowa_kluczowe_z_bazy)
             wsad_json = json.dumps(przetworzone_dane, indent=4, ensure_ascii=False)
 
-            txt_npc = "\n".join([f"- {n[0]} -> {n[1]}" for n in wsad_npc if n[0] and n[1]])
+            txt_npc = "\n".join([f"- {n[0]} -> {n[1]} | PLEC={n[2]} | RASA={n[3]}" for n in wsad_npc if n[0] and n[1]])
             txt_sk = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_sk if k[0] and k[1]])
 
             print(f"--- [ID: {misja_id}] Start Tlumaczenia... ---")
@@ -490,7 +499,8 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
           AND NOT EXISTS (
                             SELECT 1 
                             FROM dbo.MISJE_STATUSY AS ms 
-                            WHERE ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK 
+                            WHERE 1=1
+                              AND ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK 
                               AND ms.STATUS = N'1_PRZETŁUMACZONO'
                           )
           AND EXISTS (
@@ -702,3 +712,132 @@ def przetlumacz_nazwy_npc(silnik, klient):
         licznik_batchy += 1
 
     print(f"\n--- KONIEC PROCESU ---")
+
+
+def przetworz_batch_metadanych_npc(
+    klient,
+    model: str,
+    config,
+    dane_npc_json: str,
+    batch_nr: int,
+    liczba_batchy: int,
+    liczba_rekordow_batcha: int,
+    folder_zapisu: str,
+    run_id: str,
+):
+    print(f"[Batch {batch_nr}/{liczba_batchy}] Wysylam {liczba_rekordow_batcha} NPC...")
+
+    try:
+        odpowiedz = klient.models.generate_content(
+            model=model,
+            contents=instrukcja_dane_npc_zmienna(dane_npc_json),
+            config=config,
+        )
+
+        df_batch = pd.DataFrame(json.loads(odpowiedz.text)["records"])
+        nazwa_pliku = f"{run_id}_batch_{batch_nr:03d}.csv"
+        pelna_sciezka = os.path.join(folder_zapisu, nazwa_pliku)
+        df_batch.to_csv(pelna_sciezka, index=False, encoding="utf-8-sig", sep=";")
+
+        print(f"[Batch {batch_nr}/{liczba_batchy}] Zapisano: {nazwa_pliku}")
+        return len(df_batch), True
+    except Exception as e:
+        print(f"[Batch {batch_nr}/{liczba_batchy}] BLAD: {e}")
+        return 0, False
+
+
+def pobierz_metadane_npc_do_csv(
+    silnik,
+    batch_size=50,
+    liczba_watkow=4,
+    folder_zapisu=sciezka_excel_mappingi("surowe", "npc_metadane"),
+):
+
+    klient=zaladuj_api_i_klienta("API_TLUMACZENIE")
+    model=MODEL_GEMINI_GLOWNY
+
+    run_id = datetime.now().strftime("%Y_%m_%d_%H%M%S_%f")
+
+    q_select_npc = text("""
+        SELECT
+            NPC_ID_MOJE_PK,
+            NAZWA
+        FROM dbo.NPC
+        WHERE 1=1
+          AND PLEC IS NULL
+          AND RASA IS NULL
+          AND KLASA IS NULL
+          AND TYTUL IS NULL
+          AND NAZWA NOT IN ('Brak Danych', '...', 'Automatic')
+        ORDER BY NPC_ID_MOJE_PK
+    """)
+
+    df_wejscie = pd.read_sql_query(sql=q_select_npc, con=silnik)
+    liczba_rekordow = len(df_wejscie)
+
+    if liczba_rekordow == 0:
+        print("Brak NPC do przetworzenia.")
+        return
+
+    config = genai_types.GenerateContentConfig(
+        system_instruction=instrukcja_dane_npc_stala(),
+        response_mime_type="application/json",
+        tools=[
+            genai_types.Tool(
+                google_search=genai_types.GoogleSearch()
+            )
+        ],
+        thinking_config=genai_types.ThinkingConfig(
+            thinking_level=genai_types.ThinkingLevel.HIGH
+        ),
+        temperature=0.1,
+    )
+
+    liczba_przetworzonych = 0
+    liczba_udanych_batchy = 0
+    liczba_batchy = (liczba_rekordow + batch_size - 1) // batch_size
+
+    print(
+        f"Start przetwarzania NPC: {liczba_rekordow} rekordow, "
+        f"batch size = {batch_size}, liczba batchy = {liczba_batchy}, watki = {liczba_watkow}"
+    )
+
+    futures = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
+        for batch_nr, start in enumerate(range(0, liczba_rekordow, batch_size), start=1):
+            stop = start + batch_size
+            batch = df_wejscie.iloc[start:stop]
+            dane_npc_json = json.dumps(
+                {
+                    "records": batch[["NPC_ID_MOJE_PK", "NAZWA"]]
+                    .rename(columns={"NPC_ID_MOJE_PK": "NPC_ID", "NAZWA": "NPC_NAZWA"})
+                    .to_dict(orient="records")
+                },
+                ensure_ascii=False,
+            )
+
+            future = executor.submit(
+                przetworz_batch_metadanych_npc,
+                klient,
+                model,
+                config,
+                dane_npc_json,
+                batch_nr,
+                liczba_batchy,
+                len(batch),
+                folder_zapisu,
+                run_id,
+            )
+            futures.append(future)
+
+        for future in concurrent.futures.as_completed(futures):
+            liczba_rekordow_batcha, czy_udany = future.result()
+            liczba_przetworzonych += liczba_rekordow_batcha
+            if czy_udany:
+                liczba_udanych_batchy += 1
+            print(
+                f"Postep: batchy {liczba_udanych_batchy}/{liczba_batchy}, "
+                f"NPC {liczba_przetworzonych}/{liczba_rekordow}"
+            )
+
+    print(f"Koniec. Udane batche: {liczba_udanych_batchy}/{liczba_batchy}. Przetworzono: {liczba_przetworzonych}/{liczba_rekordow} NPC.")

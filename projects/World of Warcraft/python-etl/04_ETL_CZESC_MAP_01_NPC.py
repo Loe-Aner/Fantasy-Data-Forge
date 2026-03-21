@@ -12,4 +12,4 @@ tych_npcow_nie_tlumacz(
     klient=klient
     )
 
-# PO WSZYSTKIM WEJSC DO PLIKU I ODSWIEZYC, A NASTEPNIE PRZYPISAC ICH
+# PRZEJSC OD RAZU DO KROKU 02

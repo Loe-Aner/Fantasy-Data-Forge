@@ -281,6 +281,10 @@ def zapisz_npc_i_status_przetlumaczony_do_db(
         usecols=["NPC_ID_MOJE_PK", "NAZWA", "NAZWA_PL_FINAL", "PLEC", "RASA", "KLASA", "TYTUL"]
     )
 
+    kolumny_tekstowe = ["NAZWA", "NAZWA_PL_FINAL", "PLEC", "RASA", "KLASA", "TYTUL"]
+    df[kolumny_tekstowe] = df[kolumny_tekstowe].astype(object)
+    df[kolumny_tekstowe] = df[kolumny_tekstowe].where(df[kolumny_tekstowe].notna(), None)
+
     q_pobierz_juz_zatwierdzone = text("""
         SELECT NPC_ID_FK 
         FROM dbo.NPC_STATUSY 
@@ -336,7 +340,7 @@ def zapisz_npc_i_status_przetlumaczony_do_db(
         for r in df_do_update_statusy.to_dict("records")
     ]
 
-    df_do_aktualizacji_npc = df[df["PLEC"].notna() & (df["PLEC"] != "")]
+    df_do_aktualizacji_npc = df[df["PLEC"].notna() & df["NAZWA"].notna()]
     parametry_update_npc_glowne = [
         {
             "nazwa_eng": r["NAZWA"],
