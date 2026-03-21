@@ -7,7 +7,7 @@
 Buduję tutaj rozwiązania **end-to-end**:  
 od architektury bazy danych i zaawansowanego ETL w Pythonie, przez modelowanie, aż po wizualizację.
 
-Ale to nie wszystko. Wierzę, że najlepsze projekty powstają z pasji. Jako fanatyk RPG i osoba zafascynowana danymi, postanowiłem połączyć te dwa światy. Poniżej znajdziesz nieco więcej info.
+Wierzę, że najlepsze projekty powstają z pasji. Jako fanatyk RPG i osoba zafascynowana danymi, postanowiłem połączyć te dwa światy. Poniżej znajdziesz nieco więcej info.
 
 ---
 
