@@ -6,5 +6,5 @@ silnik = utworz_engine_do_db()
 
 zatwierdz_tlumaczenia(
     silnik,
-    sciezka_excel_zatwierdzenia("The Light's Summons_ZATW_PRZE.xlsx")
+    sciezka_excel_zatwierdzenia("Call of the Goddess_ZATW_PRZE.xlsx")
 )

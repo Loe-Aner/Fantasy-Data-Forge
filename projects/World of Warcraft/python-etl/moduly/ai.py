@@ -35,6 +35,43 @@ MODEL_GEMINI_POMOCNICZY = "gemini-3.1-flash-lite-preview"
 TTL_CACHE_GEMINI = "10800s"
 MIN_CACHE_TOKENS_GEMINI = 4096
 CACHE_DEBUG = False
+SCHEMAT_ODPOWIEDZI_DANE_NPC = {
+    "type": "OBJECT",
+    "required": ["records"],
+    "properties": {
+        "records": {
+            "type": "ARRAY",
+            "items": {
+                "type": "OBJECT",
+                "required": [
+                    "NPC_ID",
+                    "NPC_NAZWA",
+                    "PLEC",
+                    "RASA",
+                    "KLASA",
+                    "TYTUL",
+                    "_PEWNOSC",
+                    "_ZRODLO",
+                    "_NOTATKI",
+                ],
+                "properties": {
+                    "NPC_ID": {"type": "INTEGER"},
+                    "NPC_NAZWA": {"type": "STRING"},
+                    "PLEC": {"type": "STRING"},
+                    "RASA": {"type": "STRING", "nullable": True},
+                    "KLASA": {"type": "STRING"},
+                    "TYTUL": {"type": "STRING", "nullable": True},
+                    "_PEWNOSC": {"type": "STRING"},
+                    "_ZRODLO": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"},
+                    },
+                    "_NOTATKI": {"type": "STRING", "nullable": True},
+                },
+            },
+        },
+    },
+}
 
 
 def log_cache_debug(tekst: str):
@@ -754,7 +791,7 @@ def pobierz_metadane_npc_do_csv(
 ):
 
     klient=zaladuj_api_i_klienta("API_TLUMACZENIE")
-    model=MODEL_GEMINI_GLOWNY
+    model=MODEL_GEMINI_POMOCNICZY
 
     run_id = datetime.now().strftime("%Y_%m_%d_%H%M%S_%f")
 
@@ -769,9 +806,10 @@ def pobierz_metadane_npc_do_csv(
           AND KLASA IS NULL
           AND TYTUL IS NULL
           AND NAZWA NOT IN ('Brak Danych', '...', 'Automatic')
+          --AND RASA IN ('Unknown')
         ORDER BY NPC_ID_MOJE_PK
     """)
-
+    # ('Brak Danych', '...', 'Automatic')
     df_wejscie = pd.read_sql_query(sql=q_select_npc, con=silnik)
     liczba_rekordow = len(df_wejscie)
 
@@ -782,6 +820,7 @@ def pobierz_metadane_npc_do_csv(
     config = genai_types.GenerateContentConfig(
         system_instruction=instrukcja_dane_npc_stala(),
         response_mime_type="application/json",
+        response_schema=SCHEMAT_ODPOWIEDZI_DANE_NPC,
         tools=[
             genai_types.Tool(
                 google_search=genai_types.GoogleSearch()

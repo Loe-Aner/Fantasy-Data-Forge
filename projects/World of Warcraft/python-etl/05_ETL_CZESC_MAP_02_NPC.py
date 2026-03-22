@@ -11,4 +11,5 @@ przetlumacz_nazwy_npc(
     klient=klient
     )
 
-# PRZEJSC OD RAZU DO KROKU 03
+# WEJSC I ODSWIEZYC PLIK
+# PRZEJSC DO KROKU 03
