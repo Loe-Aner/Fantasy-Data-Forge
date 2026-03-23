@@ -14,9 +14,9 @@ from moduly.sciezki import sciezka_excel_mappingi
 
 silnik = utworz_engine_do_db()
 
-NAZWA_DODATKU = 'Midnight'
-BATCH_SIZE = 100
-MAX_WORKERS = 4
+NAZWA_DODATKU = "Shadowlands"
+BATCH_SIZE = 50
+MAX_WORKERS = 10
 SCIEZKA_EXCEL = sciezka_excel_mappingi("slowa_kluczowe.xlsx")
 
 wszystkie_id_sql = pobierz_liste_id_dla_dodatku(silnik, NAZWA_DODATKU)

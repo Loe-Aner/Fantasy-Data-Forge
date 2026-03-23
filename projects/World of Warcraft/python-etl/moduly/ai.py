@@ -30,7 +30,7 @@ from moduly.utils import sklej_warunki_w_WHERE
 import zlib
 import base64
 
-MODEL_GEMINI_GLOWNY = "gemini-3.1-pro-preview" # gemini-3.1-pro-preview
+MODEL_GEMINI_GLOWNY = "gemini-3.1-pro-preview" # gemini-3.1-pro-preview -- gemini-3-flash-preview
 MODEL_GEMINI_POMOCNICZY = "gemini-3.1-flash-lite-preview"
 TTL_CACHE_GEMINI = "10800s"
 MIN_CACHE_TOKENS_GEMINI = 4096
