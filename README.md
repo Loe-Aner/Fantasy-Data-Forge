@@ -96,17 +96,17 @@ Zaawansowany projekt mający na celu stworzenie polskiego ekosystemu dla graczy 
 - 📂 **Lokalizacja:** `projects/World of Warcraft/`
 
 #### 🔄 Workflow i architektura rozwiązania:
-1.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Database:** Projekt relacyjnej struktury danych (NPC, Questy, Wypowiedzi, Słowa Kluczowe).
-2.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **ETL:** Zescrapowanie danych (Wiki/Wowhead), czyszczenie, transformacja i zapis do Azure SQL Database.
-3.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Mappings:** Słowniki i mapowanie nazw własnych (NPC, Lokacje) w celu zachowania absolutnej spójności ze światem gry. Exceli nie publikuję.
-4.  ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Preliminary Process Review:** Przechodzę wstępnie przez procesy i koryguję to co można lepiej zrobić.
-5.  ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Translation & Editing:** Proces generowania tłumaczeń i redagowania tekstów.
-6.  ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Logic Injection & Approval:** Ręczna weryfikacja (status "3_ZATWIERDZONO") oraz implementacja składni dla Lua. Obsługa zmiennych dynamicznych (płeć gracza, rasa, oryginalne nazwy w nawiasach), by tekst reagował na kontekst w grze.
-7.  ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Game Integration (Addon):** Stworzenie addonu w Lua, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
-8.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **Preliminary Process Review (Addon):** Przejść przez kod i logikę, ewentualnie skorygować, by było wydajniej i zgodnie z najlepszymi praktykami.
-9.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **BI Reporting:** Stworzenie raportowania statusu tłumaczeń oraz kondycji bazy danych w Power BI.
-10.  ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **Final Review:** Planuję przejść przez wszystkie procesy po przetłumaczeniu kilku dodatków, tak aby nazbierało się tego trochę po drodze.
-11. ![Planned](https://img.shields.io/badge/PLANNED-lightgrey?style=flat-square) **Cloud Automation (Fabric/Azure):** Migracja lokalnych skryptów do chmury. **Cel**: pełna automatyzacja procesu tłumaczenia (nowy patch -> lecą skrypty po kolei) oraz udostępnienie raportów Power BI ze statusami.
+1. ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Baza danych:** Projekt relacyjnej struktury danych.
+2. ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **ETL:** Zeskrapowanie danych (różne źródła), czyszczenie, transformacja i zapis do Azure SQL Database.
+3. ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Mapowania:** Słowniki i mapowanie nazw własnych w celu zachowania pełnej spójności ze światem gry. Plików roboczych nie publikuję.
+4. ![Done](https://img.shields.io/badge/DONE-2ea44f?style=flat-square) **Wstępny przegląd procesu:** Przeszedłem przez procesy, usprawniłem to co mi się mocno rzuciło w oczy. Final review będzie na końcu.
+5. ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Tłumaczenie i redakcja:** Trwa proces generowania tłumaczeń oraz redagowania tekstów.
+6. ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Implementacja logiki i zatwierdzanie:** Ręczna weryfikacja (nadawanie statusu `3_ZATWIERDZONO` po mojej stronie, czytam dosłownie każdy tekst) oraz implementacja składni dla Lua. Obsługa zmiennych dynamicznych, aby tekst reagował na kontekst w grze.
+7. ![In progress](https://img.shields.io/badge/IN%20PROGRESS-007ec6?style=flat-square) **Integracja z grą (Addon):** Rozwój addonu w Lua, który "w locie" podmienia angielskie teksty na polskie w interfejsie gry.
+8. ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **Wstępny przegląd rozwiązania addonowego:** Przejście przez kod i logikę addonu oraz ewentualne korekty pod kątem wydajności i zgodności z dobrymi praktykami.
+9. ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **Raportowanie BI:** Przygotowanie raportów pokazujących status tłumaczeń oraz kondycję bazy danych w Power BI.
+10. ![Up Next](https://img.shields.io/badge/UP%20NEXT-efefef?style=flat-square) **Przegląd końcowy:** Planowane przejście przez wszystkie procesy po przetłumaczeniu kilku dodatków, tak aby ocenić całość na większej próbce materiału.
+11. ![Planned](https://img.shields.io/badge/PLANNED-lightgrey?style=flat-square) **Automatyzacja chmurowa (Fabric/Azure):** Migracja lokalnych skryptów do chmury (aktualnie jest tam tylko baza danych). **Cel:** pełna automatyzacja procesu tłumaczenia (nowy patch -> uruchamianie kolejnych skryptów) oraz udostępnienie raportów Power BI ze statusami.
 
 ### 🔮 Przyszłe R&D: Lord of the Rings Online (LOTRO)
 - **Status:** `NIE ZACZĘTO`
