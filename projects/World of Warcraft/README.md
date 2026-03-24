@@ -15,12 +15,12 @@
 Projekt ma na celu stworzenie **kompleksowego polskiego rozwiązania dla World of Warcraft** obejmującego tłumaczenia, zaplecze danych, rozwój backendu oraz integrację z addonem. Docelowo chcę, aby każdy możliwy do odczytania obiekt w WoW'ie został przetłumaczony.
 
 ## Aktualny etap
-- [x] Projekt bazy danych oraz proces ETL
-- [x] Mapowania, słowniki i przygotowanie procesu
-- [o] Tłumaczenie i redakcja tekstów *(w trakcie zatwierdzania tekstów)*
-- [o] Rozwój backendu *(w trakcie; dodaję nowe funkcjonalności i rozwijam logikę procesu)*
-- [ ] Logika składni i warstwa zatwierdzania
-- [o] Integracja z addonem *(wersja wstępna już istnieje, ale obecnie obsługuje tylko część docelowego zakresu, m.in. questy, gossipy, bubbles)*
+- ✅ Projekt bazy danych oraz proces ETL
+- ✅ Mapowania, słowniki i przygotowanie procesu
+- 🔄 Tłumaczenie i redakcja tekstów *(w trakcie zatwierdzania tekstów)*
+- 🔄 Rozwój backendu *(dodaję nowe funkcjonalności i rozwijam logikę procesu)*
+- ⏳ Logika składni i warstwa zatwierdzania
+- 🔄 Integracja z addonem *(wersja wstępna już istnieje, ale obecnie obsługuje tylko część docelowego zakresu, m.in. questy, gossipy i bubbles)*
 
 > [!WAŻNE]
 > To nie jest jeszcze finalna wersja rozwiązania.  
