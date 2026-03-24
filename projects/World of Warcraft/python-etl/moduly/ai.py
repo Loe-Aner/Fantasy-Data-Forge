@@ -4,8 +4,6 @@ import time
 import concurrent.futures
 from datetime import datetime
 
-from dotenv import load_dotenv
-from google import genai
 from google.genai import types as genai_types
 
 from sqlalchemy import text, bindparam
@@ -13,273 +11,30 @@ import pandas as pd
 
 from moduly.services_persist_wynik import przefiltruj_dane_misji, zapisz_misje_dialogi_ai_do_db
 from moduly.ai_prompty import (
-    dodatek_cache_lokalizacja,
-    instrukcja_redaktor_stala,
-    instrukcja_redaktor_zmienna,
     instrukcja_slowa_kluczowe,
     instrukcja_tlumacz_npc,
-    instrukcja_tlumacz_stala,
-    instrukcja_tlumacz_zmienna,
     instrukcja_tych_npc_nie,
     instrukcja_dane_npc_stala,
     instrukcja_dane_npc_zmienna
+)
+from moduly.ai_core import (
+    MODEL_GEMINI_POZOSTALE,
+    MODEL_GEMINI_POMOCNICZY,
+    SCHEMAT_ODPOWIEDZI_DANE_NPC,
+    pobierz_thinking_config_gemini_high,
+    przygotuj_konfiguracje_promptu,
+    wyczysc_cache_gemini_dla_konfiguracji,
+    wygeneruj_json_gemini,
+    zaladuj_api_i_klienta,
+    zaloguj_uzycie_gemini,
+    zbuduj_wiadomosc_redakcji,
+    zbuduj_wiadomosc_tlumaczenia,
 )
 from moduly.sciezki import sciezka_excel_mappingi
 from scraper_wiki_main import parsuj_misje_z_url
 from moduly.utils import sklej_warunki_w_WHERE
 import zlib
 import base64
-
-MODEL_GEMINI_GLOWNY = "gemini-3.1-pro-preview" # gemini-3.1-pro-preview -- gemini-3-flash-preview
-MODEL_GEMINI_POMOCNICZY = "gemini-3.1-flash-lite-preview"
-TTL_CACHE_GEMINI = "10800s"
-MIN_CACHE_TOKENS_GEMINI = 4096
-CACHE_DEBUG = False
-SCHEMAT_ODPOWIEDZI_DANE_NPC = {
-    "type": "OBJECT",
-    "required": ["records"],
-    "properties": {
-        "records": {
-            "type": "ARRAY",
-            "items": {
-                "type": "OBJECT",
-                "required": [
-                    "NPC_ID",
-                    "NPC_NAZWA",
-                    "PLEC",
-                    "RASA",
-                    "KLASA",
-                    "TYTUL",
-                    "_PEWNOSC",
-                    "_ZRODLO",
-                    "_NOTATKI",
-                ],
-                "properties": {
-                    "NPC_ID": {"type": "INTEGER"},
-                    "NPC_NAZWA": {"type": "STRING"},
-                    "PLEC": {"type": "STRING"},
-                    "RASA": {"type": "STRING", "nullable": True},
-                    "KLASA": {"type": "STRING"},
-                    "TYTUL": {"type": "STRING", "nullable": True},
-                    "_PEWNOSC": {"type": "STRING"},
-                    "_ZRODLO": {
-                        "type": "ARRAY",
-                        "items": {"type": "STRING"},
-                    },
-                    "_NOTATKI": {"type": "STRING", "nullable": True},
-                },
-            },
-        },
-    },
-}
-
-
-def log_cache_debug(tekst: str):
-    if CACHE_DEBUG:
-        print(tekst)
-
-
-def zaladuj_api_i_klienta(
-        nazwa_api: str,
-        dostawca: str = "gemini"
-    ):
-    load_dotenv()
-    API_KEY = os.environ.get(nazwa_api)
-
-    if not API_KEY:
-        raise ValueError("BRAK KLUCZA!")
-    
-    print("KLUCZ ZWARTY I GOTOWY!")
-    
-    if dostawca == "gemini":
-        return genai.Client(api_key=API_KEY)
-    else:
-        raise ValueError(f"Nieznany dostawca: {dostawca}")
-
-
-def pobierz_prompt_staly(etap: str) -> str:
-    if etap == "tlumacz":
-        return instrukcja_tlumacz_stala()
-    if etap == "redaktor":
-        return instrukcja_redaktor_stala()
-    raise ValueError(f"Nieznany etap promptu: {etap}")
-
-
-def zbuduj_wiadomosc_tlumaczenia(txt_npc: str, txt_sk: str, wsad_json: str) -> str:
-    return "\n\n".join(
-        [
-            instrukcja_tlumacz_zmienna(txt_npc, txt_sk),
-            "JSON MISJI DO PRZETLUMACZENIA:",
-            wsad_json,
-        ]
-    )
-
-
-def zbuduj_wiadomosc_redakcji(
-    tekst_oryginalny: str,
-    txt_npc: str,
-    txt_sk: str,
-    wsad_redakcja: str,
-) -> str:
-    return "\n\n".join(
-        [
-            instrukcja_redaktor_zmienna(tekst_oryginalny, txt_npc, txt_sk),
-            "WERSJA ROBOCZA JSON DO REDAKCJI:",
-            wsad_redakcja,
-        ]
-    )
-
-
-def policz_tokeny_promptu_gemini(klient, prompt_staly: str) -> int:
-    try:
-        wynik = klient.models.count_tokens(
-            model=MODEL_GEMINI_GLOWNY,
-            contents=".",
-            config=genai_types.CountTokensConfig(
-                system_instruction=prompt_staly,
-            ),
-        )
-        return wynik.total_tokens
-    except Exception as e:
-        log_cache_debug(
-            "[CACHE][Gemini] CountTokens dla system_instruction nie jest wspierany w tym API. "
-            f"Wracam do przyblizenia przez contents. Blad: {e}"
-        )
-        wynik = klient.models.count_tokens(
-            model=MODEL_GEMINI_GLOWNY,
-            contents=prompt_staly,
-        )
-        return wynik.total_tokens
-
-
-def wygeneruj_json_gemini(klient, konfiguracja: dict, contents: str, etap: str, misja_id: int | None = None):
-    config = {"response_mime_type": "application/json"}
-    cached_content = konfiguracja.get("cached_content")
-
-    if cached_content:
-        config["cached_content"] = cached_content
-        try:
-            odpowiedz = klient.models.generate_content(
-                model=konfiguracja["model"],
-                contents=contents,
-                config=config,
-            )
-            zaloguj_uzycie_cache_gemini(odpowiedz, etap, misja_id=misja_id, konfiguracja_cache=True)
-            return odpowiedz
-        except Exception as e:
-            prefix = f"[ID: {misja_id}] " if misja_id is not None else ""
-            print(
-                f"[CACHE][Gemini][{etap}] {prefix}Blad podczas uzycia cached_content. "
-                f"Powtarzam bez cache. Blad: {e}"
-            )
-
-    config.pop("cached_content", None)
-    config["system_instruction"] = konfiguracja["prompt_staly"]
-    odpowiedz = klient.models.generate_content(
-        model=konfiguracja["model"],
-        contents=contents,
-        config=config,
-    )
-    zaloguj_uzycie_cache_gemini(odpowiedz, etap, misja_id=misja_id, konfiguracja_cache=False)
-    return odpowiedz
-
-
-def przygotuj_prompt_staly_dla_gemini(klient, etap: str) -> tuple[str, int, bool]:
-    prompt_staly = pobierz_prompt_staly(etap)
-
-    try:
-        tokeny = policz_tokeny_promptu_gemini(klient, prompt_staly)
-    except Exception as e:
-        print(f"[CACHE][Gemini][{etap}] Nie udalo sie policzyc tokenow promptu stalego: {e}")
-        prompt_staly = f"{prompt_staly}\n\n{dodatek_cache_lokalizacja()}"
-        return prompt_staly, -1, True
-
-    if tokeny >= MIN_CACHE_TOKENS_GEMINI:
-        return prompt_staly, tokeny, False
-
-    prompt_rozszerzony = f"{prompt_staly}\n\n{dodatek_cache_lokalizacja()}"
-    tokeny_rozszerzone = policz_tokeny_promptu_gemini(klient, prompt_rozszerzony)
-    return prompt_rozszerzony, tokeny_rozszerzone, True
-
-
-def potwierdz_cache_gemini(cache, etap: str):
-    usage = getattr(cache, "usage_metadata", None)
-    cached_tokens = getattr(usage, "total_token_count", 0) if usage else 0
-    print(
-        f"[CACHE][Gemini][{etap}] cached_content={cache.name}, "
-        f"cached_tokens={cached_tokens}, expire_time={getattr(cache, 'expire_time', None)}"
-    )
-
-
-def zaloguj_uzycie_cache_gemini(
-    odpowiedz,
-    etap: str,
-    misja_id: int | None = None,
-    konfiguracja_cache: bool = False,
-):
-    usage = getattr(odpowiedz, "usage_metadata", None)
-    if not usage:
-        return
-
-    prefix = f"[ID: {misja_id}] " if misja_id is not None else ""
-    prompt_tokens = getattr(usage, "prompt_token_count", 0)
-    cached_tokens = getattr(usage, "cached_content_token_count", 0)
-    output_tokens = getattr(usage, "candidates_token_count", 0)
-    print(
-        f"[CACHE][Gemini][{etap}] {prefix}konfiguracja_cache={'TAK' if konfiguracja_cache else 'NIE'}, "
-        f"prompt_tokens={prompt_tokens}, cached_tokens={cached_tokens}, output_tokens={output_tokens}"
-    )
-
-def przygotuj_konfiguracje_promptu(klient, dostawca: str, etap: str) -> dict:
-    if dostawca == "gemini":
-        prompt_staly, tokeny_systemu, czy_dodano_aneks = przygotuj_prompt_staly_dla_gemini(klient, etap)
-        print(
-            f"[CACHE][Gemini][{etap}] tokeny_prefiksu={tokeny_systemu}, "
-            f"dodano_aneks={'TAK' if czy_dodano_aneks else 'NIE'}"
-        )
-        try:
-            cache = klient.caches.create(
-                model=MODEL_GEMINI_GLOWNY,
-                config=genai_types.CreateCachedContentConfig(
-                    display_name=f"wow-{etap}-{int(time.time())}",
-                    system_instruction=prompt_staly,
-                    ttl=TTL_CACHE_GEMINI,
-                ),
-            )
-            potwierdz_cache_gemini(cache, etap)
-            cached_content = cache.name
-        except Exception as e:
-            print(f"[CACHE][Gemini][{etap}] Nie udalo sie utworzyc cache. Fallback bez cache. Blad: {e}")
-            cached_content = None
-
-        return {
-            "dostawca": dostawca,
-            "etap": etap,
-            "model": MODEL_GEMINI_GLOWNY,
-            "prompt_staly": prompt_staly,
-            "cached_content": cached_content,
-        }
-
-    raise ValueError(f"Nieobslugiwany dostawca: {dostawca}")
-
-
-def wyczysc_cache_gemini(klient, nazwa_cache: str, etap: str):
-    try:
-        klient.caches.delete(name=nazwa_cache)
-        print(f"[CACHE][Gemini][{etap}] Usunieto cache: {nazwa_cache}")
-    except Exception as e:
-        print(f"[CACHE][Gemini][{etap}] Nie udalo sie usunac cache {nazwa_cache}: {e}")
-
-
-def wyczysc_cache_gemini_dla_konfiguracji(klient, konfiguracja: dict | None):
-    if not konfiguracja or konfiguracja.get("dostawca") != "gemini":
-        return
-
-    nazwa_cache = konfiguracja.get("cached_content")
-    if not nazwa_cache:
-        return
-
-    wyczysc_cache_gemini(klient, nazwa_cache, konfiguracja.get("etap", "nieznany"))
 
 def pobierz_przetworz_zapisz_batch_lista(
         silnik, 
@@ -339,20 +94,25 @@ def pobierz_przetworz_zapisz_batch_lista(
 
     try:
         odpowiedz = klient.models.generate_content(
-                    model=MODEL_GEMINI_GLOWNY,
+                    model=MODEL_GEMINI_POZOSTALE,
                     contents=json.dumps(wsad_dla_geminisia),
                     config={
                         "system_instruction": instrukcja_slowa_kluczowe(),
                         "response_mime_type": "application/json",
-                        "tools": [{"google_search": {}}] 
+                        "tools": [{"google_search": {}}],
+                        "thinking_config": pobierz_thinking_config_gemini_high(),
                     }
                 )
-        
+        zaloguj_uzycie_gemini(odpowiedz, "slowa_kluczowe")
+
         wynik_lista = json.loads(odpowiedz.text)
 
         df = pd.DataFrame(wynik_lista)
-        df_rozbite = df.explode("extracted")
-        df_rozbite = df_rozbite.dropna(subset=["extracted"])
+        df_rozbite = (
+            df
+            .explode("extracted")
+            .dropna(subset=["extracted"])
+        )
 
         if df_rozbite.empty:
             print(f"Batch {min_b}-{max_b} przetworzony, ale nie znaleziono słów kluczowych.")
@@ -650,9 +410,11 @@ def tych_npcow_nie_tlumacz(silnik, klient):
             contents=dfj,
             config={
                 "system_instruction": instrukcja_tych_npc_nie(), 
-                "response_mime_type": "application/json"
+                "response_mime_type": "application/json",
+                "thinking_config": pobierz_thinking_config_gemini_high(),
             }
         )
+        zaloguj_uzycie_gemini(odpowiedz, "npc_nie_tlumacz")
         
         czas_trwania = time.time() - start_czas
         print(f"   <- Otrzymano odpowiedź w {czas_trwania:.2f} sek.")
@@ -708,14 +470,16 @@ def przetlumacz_nazwy_npc(silnik, klient):
         
         try:
             odpowiedz = klient.models.generate_content(
-                model=MODEL_GEMINI_GLOWNY,
+                model=MODEL_GEMINI_POZOSTALE,
                 contents=dfj,
                 config={
                     "system_instruction": instrukcja_tlumacz_npc(), 
                     "response_mime_type": "application/json",
-                    "tools": [{"google_search": {}}]
+                    "tools": [{"google_search": {}}],
+                    "thinking_config": pobierz_thinking_config_gemini_high(),
                 }
             )
+            zaloguj_uzycie_gemini(odpowiedz, "npc_tlumacz")
             
             czas_trwania = time.time() - start_czas
             print(f"   <- Otrzymano odpowiedź w {czas_trwania:.2f} sek.")
@@ -770,6 +534,7 @@ def przetworz_batch_metadanych_npc(
             contents=instrukcja_dane_npc_zmienna(dane_npc_json),
             config=config,
         )
+        zaloguj_uzycie_gemini(odpowiedz, "npc_metadane")
 
         df_batch = pd.DataFrame(json.loads(odpowiedz.text)["records"])
         nazwa_pliku = f"{run_id}_batch_{batch_nr:03d}.csv"
@@ -826,9 +591,7 @@ def pobierz_metadane_npc_do_csv(
                 google_search=genai_types.GoogleSearch()
             )
         ],
-        thinking_config=genai_types.ThinkingConfig(
-            thinking_level=genai_types.ThinkingLevel.HIGH
-        ),
+        thinking_config=pobierz_thinking_config_gemini_high(),
         temperature=0.1,
     )
 
