@@ -8,7 +8,7 @@ silnik = utworz_engine_do_db()
 # TŁUMACZY A POTEM REDAGUJE, ZAPISUJĄC DO BAZY DANYCH Z ODPOWIEDNIMI STATUSAMI
 # MOŻNA PODAĆ DOWOLNIE KTORY PARAMETR
 # BIERZE POD UWAGE TYLKO MISJE Z TRESCIA
-misje_dialogi_przetlumacz_zredaguj_zapisz(silnik, dodatek="Dragonflight", liczba_watkow=6, 
+misje_dialogi_przetlumacz_zredaguj_zapisz(silnik, dodatek="Midnight", liczba_watkow=6, 
                                                  dostawca_tlumaczenie="gemini", dostawca_redakcja="gemini")
 
 # KOREKTA MISJI - JEŻELI NP. DWIE MISJE O ID 37, 38 MAJĄ TEN SAM TYTUŁ PO ENG, ALE INNY PO PL, TO WYBIERAM PIERWSZY TYTUŁ
