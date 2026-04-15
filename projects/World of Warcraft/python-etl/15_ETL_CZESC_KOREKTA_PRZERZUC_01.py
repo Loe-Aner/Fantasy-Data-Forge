@@ -7,5 +7,5 @@ silnik = utworz_engine_do_db()
 # TA SAMA FUNKCJA CO W PLIKU 12_ETL
 zatwierdz_tlumaczenia(
     silnik,
-    sciezka_excel_zatwierdzenia("Path of de Hash'ey_RECZNE.xlsx")
+    sciezka_excel_zatwierdzenia("The Path of Light_RECZNE_PRZE.xlsx")
 )

@@ -206,41 +206,42 @@ def przetworz_pojedyncza_misje(
             txt_sk = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_sk if k[0] and k[1]])
 
             print(f"--- [ID: {misja_id}] Start Tlumaczenia... ---")
-            wiadomosc_tlumaczenia = zbuduj_wiadomosc_tlumaczenia(txt_npc, txt_sk, wsad_json)
+            
+            # wiadomosc_tlumaczenia = zbuduj_wiadomosc_tlumaczenia(txt_npc, txt_sk, wsad_json)
 
-            if konfiguracja_tlumaczenie["dostawca"] == "gemini":
-                odp_tlumacz = wygeneruj_json_gemini(
-                    klient_tlumacz,
-                    konfiguracja_tlumaczenie,
-                    wiadomosc_tlumaczenia,
-                    "tlumacz",
-                    misja_id=misja_id,
-                )
-                przetlumaczone = json.loads(odp_tlumacz.text)
-            else:
-                raise ValueError(
-                    f"Nieobsługiwany dostawca tłumaczenia: {konfiguracja_tlumaczenie['dostawca']}"
-                )
+            # if konfiguracja_tlumaczenie["dostawca"] == "gemini":
+            #     odp_tlumacz = wygeneruj_json_gemini(
+            #         klient_tlumacz,
+            #         konfiguracja_tlumaczenie,
+            #         wiadomosc_tlumaczenia,
+            #         "tlumacz",
+            #         misja_id=misja_id,
+            #     )
+            #     przetlumaczone = json.loads(odp_tlumacz.text)
+            # else:
+            #     raise ValueError(
+            #         f"Nieobsługiwany dostawca tłumaczenia: {konfiguracja_tlumaczenie['dostawca']}"
+            #     )
 
             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
 
             print(f"--- [ID: {misja_id}] Start Redakcji... ---")
-            wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
-            wiadomosc_redakcji = zbuduj_wiadomosc_redakcji(wsad_json, txt_npc, txt_sk, wsad_redakcja)
+            # wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
+            # wiadomosc_redakcji = zbuduj_wiadomosc_redakcji(wsad_json, txt_npc, txt_sk, wsad_redakcja)
 
-            if konfiguracja_redakcja["dostawca"] == "gemini":
-                odp_redaktor = wygeneruj_json_gemini(
-                    klient_redaktor,
-                    konfiguracja_redakcja,
-                    wiadomosc_redakcji,
-                    "redaktor",
-                    misja_id=misja_id,
-                )
-                zredagowane = json.loads(odp_redaktor.text)
-            else:
-                raise ValueError(
-                    f"Nieobsługiwany dostawca redakcji: {konfiguracja_redakcja['dostawca']}"
-                )
+            # if konfiguracja_redakcja["dostawca"] == "gemini":
+            #     odp_redaktor = wygeneruj_json_gemini(
+            #         klient_redaktor,
+            #         konfiguracja_redakcja,
+            #         wiadomosc_redakcji,
+            #         "redaktor",
+            #         misja_id=misja_id,
+            #     )
+            #     zredagowane = json.loads(odp_redaktor.text)
+            # else:
+            #     raise ValueError(
+            #         f"Nieobsługiwany dostawca redakcji: {konfiguracja_redakcja['dostawca']}"
+            #     )
 
             zapisz_misje_dialogi_ai_do_db(silnik, misja_id, zredagowane, "2_ZREDAGOWANO")
 
