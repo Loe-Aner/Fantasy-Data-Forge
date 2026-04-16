@@ -1,13 +1,13 @@
 SELECT 'MISJE', *
 FROM dbo.MISJE
 WHERE 1=1
-  AND NAZWA_LINII_FABULARNEJ_EN = 'The Path of Light'
+  --AND NAZWA_LINII_FABULARNEJ_EN = 'The Path of Light'
   --AND DODANO_W_PATCHU = '12.0.1'
   --AND MISJA_TYTUL_EN = 'Avoiding Blame'
   --AND MISJA_ID_Z_GRY != 123456789
   --AND DODATEK_EN = 'Midnight'
   --AND MISJA_ID_Z_GRY = 90959
-  AND MISJA_ID_MOJE_PK /*IN (129, 130, 131)*/ = 8964
+  AND MISJA_ID_MOJE_PK /*IN (129, 130, 131)*/ = 231
   --AND KRAINA_EN = 'Exile''s Reach'
   --AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
   AND NPC_KONIEC_ID = 658
@@ -18,7 +18,7 @@ FROM dbo.MISJE_STATUSY AS ms
 INNER JOIN dbo.MISJE AS m
   ON ms.MISJA_ID_MOJE_FK = m.MISJA_ID_MOJE_PK
 WHERE 1=1
-  --AND m.MISJA_ID_MOJE_PK = 8964
+  AND m.MISJA_ID_MOJE_PK = 231
   AND m.NAZWA_LINII_FABULARNEJ_EN = 'The Path of Light'
   --AND ms.STATUS = '3_ZATWIERDZONO'
   --AND m.KRAINA_EN = 'Exile''s Reach'

@@ -22,14 +22,14 @@ from moduly.ai_core import (
     MODEL_GEMINI_POMOCNICZY,
     SCHEMAT_ODPOWIEDZI_DANE_NPC,
     pobierz_thinking_config_gemini_high,
-    przygotuj_konfiguracje_promptu,
-    wyczysc_cache_gemini_dla_konfiguracji,
-    wygeneruj_json_gemini,
     zaladuj_api_i_klienta,
     zaloguj_uzycie_gemini,
-    zbuduj_wiadomosc_redakcji,
-    zbuduj_wiadomosc_tlumaczenia,
 )
+
+from moduly.ai_prompty_misje import translator
+from moduly.ai_modele import llm_translator
+from moduly.ai_logi import create_logs
+
 from moduly.sciezki import sciezka_excel_mappingi
 from scraper_wiki_main import parsuj_misje_z_url
 from moduly.utils import sklej_warunki_w_WHERE
@@ -134,10 +134,6 @@ def pobierz_przetworz_zapisz_batch_lista(
 def przetworz_pojedyncza_misje(
     wiersz,
     silnik,
-    klient_tlumacz,
-    klient_redaktor,
-    konfiguracja_tlumaczenie,
-    konfiguracja_redakcja,
 ):
     """
     Ta funkcja wykonuje całą pracę dla jednej misji.
@@ -205,47 +201,65 @@ def przetworz_pojedyncza_misje(
             txt_npc = "\n".join([f"- {n[0]} -> {n[1]} | PLEC={n[2]} | RASA={n[3]}" for n in wsad_npc if n[0] and n[1]])
             txt_sk = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_sk if k[0] and k[1]])
 
-            print(f"--- [ID: {misja_id}] Start Tlumaczenia... ---")
+            llm = llm_translator()
+            result = None
+            raw_response = None
+            started_at = None
             
-            # wiadomosc_tlumaczenia = zbuduj_wiadomosc_tlumaczenia(txt_npc, txt_sk, wsad_json)
+            print(f"--- [ID: {misja_id}] Start Tlumaczenia... ---")
+            try:
+                started_at = time.perf_counter()
+                result = translator(
+                    llm=llm,
+                    tekst_oryginalny=wsad_json,
+                    tekst_niemiecki="",
+                    tekst_npc=txt_npc,
+                    tekst_slowa_kluczowe=txt_sk
+                )
+                raw_response = result["raw"]
 
-            # if konfiguracja_tlumaczenie["dostawca"] == "gemini":
-            #     odp_tlumacz = wygeneruj_json_gemini(
-            #         klient_tlumacz,
-            #         konfiguracja_tlumaczenie,
-            #         wiadomosc_tlumaczenia,
-            #         "tlumacz",
-            #         misja_id=misja_id,
-            #     )
-            #     przetlumaczone = json.loads(odp_tlumacz.text)
-            # else:
-            #     raise ValueError(
-            #         f"Nieobsługiwany dostawca tłumaczenia: {konfiguracja_tlumaczenie['dostawca']}"
-            #     )
+                if result["parsing_error"] is not None:
+                    raise result["parsing_error"]
 
-            zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
+                translated = result["parsed"]
+                if translated is None:
+                    raise ValueError(f"[ID: {misja_id}] Brak sparsowanego wyniku tłumaczenia.")
 
-            print(f"--- [ID: {misja_id}] Start Redakcji... ---")
-            # wsad_redakcja = json.dumps(przetlumaczone, indent=4, ensure_ascii=False)
-            # wiadomosc_redakcji = zbuduj_wiadomosc_redakcji(wsad_json, txt_npc, txt_sk, wsad_redakcja)
+                output_json_str = json.dumps(translated, indent=2, ensure_ascii=False)
 
-            # if konfiguracja_redakcja["dostawca"] == "gemini":
-            #     odp_redaktor = wygeneruj_json_gemini(
-            #         klient_redaktor,
-            #         konfiguracja_redakcja,
-            #         wiadomosc_redakcji,
-            #         "redaktor",
-            #         misja_id=misja_id,
-            #     )
-            #     zredagowane = json.loads(odp_redaktor.text)
-            # else:
-            #     raise ValueError(
-            #         f"Nieobsługiwany dostawca redakcji: {konfiguracja_redakcja['dostawca']}"
-            #     )
+                logs = create_logs(
+                    raw_response=raw_response,
+                    llm=llm,
+                    quest_id=misja_id,
+                    etap="tlumacz",
+                    duration_ms=round((time.perf_counter() - started_at) * 1000) if started_at is not None else None,
+                    input_chars=len(wsad_json),
+                    output_chars=len(output_json_str)
+                )
 
-            zapisz_misje_dialogi_ai_do_db(silnik, misja_id, zredagowane, "2_ZREDAGOWANO")
+                #zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
+                #zapisz_logi_ai_do_db(...)
 
-            print(f"+++ [ID: {misja_id}] GOTOWE (Tlumaczenie + Redakcja) +++")
+                print(output_json_str)
+                print(json.dumps(logs, indent=2, ensure_ascii=False))
+            except Exception as e:
+                if raw_response is not None:
+                    logs = create_logs(
+                        raw_response=raw_response,
+                        llm=llm,
+                        quest_id=misja_id,
+                        etap="tlumacz",
+                        duration_ms=round((time.perf_counter() - started_at) * 1000) if started_at is not None else None,
+                        parsing_error=str(e),
+                        input_chars=len(wsad_json),
+                        output_chars=0
+                    )
+                    print(json.dumps(logs, indent=2, ensure_ascii=False))
+                    #zapisz_logi_ai_do_db(...)
+                else:
+                    print(f"---NIEZNANY BŁĄD: {e}")
+
+            print(f"+++ [ID: {misja_id}] GOTOWE (Tlumaczenie) +++")
 
         except Exception as e:
             print(f"!!! BLAD przy misji {misja_id}: {e}")
@@ -261,20 +275,6 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
     dostawca_redakcja: str = "gemini",
     dostawca_tlumaczenie: str = "gemini"
 ):
-    dostawca_tlumaczenie = dostawca_tlumaczenie.lower().strip()
-    dostawca_redakcja = dostawca_redakcja.lower().strip()
-
-    if dostawca_tlumaczenie != "gemini":
-        raise ValueError("Parametr 'dostawca_tlumaczenie' musi mieć wartość: 'gemini'.")
-    if dostawca_redakcja != "gemini":
-        raise ValueError("Parametr 'dostawca_redakcja' musi mieć wartość: 'gemini'.")
-
-    klient_tlumacz = zaladuj_api_i_klienta("API_TLUMACZENIE", dostawca=dostawca_tlumaczenie)
-    if dostawca_redakcja == dostawca_tlumaczenie:
-        klient_redaktor = klient_tlumacz
-    else:
-        klient_redaktor = zaladuj_api_i_klienta("API_REDAGOWANIE", dostawca=dostawca_redakcja)
-    
     warunki_sql = sklej_warunki_w_WHERE(kraina, fabula, dodatek, id_misji)
 
     q_select_tresc = text(f"""
@@ -333,43 +333,21 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
         return
 
     print(f"Znaleziono {liczba_zadan} misji do przetworzenia. Uruchamiam {liczba_watkow} wątków...")
-    print(f"Dostawca tłumaczenia: {dostawca_tlumaczenie}")
-    print(f"Dostawca redakcji: {dostawca_redakcja}")
+    print("Dostawca tłumaczenia: langchain/openai")
+    print("Redagowanie: pominięte")
 
-    konfiguracja_tlumaczenie = None
-    konfiguracja_redakcja = None
+    with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
+        futures = []
+        for wiersz in lista_zadan:
+            future = executor.submit(
+                przetworz_pojedyncza_misje,
+                wiersz,
+                silnik,
+            )
+            futures.append(future)
 
-    try:
-        konfiguracja_tlumaczenie = przygotuj_konfiguracje_promptu(
-            klient_tlumacz,
-            dostawca_tlumaczenie,
-            "tlumacz",
-        )
-        konfiguracja_redakcja = przygotuj_konfiguracje_promptu(
-            klient_redaktor,
-            dostawca_redakcja,
-            "redaktor",
-        )
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=liczba_watkow) as executor:
-            futures = []
-            for wiersz in lista_zadan:
-                future = executor.submit(
-                    przetworz_pojedyncza_misje,
-                    wiersz,
-                    silnik,
-                    klient_tlumacz,
-                    klient_redaktor,
-                    konfiguracja_tlumaczenie,
-                    konfiguracja_redakcja
-                )
-                futures.append(future)
-
-            for future in concurrent.futures.as_completed(futures):
-                pass
-    finally:
-        wyczysc_cache_gemini_dla_konfiguracji(klient_tlumacz, konfiguracja_tlumaczenie)
-        wyczysc_cache_gemini_dla_konfiguracji(klient_redaktor, konfiguracja_redakcja)
+        for future in concurrent.futures.as_completed(futures):
+            pass
 
     print("\n--- ZAKOŃCZONO PRZETWARZANIE WIELOWĄTKOWE ---")
 

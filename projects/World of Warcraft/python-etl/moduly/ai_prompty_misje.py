@@ -1,5 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
-from ai_klasy import OdpowiedzTlumacza
+
+from moduly.ai_klasy import OdpowiedzTlumacza, WynikTranslatora
 
 def tekst_lub_placeholder(tekst: str, placeholder: str) -> str:
     tekst = (tekst or "").strip()
@@ -96,12 +97,16 @@ def translator(
         tekst_niemiecki,
         tekst_npc,
         tekst_slowa_kluczowe
-    ) -> OdpowiedzTlumacza:
+    ) -> WynikTranslatora:
     """
     Tłumaczy misję na bazie podanych parametrów.
     """
     
-    structured_model = prompt | llm.with_structured_output(OdpowiedzTlumacza, method="json_schema")
+    structured_model = prompt | llm.with_structured_output(
+        OdpowiedzTlumacza,
+        method="json_schema",
+        include_raw=True
+    )
     result = structured_model.invoke(
         {
             "tekst_oryginalny": tekst_oryginalny,
