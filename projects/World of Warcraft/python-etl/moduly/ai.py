@@ -28,7 +28,10 @@ from moduly.ai_core import (
 
 from moduly.ai_prompty_misje import translator
 from moduly.ai_modele import llm_translator
-from moduly.ai_logi import create_logs
+from moduly.ai_logi import (
+    create_logs,
+    save_ai_logs_to_db
+)
 
 from moduly.sciezki import sciezka_excel_mappingi
 from scraper_wiki_main import parsuj_misje_z_url
@@ -191,8 +194,8 @@ def przetworz_pojedyncza_misje(
 
             skompresowane_bajty = base64.b64decode(zakodowane_dane)
             tekst_html = zlib.decompress(skompresowane_bajty).decode("utf-8")
-            surowe_dane = parsuj_misje_z_url(None, html_content=tekst_html)
-            przetworzone_dane = przefiltruj_dane_misji(surowe_dane, jezyk="EN")
+            surowe_dane = parsuj_misje_z_url(url=None, html_content=tekst_html)
+            przetworzone_dane = przefiltruj_dane_misji(dane_wejsciowe=surowe_dane, jezyk="EN")
 
             wsad_npc = set(n for n in npc_z_bazy)
             wsad_sk = set(s for s in slowa_kluczowe_z_bazy)
@@ -223,43 +226,49 @@ def przetworz_pojedyncza_misje(
 
                 translated = result["parsed"]
                 if translated is None:
-                    raise ValueError(f"[ID: {misja_id}] Brak sparsowanego wyniku tłumaczenia.")
+                    raise ValueError(f"---[ID: {misja_id}] Brak sparsowanego wyniku tłumaczenia.")
+                translated_json = json.dumps(translated, indent=2, ensure_ascii=False)
 
-                output_json_str = json.dumps(translated, indent=2, ensure_ascii=False)
+                dms = round((time.perf_counter() - started_at) * 1000) if started_at is not None else None
 
                 logs = create_logs(
                     raw_response=raw_response,
                     llm=llm,
-                    quest_id=misja_id,
-                    etap="tlumacz",
-                    duration_ms=round((time.perf_counter() - started_at) * 1000) if started_at is not None else None,
+                    misja_id_moje_fk=misja_id,
+                    stage="translator",
+                    duration_ms=dms,
                     input_chars=len(wsad_json),
-                    output_chars=len(output_json_str)
+                    output_chars=len(translated_json)
                 )
 
-                #zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, "1_PRZETŁUMACZONO")
-                #zapisz_logi_ai_do_db(...)
+                zapisz_misje_dialogi_ai_do_db(silnik, misja_id, translated, "1_PRZETŁUMACZONO")
+                save_ai_logs_to_db(silnik=silnik, logs=logs)
 
-                print(output_json_str)
-                print(json.dumps(logs, indent=2, ensure_ascii=False))
+                #print(translated_json)
+                #logs_json = json.dumps(logs, indent=2, ensure_ascii=False)
+                #print(logs_json)
             except Exception as e:
                 if raw_response is not None:
+                    dms = round((time.perf_counter() - started_at) * 1000) if started_at is not None else None
+                    err = str(e)
+                    parsing_error = err[:997] + "..." if len(err) > 1000 else err
+
                     logs = create_logs(
                         raw_response=raw_response,
                         llm=llm,
-                        quest_id=misja_id,
-                        etap="tlumacz",
-                        duration_ms=round((time.perf_counter() - started_at) * 1000) if started_at is not None else None,
-                        parsing_error=str(e),
+                        misja_id_moje_fk=misja_id,
+                        stage="translator",
+                        duration_ms=dms,
+                        parsing_error=parsing_error,
                         input_chars=len(wsad_json),
                         output_chars=0
                     )
-                    print(json.dumps(logs, indent=2, ensure_ascii=False))
-                    #zapisz_logi_ai_do_db(...)
+                    #print(json.dumps(logs, indent=2, ensure_ascii=False))
+                    save_ai_logs_to_db(silnik=silnik, logs=logs)
                 else:
                     print(f"---NIEZNANY BŁĄD: {e}")
 
-            print(f"+++ [ID: {misja_id}] GOTOWE (Tlumaczenie) +++")
+            print(f"+++[ID: {misja_id}] GOTOWE (Tlumaczenie) +++")
 
         except Exception as e:
             print(f"!!! BLAD przy misji {misja_id}: {e}")
@@ -272,8 +281,7 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
     dodatek: str | None = None,
     id_misji: int | None = None, 
     liczba_watkow: int = 4,
-    dostawca_redakcja: str = "gemini",
-    dostawca_tlumaczenie: str = "gemini"
+    dostawca_redakcja: str = "gemini"
 ):
     warunki_sql = sklej_warunki_w_WHERE(kraina, fabula, dodatek, id_misji)
 
