@@ -1,22 +1,15 @@
 # NOTICE
 
-This repository is publicly visible for portfolio, learning showcase, and project presentation purposes only.
+This repository is public for portfolio, evaluation, learning showcase, and project presentation purposes only.
 
-Unless explicitly stated otherwise, all contents of this repository are proprietary and protected.
-You are not permitted to reuse, copy, adapt, redistribute, monetize, or incorporate any part of this repository into another project, addon, tool, service, subscription, or product without prior written permission.
+It is proprietary. All rights are reserved. It is not open source.
 
-This restriction applies in particular to:
+Except for the narrow end-user permission for officially published addon builds described below, no permission is granted to copy, modify, translate, reuse, redistribute, reupload, scrape, commercialize, train models on, or build upon any part of this repository without the repository owner's prior written permission.
 
-- code
-- SQL and ETL logic
-- prompts
-- translation workflows
-- terminology mappings
-- addon-related logic
-- dashboard logic
-- challenge solutions
-- documentation and project structure
+This restriction applies to all repository materials, including code, Lua files, scripts, SQL, ETL logic, dashboards, prompts, translations, glossaries, mappings, workflows, addon logic, data structures, documentation, challenge solutions, and the repository's selection, coordination, and arrangement of content.
 
-Commercial use is strictly prohibited.
+If the repository owner personally publishes an addon build through an official distribution channel, end users may download, install, and use that released build only for personal, private, non-commercial gameplay use. No right is granted to reuse the source, create derivative or competing addons or projects, redistribute or mirror the build, remove notices or attribution, or use any repository material in paid products, subscriptions, services, voice packs, localization packs, datasets, or AI systems.
 
-If you are interested in collaboration or licensing, please contact the repository owner.
+Public visibility or visible source code does not make this repository open source.
+
+See LICENSE.md for the full terms. If there is any conflict, LICENSE.md controls.

@@ -6,5 +6,5 @@ silnik = utworz_engine_do_db()
 
 zatwierdz_tlumaczenia(
     silnik,
-    sciezka_excel_zatwierdzenia("The Path of Light_ZATW_PRZE.xlsx")
+    sciezka_excel_zatwierdzenia("Dis Was Our Land_ZATW_PRZE.xlsx")
 )
