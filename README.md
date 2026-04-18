@@ -137,3 +137,17 @@ Tutaj eksperymentuję na platformach e-learningowych np. DataLemur, HackerRank, 
 ### 📫 Kontakt
 Masz uwagi do kodu lub pomysł na wspólny projekt z gier?  
 Śmiało uderzaj na LinkedIn (link na górze) lub na discordzie (link w moim profilu). 😊
+
+
+---
+
+## License and Usage
+
+This repository is **not open source**.
+
+It is published publicly for **portfolio and presentation purposes only**.
+Unless explicitly stated otherwise, all contents are proprietary and protected.
+
+You may view the repository and reference it by link, but you may not reuse, copy, adapt, redistribute, monetize, or incorporate any part of it into another project, addon, service, subscription, or product without prior written permission.
+
+Please see [LICENSE.md](./LICENSE.md) and [NOTICE.md](./NOTICE.md) for full terms.
