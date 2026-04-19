@@ -124,6 +124,7 @@ def stworz_excele_do_zatwierdzenia_tlumaczen(silnik, kraina = None, fabula = Non
             m.WSKAZNIK_ZGODNOSCI <= 0.70000
             OR m.WSKAZNIK_ZGODNOSCI IS NULL
         )
+          AND m.STATUS_MISJI = 2
  
         {warunki_sql}
 
@@ -334,6 +335,7 @@ def stworz_excele_do_recznych_tlumaczen(silnik, kraina = None, fabula = None, do
         WHERE 1=1
           AND m.MISJA_ID_MOJE_PK <> 123456789
           AND m.WSKAZNIK_ZGODNOSCI > 0.70000
+          AND (m.STATUS_MISJI IS NULL OR m.STATUS_MISJI <> 3)
 
         {warunki_sql}
 

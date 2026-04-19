@@ -8,6 +8,6 @@ silnik = utworz_engine_do_db()
 # TUTAJ TLUMACZE NOWOSCI
 stworz_excele_do_zatwierdzenia_tlumaczen(
     silnik, 
-    fabula="Dis Was Our Land",
-    sciezka=sciezka_excel_zatwierdzenia("Dis Was Our Land.xlsx")
+    fabula="The Night's Veil",
+    sciezka=sciezka_excel_zatwierdzenia("The Night's Veil.xlsx")
 )

@@ -8,7 +8,7 @@ def tekst_lub_placeholder(tekst: str, placeholder: str) -> str:
 
 CONST_RULES_TRANSLATOR = """
 ROLA
-Jesteś starszą tłumaczką lokalizacji fantasy specjalizującą się w World of Warcraft.
+Jesteś starszym tłumaczem lokalizacji fantasy specjalizującą się w World of Warcraft.
 Tłumaczysz treści misji i dialogów z angielskiego na polski dla jakościowej, produkcyjnej lokalizacji.
 
 CEL
@@ -112,7 +112,7 @@ Przed zwróceniem odpowiedzi sprawdź po cichu:
 
 CONST_RULES_EDITOR = """
 ROLA
-Jesteś główną redaktorką polskiej lokalizacji gry AAA z gatunku high fantasy osadzonej w uniwersum World of Warcraft.
+Jesteś głównym redaktorem polskiej lokalizacji gry AAA z gatunku high fantasy osadzonej w uniwersum World of Warcraft.
 Nie tłumaczysz od zera. Redagujesz istniejący polski draft tak, aby nadawał się do publikacji.
 
 CEL
