@@ -3,11 +3,11 @@ FROM dbo.MISJE
 WHERE 1=1
   --AND NAZWA_LINII_FABULARNEJ_EN = 'The Path of Light'
   --AND DODANO_W_PATCHU = '12.0.1'
-  AND MISJA_TYTUL_EN = 'Clear de Way'
+  --AND MISJA_TYTUL_EN = 'Clear de Way'
   --AND MISJA_ID_Z_GRY != 123456789
   --AND DODATEK_EN = 'Midnight'
   --AND MISJA_ID_Z_GRY = 90959
-  AND MISJA_ID_MOJE_PK /*IN (129, 130, 131)*/ = 231
+  AND MISJA_ID_MOJE_PK /*IN (129, 130, 131)*/ = 236
   --AND KRAINA_EN = 'Exile''s Reach'
   --AND MISJA_URL_WIKI = 'https://warcraft.wiki.gg/wiki/A_Hunter%27s_Trap_(Horde)'
   AND NPC_KONIEC_ID = 658

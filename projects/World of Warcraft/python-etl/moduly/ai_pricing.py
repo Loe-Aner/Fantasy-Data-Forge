@@ -85,7 +85,15 @@ MODEL_PRICING = {
         "langchain_class": "ChatGoogleGenerativeAI",
         "currency": "USD",
         "input_per_1m": 0.30,
-        "output_per_1m": 2.50
+        "output_per_1m": 1.0
+    },
+    "claude-opus-4-7": {
+        "provider": "anthropic",
+        "langchain_package": "langchain-anthropic",
+        "langchain_class": "ChatAnthropic",
+        "currency": "USD",
+        "input_per_1m": 5.00,
+        "output_per_1m": 25.00
     },
     "claude-opus-4-6": {
         "provider": "anthropic",
@@ -116,40 +124,40 @@ MODEL_PRICING = {
         "langchain_package": ["langchain-community", "langchain-qwq"],
         "langchain_class": ["ChatTongyi", "ChatQwen"],
         "currency": "CNY",
-        "input_per_1m": 2.0,
-        "output_per_1m": 12.0
+        "input_per_1m": 0.5,
+        "output_per_1m": 3.0
     },
     "qwen3.5-397b-a17b": {
         "provider": "qwen",
         "langchain_package": ["langchain-community", "langchain-qwq"],
         "langchain_class": ["ChatTongyi", "ChatQwen"],
         "currency": "CNY",
-        "input_per_1m": 1.2,
-        "output_per_1m": 7.2
+        "input_per_1m": 0.6,
+        "output_per_1m": 3.6
     },
     "qwen3.5-27b": {
         "provider": "qwen",
         "langchain_package": ["langchain-community", "langchain-qwq"],
         "langchain_class": ["ChatTongyi", "ChatQwen"],
         "currency": "CNY",
-        "input_per_1m": 0.6,
-        "output_per_1m": 4.8
+        "input_per_1m": 0.3,
+        "output_per_1m": 2.4
     },
     "glm-5.1": {
         "provider": "glm",
         "langchain_package": ["langchain-community", "langchain-openai"],
         "langchain_class": ["ChatZhipuAI", "ChatOpenAI"],
         "currency": "CNY",
-        "input_per_1m": 6.0,
-        "output_per_1m": 24.0
+        "input_per_1m": 1.4,
+        "output_per_1m": 4.4
     },
     "glm-5": {
         "provider": "glm",
         "langchain_package": ["langchain-community", "langchain-openai"],
         "langchain_class": ["ChatZhipuAI", "ChatOpenAI"],
         "currency": "CNY",
-        "input_per_1m": 4.0,
-        "output_per_1m": 18.0
+        "input_per_1m": 1.0,
+        "output_per_1m": 3.2
     },
     "MiniMax-M2.7": {
         "provider": "minimax",

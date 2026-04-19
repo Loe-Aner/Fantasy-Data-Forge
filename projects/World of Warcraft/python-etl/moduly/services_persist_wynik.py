@@ -305,7 +305,7 @@ def przefiltruj_dane_misji(dane_wejsciowe, jezyk: str = "EN"):
     
     return nowy_wynik
 
-def zapisz_misje_dialogi_ai_do_db(silnik, misja_id, przetlumaczone, status):
+def save_quests_dialogues_to_db(silnik, misja_id, przetlumaczone, status):
     print(f"\n--- [START] Zapis misji ID: {misja_id} | Status: {status} ---")
     
     if status not in ("1_PRZETŁUMACZONO", "2_ZREDAGOWANO"):

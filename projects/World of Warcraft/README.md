@@ -19,6 +19,7 @@ Projekt ma na celu stworzenie **kompleksowego polskiego rozwiązania dla World o
 - ✅ Mapowania, słowniki i przygotowanie procesu
 - 🔄 Tłumaczenie i redakcja tekstów *(w trakcie zatwierdzania tekstów)*
 - 🔄 Rozwój backendu *(dodaję nowe funkcjonalności i rozwijam logikę procesu)*
+- 🔄 Stopniowo zmieniam nazwy zmiennych i funkcji na angielskie (dlatego może być miks)
 - ⏳ Logika składni i warstwa zatwierdzania
 - 🔄 Integracja z addonem *(wersja wstępna już istnieje, ale obecnie obsługuje tylko część docelowego zakresu, m.in. questy, gossipy i bubbles)*
 

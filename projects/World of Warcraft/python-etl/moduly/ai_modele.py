@@ -15,3 +15,13 @@ def llm_translator():
         max_retries=2
     )
     return llm
+
+def llm_editor():
+    llm = ChatOpenAI(
+        model="gpt-5.4-mini",
+        temperature=TEMPERATURE_EDITOR,
+        reasoning_effort="none",
+        use_responses_api=True,
+        max_retries=2
+    )
+    return llm

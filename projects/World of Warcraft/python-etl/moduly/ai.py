@@ -9,7 +9,10 @@ from google.genai import types as genai_types
 from sqlalchemy import text, bindparam
 import pandas as pd
 
-from moduly.services_persist_wynik import przefiltruj_dane_misji, zapisz_misje_dialogi_ai_do_db
+from moduly.services_persist_wynik import (
+    przefiltruj_dane_misji, 
+    save_quests_dialogues_to_db
+)
 from moduly.ai_prompty import (
     instrukcja_slowa_kluczowe,
     instrukcja_tlumacz_npc,
@@ -26,8 +29,14 @@ from moduly.ai_core import (
     zaloguj_uzycie_gemini,
 )
 
-from moduly.ai_prompty_misje import translator
-from moduly.ai_modele import llm_translator
+from moduly.ai_prompty_misje import (
+    translator,
+    editor
+)
+from moduly.ai_modele import (
+    llm_translator,
+    llm_editor
+)
 from moduly.ai_logi import (
     create_logs,
     save_ai_logs_to_db
@@ -134,6 +143,47 @@ def pobierz_przetworz_zapisz_batch_lista(
         print(f"Błąd w batchu {min_b}-{max_b}: {e}")
         return None
 
+def handle_quest_stage_result(
+    result,
+    raw_response,
+    llm,
+    misja_id,
+    stage,
+    started_at,
+    wsad_json,
+    silnik,
+    status_zapisu
+):
+    if result["parsing_error"] is not None:
+        raise result["parsing_error"]
+
+    parsed = result["parsed"]
+    if parsed is None:
+        raise ValueError(f"---[ID: {misja_id}] Brak sparsowanego wyniku etapu: {stage}.")
+
+    if hasattr(parsed, "model_dump"):
+        parsed_dict = parsed.model_dump(mode="python")
+        parsed_json = parsed.model_dump_json(indent=2)
+    else:
+        parsed_dict = parsed
+        parsed_json = json.dumps(parsed_dict, indent=2, ensure_ascii=False)
+    dms = round((time.perf_counter() - started_at) * 1000) if started_at is not None else None
+
+    logs = create_logs(
+        raw_response=raw_response,
+        llm=llm,
+        misja_id_moje_fk=misja_id,
+        stage=stage,
+        duration_ms=dms,
+        input_chars=len(wsad_json),
+        output_chars=len(parsed_json)
+    )
+
+    #save_quests_dialogues_to_db(silnik, misja_id, parsed_dict, status_zapisu)
+    save_ai_logs_to_db(silnik=silnik, logs=logs)
+
+    return parsed_json, logs
+
 def przetworz_pojedyncza_misje(
     wiersz,
     silnik,
@@ -204,69 +254,108 @@ def przetworz_pojedyncza_misje(
             txt_npc = "\n".join([f"- {n[0]} -> {n[1]} | PLEC={n[2]} | RASA={n[3]}" for n in wsad_npc if n[0] and n[1]])
             txt_sk = "\n".join([f"- {k[0]} -> {k[1]}" for k in wsad_sk if k[0] and k[1]])
 
-            llm = llm_translator()
-            result = None
+            _translator = llm_translator()
+            _editor = llm_editor()
+
+            result_translator = None
+            result_editor = None
             raw_response = None
             started_at = None
+            current_stage = None
+            current_llm = None
             
             print(f"--- [ID: {misja_id}] Start Tlumaczenia... ---")
             try:
+
+# =========================================================================================
+# ======================================= TRANSLATOR ======================================
+# =========================================================================================
+
+                current_stage = "translator"
+                current_llm = _translator
+                raw_response = None
                 started_at = time.perf_counter()
-                result = translator(
-                    llm=llm,
+                result_translator = translator(
+                    llm=_translator,
                     tekst_oryginalny=wsad_json,
                     tekst_niemiecki="",
                     tekst_npc=txt_npc,
                     tekst_slowa_kluczowe=txt_sk
                 )
-                raw_response = result["raw"]
-
-                if result["parsing_error"] is not None:
-                    raise result["parsing_error"]
-
-                translated = result["parsed"]
-                if translated is None:
-                    raise ValueError(f"---[ID: {misja_id}] Brak sparsowanego wyniku tłumaczenia.")
-                translated_json = json.dumps(translated, indent=2, ensure_ascii=False)
-
-                dms = round((time.perf_counter() - started_at) * 1000) if started_at is not None else None
-
-                logs = create_logs(
+                raw_response = result_translator["raw"]
+                translated_json, logs = handle_quest_stage_result(
+                    result=result_translator,
                     raw_response=raw_response,
-                    llm=llm,
-                    misja_id_moje_fk=misja_id,
+                    llm=_translator,
+                    misja_id=misja_id,
                     stage="translator",
-                    duration_ms=dms,
-                    input_chars=len(wsad_json),
-                    output_chars=len(translated_json)
+                    started_at=started_at,
+                    wsad_json=wsad_json,
+                    silnik=silnik,
+                    status_zapisu="1_PRZETŁUMACZONO"
                 )
+                print(translated_json)
+                logs_json = json.dumps(logs, indent=2, ensure_ascii=False)
+                print(logs_json)
 
-                zapisz_misje_dialogi_ai_do_db(silnik, misja_id, translated, "1_PRZETŁUMACZONO")
-                save_ai_logs_to_db(silnik=silnik, logs=logs)
+# ============================================================================================
+# ========================================== EDITOR ==========================================
+# ============================================================================================
 
-                #print(translated_json)
-                #logs_json = json.dumps(logs, indent=2, ensure_ascii=False)
-                #print(logs_json)
+                current_stage = "editor"
+                current_llm = _editor
+                raw_response = None
+                started_at = time.perf_counter()
+                result_editor = editor(
+                    llm=_editor,
+                    tekst_oryginalny=wsad_json,
+                    tekst_przetlumaczony=translated_json,
+                    tekst_pomocniczy="",
+                    tekst_npc=txt_npc,
+                    tekst_slowa_kluczowe=txt_sk,
+                    tekst_rasy_przyklady="",
+                    tekst_klasy_przyklady=""
+                )
+                raw_response = result_editor["raw"]
+                edited_json, logs = handle_quest_stage_result(
+                    result=result_editor,
+                    raw_response=raw_response,
+                    llm=_editor,
+                    misja_id=misja_id,
+                    stage="editor",
+                    started_at=started_at,
+                    wsad_json=wsad_json,
+                    silnik=silnik,
+                    status_zapisu="2_ZREDAGOWANO"
+                )
+                print(edited_json)
+                logs_json = json.dumps(logs, indent=2, ensure_ascii=False)
+                print(logs_json)
+
+# ========================================================================================
+# ====================================== EXCEPTIONS ======================================
+# ========================================================================================
+
             except Exception as e:
-                if raw_response is not None:
+                if raw_response is not None and current_llm is not None and current_stage is not None:
                     dms = round((time.perf_counter() - started_at) * 1000) if started_at is not None else None
                     err = str(e)
                     parsing_error = err[:997] + "..." if len(err) > 1000 else err
 
                     logs = create_logs(
                         raw_response=raw_response,
-                        llm=llm,
+                        llm=current_llm,
                         misja_id_moje_fk=misja_id,
-                        stage="translator",
+                        stage=current_stage,
                         duration_ms=dms,
                         parsing_error=parsing_error,
                         input_chars=len(wsad_json),
                         output_chars=0
                     )
-                    #print(json.dumps(logs, indent=2, ensure_ascii=False))
+                    print(json.dumps(logs, indent=2, ensure_ascii=False))
                     save_ai_logs_to_db(silnik=silnik, logs=logs)
                 else:
-                    print(f"---NIEZNANY BŁĄD: {e}")
+                    print(f"---BŁĄD ETAPU {current_stage or 'unknown'}: {e}")
 
             print(f"+++[ID: {misja_id}] GOTOWE (Tlumaczenie) +++")
 
@@ -280,8 +369,7 @@ def misje_dialogi_przetlumacz_zredaguj_zapisz(
     fabula: str | None = None, 
     dodatek: str | None = None,
     id_misji: int | None = None, 
-    liczba_watkow: int = 4,
-    dostawca_redakcja: str = "gemini"
+    liczba_watkow: int = 4
 ):
     warunki_sql = sklej_warunki_w_WHERE(kraina, fabula, dodatek, id_misji)
 
