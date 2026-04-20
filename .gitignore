@@ -6,6 +6,7 @@ projects/World of Warcraft/python-etl/moduly/ai_prompty_v2.py
 projects/World of Warcraft/python-etl/moduly/ai_prompty_arch.py
 projects/World of Warcraft/python-etl/moduly/ai_core.py
 projects/World of Warcraft/python-etl/moduly/sciezki.py
+projects/World of Warcraft/python-etl/moduly/ai_przyklady_ras_tony_teksty.py
 projects/World of Warcraft/python-etl/scraper_wiki_async.py
 projects/World of Warcraft/python-etl/scraper_wiki_main.py
 projects/World of Warcraft/python-etl/scraper_wowhead.py

@@ -144,7 +144,7 @@ def pobierz_przetworz_zapisz_batch_lista(
         print(f"Błąd w batchu {min_b}-{max_b}: {e}")
         return None
 
-def _require_mapping(value: Any, path: str, errors: list[str]) -> dict[str, Any] | None:
+def require_mapping(value: Any, path: str, errors: list[str]) -> dict[str, Any] | None:
     if isinstance(value, dict):
         return value
 
@@ -152,7 +152,7 @@ def _require_mapping(value: Any, path: str, errors: list[str]) -> dict[str, Any]
     return None
 
 
-def _require_list(value: Any, path: str, errors: list[str]) -> list[Any] | None:
+def require_list(value: Any, path: str, errors: list[str]) -> list[Any] | None:
     if isinstance(value, list):
         return value
 
@@ -160,7 +160,7 @@ def _require_list(value: Any, path: str, errors: list[str]) -> list[Any] | None:
     return None
 
 
-def _require_keys(value: dict[str, Any] | None, path: str, keys: list[str], errors: list[str]) -> None:
+def require_keys(value: dict[str, Any] | None, path: str, keys: list[str], errors: list[str]) -> None:
     if value is None:
         return
 
@@ -176,32 +176,32 @@ def validate_quest_content_response(parsed: Any, misja_id: int, stage: str) -> N
     """
     errors: list[str] = []
 
-    root = _require_mapping(parsed, "root", errors)
-    _require_keys(root, "root", ["Misje_PL", "Dialogi_PL"], errors)
+    root = require_mapping(parsed, "root", errors)
+    require_keys(root, "root", ["Misje_PL", "Dialogi_PL"], errors)
 
-    misje = _require_mapping(root.get("Misje_PL") if root else None, "Misje_PL", errors)
-    _require_keys(
+    misje = require_mapping(root.get("Misje_PL") if root else None, "Misje_PL", errors)
+    require_keys(
         misje,
         "Misje_PL",
         ["Podsumowanie_PL", "Cele_PL", "Treść_PL", "Postęp_PL", "Zakończenie_PL", "Nagrody_PL"],
         errors
     )
 
-    podsumowanie = _require_mapping(misje.get("Podsumowanie_PL") if misje else None, "Misje_PL.Podsumowanie_PL", errors)
-    _require_keys(podsumowanie, "Misje_PL.Podsumowanie_PL", ["Tytuł"], errors)
+    podsumowanie = require_mapping(misje.get("Podsumowanie_PL") if misje else None, "Misje_PL.Podsumowanie_PL", errors)
+    require_keys(podsumowanie, "Misje_PL.Podsumowanie_PL", ["Tytuł"], errors)
 
-    cele = _require_mapping(misje.get("Cele_PL") if misje else None, "Misje_PL.Cele_PL", errors)
-    _require_keys(cele, "Misje_PL.Cele_PL", ["Główny", "Podrzędny"], errors)
+    cele = require_mapping(misje.get("Cele_PL") if misje else None, "Misje_PL.Cele_PL", errors)
+    require_keys(cele, "Misje_PL.Cele_PL", ["Główny", "Podrzędny"], errors)
 
-    dialogi = _require_mapping(root.get("Dialogi_PL") if root else None, "Dialogi_PL", errors)
-    _require_keys(dialogi, "Dialogi_PL", ["Gossipy_Dymki_PL"], errors)
+    dialogi = require_mapping(root.get("Dialogi_PL") if root else None, "Dialogi_PL", errors)
+    require_keys(dialogi, "Dialogi_PL", ["Gossipy_Dymki_PL"], errors)
 
-    bloki = _require_list(dialogi.get("Gossipy_Dymki_PL") if dialogi else None, "Dialogi_PL.Gossipy_Dymki_PL", errors)
+    bloki = require_list(dialogi.get("Gossipy_Dymki_PL") if dialogi else None, "Dialogi_PL.Gossipy_Dymki_PL", errors)
     if bloki is not None:
         for idx, blok_raw in enumerate(bloki):
             blok_path = f"Dialogi_PL.Gossipy_Dymki_PL[{idx}]"
-            blok = _require_mapping(blok_raw, blok_path, errors)
-            _require_keys(blok, blok_path, ["id", "typ", "npc_pl", "wypowiedzi_PL"], errors)
+            blok = require_mapping(blok_raw, blok_path, errors)
+            require_keys(blok, blok_path, ["id", "typ", "npc_pl", "wypowiedzi_PL"], errors)
 
             if blok is not None and "typ" in blok and blok["typ"] not in ("gossip", "dymek"):
                 errors.append(f"{blok_path}.typ (nieprawidłowa wartość: {blok['typ']!r})")
@@ -383,6 +383,7 @@ def przetworz_pojedyncza_misje(
                     tekst_pomocniczy="",
                     tekst_npc=txt_npc,
                     tekst_slowa_kluczowe=txt_sk,
+                    tekst_wytyczne_rasy="",
                     tekst_rasy_przyklady="",
                     tekst_klasy_przyklady=""
                 )

@@ -299,6 +299,10 @@ prompt_editor = ChatPromptTemplate.from_messages(
         <mapowania_slow_kluczowych>
         {tekst_slowa_kluczowe}
         </mapowania_slow_kluczowych>
+         
+        <wytyczne_dla_ras>
+        {tekst_wytyczne_rasy}
+        </wytyczne_dla_ras> 
 
         <przyklady_stylu_ras>
         {tekst_rasy_przyklady}
@@ -348,6 +352,7 @@ def editor(
         tekst_pomocniczy,
         tekst_npc,
         tekst_slowa_kluczowe,
+        tekst_wytyczne_rasy,
         tekst_rasy_przyklady,
         tekst_klasy_przyklady
     ) -> QuestContentResult:
@@ -368,6 +373,7 @@ def editor(
             "tekst_pomocniczy": tekst_lub_placeholder(tekst_pomocniczy, "- brak wersji niemieckiej dla tej misji"),
             "tekst_npc": tekst_lub_placeholder(tekst_npc, "- brak mapowań NPC dla tej misji"),
             "tekst_slowa_kluczowe": tekst_lub_placeholder(tekst_slowa_kluczowe, "- brak mapowań słów kluczowych dla tej misji"),
+            "tekst_wytyczne_rasy": tekst_lub_placeholder(tekst_wytyczne_rasy, "- brak wytycznych dla tych ras"),
             "tekst_rasy_przyklady": tekst_lub_placeholder(tekst_rasy_przyklady, "- brak przykładów redakcji dla tych ras"),
             "tekst_klasy_przyklady": tekst_lub_placeholder(tekst_klasy_przyklady, "- brak przykładów redakcji dla tych klas"),
         }
