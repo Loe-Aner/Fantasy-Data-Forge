@@ -1,49 +1,53 @@
-from typing import Literal, TypedDict
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Literal
 
 from langchain_core.messages import AIMessage
+from typing_extensions import Annotated, TypedDict
 
 
-class StrictBaseModel(BaseModel):
-    """
-    Bazowa klasa Pydantic dla schematów odpowiedzi AI.
-    Dziedziczą po niej poniższe klasy, aby nie powtarzać wspólnej konfiguracji modelu.
-    """
-    model_config = ConfigDict(extra="forbid")
+class QuestSummaryPL(TypedDict):
+    """Podsumowanie misji."""
+
+    Tytuł: Annotated[str, ..., "Tytuł misji"]
 
 
-class QuestSummaryPL(StrictBaseModel):
-    Tytuł: str = Field(description="Tytuł misji")
+class QuestObjectivesPL(TypedDict):
+    """Cele misji."""
+
+    Główny: Annotated[dict[str, str], ..., "Główne cele misji mapowane numerem linii"]
+    Podrzędny: Annotated[dict[str, str], ..., "Podrzędne cele misji mapowane numerem linii"]
 
 
-class QuestObjectivesPL(StrictBaseModel):
-    Główny: dict[str, str] = Field(description="Główne cele misji")
-    Podrzędny: dict[str, str] = Field(description="Podrzędne cele misji")
+class DialogueBlockPL(TypedDict):
+    """Blok dialogowy misji."""
+
+    id: Annotated[int, ..., "Identyfikator bloku dialogowego"]
+    typ: Annotated[Literal["gossip", "dymek"], ..., "Typ bloku dialogowego"]
+    npc_pl: Annotated[str, ..., "Polska nazwa NPC wypowiadającego kwestie w tym bloku"]
+    wypowiedzi_PL: Annotated[dict[str, str], ..., "Kwestie dialogowe mapowane numerem linii"]
 
 
-class DialogueBlockPL(StrictBaseModel):
-    id: int = Field(description="Identyfikator bloku dialogowego")
-    typ: Literal["gossip", "dymek"] = Field(description="Typ bloku dialogowego")
-    npc_pl: str = Field(description="Polska nazwa NPC wypowiadającego kwestie w tym bloku")
-    wypowiedzi_PL: dict[str, str] = Field(description="Kwestie dialogowe mapowane numerem linii")
+class QuestPL(TypedDict):
+    """Polska treść misji."""
+
+    Podsumowanie_PL: Annotated[QuestSummaryPL, ..., "Podsumowanie misji"]
+    Cele_PL: Annotated[QuestObjectivesPL, ..., "Cele misji"]
+    Treść_PL: Annotated[dict[str, str], ..., "Główna treść misji mapowana numerem linii"]
+    Postęp_PL: Annotated[dict[str, str], ..., "Teksty postępu misji mapowane numerem linii"]
+    Zakończenie_PL: Annotated[dict[str, str], ..., "Teksty zakończenia misji mapowane numerem linii"]
+    Nagrody_PL: Annotated[dict[str, str], ..., "Sekcja nagród mapowana numerem linii"]
 
 
-class QuestPL(StrictBaseModel):
-    Podsumowanie_PL: QuestSummaryPL = Field(description="Podsumowanie misji")
-    Cele_PL: QuestObjectivesPL = Field(description="Cele misji")
-    Treść_PL: dict[str, str] = Field(description="Główna treść misji")
-    Postęp_PL: dict[str, str] = Field(description="Teksty postępu misji")
-    Zakończenie_PL: dict[str, str] = Field(description="Teksty zakończenia misji")
-    Nagrody_PL: dict[str, str] = Field(description="Sekcja nagród")
-    
+class DialoguesPL(TypedDict):
+    """Polskie dialogi misji."""
 
-class DialoguesPL(StrictBaseModel):
-    Gossipy_Dymki_PL: list[DialogueBlockPL] = Field(description="Lista bloków dialogowych")
+    Gossipy_Dymki_PL: Annotated[list[DialogueBlockPL], ..., "Lista bloków dialogowych"]
 
 
-class QuestContentResponse(StrictBaseModel):
-    Misje_PL: QuestPL = Field(description="Polska treść misji")
-    Dialogi_PL: DialoguesPL = Field(description="Polskie dialogi misji")
+class QuestContentResponse(TypedDict):
+    """Pełna polska treść misji i dialogów."""
+
+    Misje_PL: Annotated[QuestPL, ..., "Polska treść misji"]
+    Dialogi_PL: Annotated[DialoguesPL, ..., "Polskie dialogi misji"]
 
 
 class QuestContentResult(TypedDict):

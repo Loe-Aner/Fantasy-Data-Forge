@@ -67,36 +67,48 @@ ELEMENTY NIETŁUMACZALNE I PLACEHOLDERY
 - Nie zamieniaj sekwencji escape na rzeczywiste znaki.
 
 ZASADY STRUKTURY I DANYCH
-- Obiekt wyjściowy musi być zgodny ze schematem odpowiedzi dostarczonym przez runtime.
-- Zwróć strukturę równoważną wejściowemu JSON-owi, zachowując te same sekcje i to samo zagnieżdżenie, ale z polskimi sufiksami i polami docelowymi.
-- Używaj dokładnie tych kluczy top-level: `Misje_PL` oraz `Dialogi_PL`.
-- W `Misje_PL` używaj dokładnie tych kluczy: `Podsumowanie_PL`, `Cele_PL`, `Treść_PL`, `Postęp_PL`, `Zakończenie_PL`, `Nagrody_PL`.
-- W `Podsumowanie_PL` używaj klucza `Tytuł`.
-- W `Cele_PL` używaj dokładnie kluczy `Główny` oraz `Podrzędny`.
-- W `Dialogi_PL` używaj dokładnie klucza `Gossipy_Dymki_PL`.
-- Każdy element w `Gossipy_Dymki_PL` musi mieć dokładnie klucze: `id`, `typ`, `npc_pl`, `wypowiedzi_PL`.
-- Zamieniaj wyłącznie klucze językowe i pola docelowe według schematu:
-  `Misje_EN` -> `Misje_PL`
-  `Podsumowanie_EN` -> `Podsumowanie_PL`
-  `Cele_EN` -> `Cele_PL`
-  `Treść_EN` -> `Treść_PL`
-  `Postęp_EN` -> `Postęp_PL`
-  `Zakończenie_EN` -> `Zakończenie_PL`
-  `Nagrody_EN` -> `Nagrody_PL`
-  `Dialogi_EN` -> `Dialogi_PL`
-  `Gossipy_Dymki_EN` -> `Gossipy_Dymki_PL`
-  `npc_en` -> `npc_pl`
-  `wypowiedzi_EN` -> `wypowiedzi_PL`
-- Nie zmieniaj żadnych innych nazw kluczy.
-- `Dialogi_PL` ma być zawsze obok `Misje_PL`, nigdy wewnątrz `Misje_PL`.
-- Nie dodawaj, nie usuwaj i nie zmieniaj żadnych obiektów, list, identyfikatorów, enumów ani wartości technicznych.
-- Zachowaj kolejność elementów.
-- Zachowaj liczbę elementów w listach i liczbę linii w blokach dialogowych.
-- Nie łącz i nie dziel elementów między polami lub listami.
-- Puste pola mają pozostać puste. Puste listy mają pozostać puste.
-- Nie zamieniaj pustego stringa na `null` ani `null` na pusty string.
-- Tłumacz tylko treści językowe przeznaczone dla gracza.
-- Nazwy pól, klucze schematu, identyfikatory, nazwy funkcji, nazwy zmiennych i inne klucze techniczne nie podlegają tłumaczeniu.
+Zwróć zawsze kompletny JSON w dokładnie poniższej strukturze; zachowaj wszystkie sekcje, listy, ID, enum `typ`, kolejność i numerowane klucze z wejścia, a tłumacz wyłącznie wartości tekstowe.
+```json
+{{
+  "Misje_PL": {{
+    "Podsumowanie_PL": {{
+      "Tytuł": ""
+    }},
+    "Cele_PL": {{
+      "Główny": {{
+        "1": ""
+      }},
+      "Podrzędny": {{
+        "1": ""
+      }}
+    }},
+    "Treść_PL": {{
+      "1": ""
+    }},
+    "Postęp_PL": {{
+      "1": ""
+    }},
+    "Zakończenie_PL": {{
+      "1": ""
+    }},
+    "Nagrody_PL": {{
+      "1": ""
+    }}
+  }},
+  "Dialogi_PL": {{
+    "Gossipy_Dymki_PL": [
+      {{
+        "id": 1,
+        "typ": "dymek",
+        "npc_pl": "",
+        "wypowiedzi_PL": {{
+          "1": ""
+        }}
+      }}
+    ]
+  }}
+}}
+```
 
 KONTROLA KOŃCOWA
 Przed zwróceniem odpowiedzi sprawdź po cichu:
@@ -118,15 +130,13 @@ Nie tłumaczysz od zera. Redagujesz istniejący polski draft tak, aby nadawał s
 CEL
 Dostarcz finalną wersję polską, która:
 - zachowuje dokładny sens źródła EN,
-- brzmi naturalnie, płynnie i klimatycznie po polsku,
+- brzmi naturalnie, płynnie, klimatycznie i dobrze po polsku,
 - utrzymuje spójność lore, nazw i głosu postaci,
 - nie narusza placeholderów, struktury, ID ani wartości technicznych.
 
 TRYB PRACY
 - Przeczytaj EN, draft PL, DE oraz materiały pomocnicze jako jeden pakiet.
 - Traktuj draft PL jako bazę do redakcji, nie jako tekst do swobodnego przepisania.
-- Zmieniaj tylko to, co realnie poprawia wynik.
-- Jeżeli dane zdanie jest już dobre, zostaw je w spokoju.
 - Nie komentuj procesu. Nie wyjaśniaj decyzji. Zwróć wyłącznie wynik zgodny ze schematem odpowiedzi.
 
 PRIORYTET REDAKCJI
@@ -176,22 +186,48 @@ ELEMENTY NIETŁUMACZALNE I PLACEHOLDERY
 - Jeżeli placeholder jest już poprawnie użyty, nie ruszaj go.
 
 ZASADY STRUKTURY I DANYCH
-- Obiekt wyjściowy musi być zgodny ze schematem odpowiedzi dostarczonym przez runtime.
-- Modyfikujesz wyłącznie treści po polsku w obiekcie docelowym.
-- Zachowaj dokładnie istniejącą polską strukturę JSON-a.
-- Używaj dokładnie tych kluczy top-level: `Misje_PL` oraz `Dialogi_PL`.
-- W `Misje_PL` używaj dokładnie tych kluczy: `Podsumowanie_PL`, `Cele_PL`, `Treść_PL`, `Postęp_PL`, `Zakończenie_PL`, `Nagrody_PL`.
-- W `Podsumowanie_PL` używaj klucza `Tytuł`.
-- W `Cele_PL` używaj dokładnie kluczy `Główny` oraz `Podrzędny`.
-- W `Dialogi_PL` używaj dokładnie klucza `Gossipy_Dymki_PL`.
-- Każdy element w `Gossipy_Dymki_PL` musi mieć dokładnie klucze: `id`, `typ`, `npc_pl`, `wypowiedzi_PL`.
-- `Dialogi_PL` ma być zawsze obok `Misje_PL`, nigdy wewnątrz `Misje_PL`.
-- Nie zmieniaj kluczy, układu, list, ID, enumów ani wartości technicznych.
-- Zachowaj kolejność elementów.
-- Zachowaj liczbę elementów w listach i liczbę linii w blokach dialogowych.
-- Nie scalaj, nie dziel i nie przenoś linii między elementami.
-- Puste pola mają pozostać puste. Puste listy mają pozostać puste.
-- Nie zamieniaj pustego stringa na `null` ani `null` na pusty string.
+Zwróć zawsze kompletny JSON w dokładnie poniższej strukturze; zachowaj wszystkie sekcje, listy, ID, enum `typ`, kolejność i numerowane klucze z draftu PL, a redaguj wyłącznie wartości tekstowe.
+```json
+{{
+  "Misje_PL": {{
+    "Podsumowanie_PL": {{
+      "Tytuł": ""
+    }},
+    "Cele_PL": {{
+      "Główny": {{
+        "1": ""
+      }},
+      "Podrzędny": {{
+        "1": ""
+      }}
+    }},
+    "Treść_PL": {{
+      "1": ""
+    }},
+    "Postęp_PL": {{
+      "1": ""
+    }},
+    "Zakończenie_PL": {{
+      "1": ""
+    }},
+    "Nagrody_PL": {{
+      "1": ""
+    }}
+  }},
+  "Dialogi_PL": {{
+    "Gossipy_Dymki_PL": [
+      {{
+        "id": 1,
+        "typ": "dymek",
+        "npc_pl": "",
+        "wypowiedzi_PL": {{
+          "1": ""
+        }}
+      }}
+    ]
+  }}
+}}
+```
 
 JAK REDAGOWAĆ
 - Usuwaj kalki, sztuczny angielski szyk i nienaturalne redundancje.
@@ -289,7 +325,8 @@ def translator(
     
     structured_model = prompt_translator | llm.with_structured_output(
         QuestContentResponse,
-        method="function_calling",
+        method="json_schema",
+        strict=False,
         include_raw=True
     )
     result = structured_model.invoke(
@@ -320,7 +357,8 @@ def editor(
 
     structured_model = prompt_editor | llm.with_structured_output(
         QuestContentResponse,
-        method="function_calling",
+        method="json_schema",
+        strict=False,
         include_raw=True
     )
     result = structured_model.invoke(

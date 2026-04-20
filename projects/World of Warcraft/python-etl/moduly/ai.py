@@ -3,6 +3,7 @@ import os
 import time
 import concurrent.futures
 from datetime import datetime
+from typing import Any
 
 from google.genai import types as genai_types
 
@@ -143,6 +144,73 @@ def pobierz_przetworz_zapisz_batch_lista(
         print(f"Błąd w batchu {min_b}-{max_b}: {e}")
         return None
 
+def _require_mapping(value: Any, path: str, errors: list[str]) -> dict[str, Any] | None:
+    if isinstance(value, dict):
+        return value
+
+    errors.append(f"{path} (oczekiwano obiektu)")
+    return None
+
+
+def _require_list(value: Any, path: str, errors: list[str]) -> list[Any] | None:
+    if isinstance(value, list):
+        return value
+
+    errors.append(f"{path} (oczekiwano listy)")
+    return None
+
+
+def _require_keys(value: dict[str, Any] | None, path: str, keys: list[str], errors: list[str]) -> None:
+    if value is None:
+        return
+
+    for key in keys:
+        if key not in value:
+            errors.append(f"{path}.{key}")
+
+
+def validate_quest_content_response(parsed: Any, misja_id: int, stage: str) -> None:
+    """
+    Minimalna walidacja shape odpowiedzi AI.
+    TypedDict pomaga zbudować schema dla modelu, ale runtime'owo parsed jest zwykłym dict.
+    """
+    errors: list[str] = []
+
+    root = _require_mapping(parsed, "root", errors)
+    _require_keys(root, "root", ["Misje_PL", "Dialogi_PL"], errors)
+
+    misje = _require_mapping(root.get("Misje_PL") if root else None, "Misje_PL", errors)
+    _require_keys(
+        misje,
+        "Misje_PL",
+        ["Podsumowanie_PL", "Cele_PL", "Treść_PL", "Postęp_PL", "Zakończenie_PL", "Nagrody_PL"],
+        errors
+    )
+
+    podsumowanie = _require_mapping(misje.get("Podsumowanie_PL") if misje else None, "Misje_PL.Podsumowanie_PL", errors)
+    _require_keys(podsumowanie, "Misje_PL.Podsumowanie_PL", ["Tytuł"], errors)
+
+    cele = _require_mapping(misje.get("Cele_PL") if misje else None, "Misje_PL.Cele_PL", errors)
+    _require_keys(cele, "Misje_PL.Cele_PL", ["Główny", "Podrzędny"], errors)
+
+    dialogi = _require_mapping(root.get("Dialogi_PL") if root else None, "Dialogi_PL", errors)
+    _require_keys(dialogi, "Dialogi_PL", ["Gossipy_Dymki_PL"], errors)
+
+    bloki = _require_list(dialogi.get("Gossipy_Dymki_PL") if dialogi else None, "Dialogi_PL.Gossipy_Dymki_PL", errors)
+    if bloki is not None:
+        for idx, blok_raw in enumerate(bloki):
+            blok_path = f"Dialogi_PL.Gossipy_Dymki_PL[{idx}]"
+            blok = _require_mapping(blok_raw, blok_path, errors)
+            _require_keys(blok, blok_path, ["id", "typ", "npc_pl", "wypowiedzi_PL"], errors)
+
+            if blok is not None and "typ" in blok and blok["typ"] not in ("gossip", "dymek"):
+                errors.append(f"{blok_path}.typ (nieprawidłowa wartość: {blok['typ']!r})")
+
+    if errors:
+        missing = "; ".join(errors)
+        raise ValueError(f"---[ID: {misja_id}] Niepełna lub błędna struktura etapu {stage}: {missing}")
+
+
 def handle_quest_stage_result(
     result,
     raw_response,
@@ -167,6 +235,8 @@ def handle_quest_stage_result(
     else:
         parsed_dict = parsed
         parsed_json = json.dumps(parsed_dict, indent=2, ensure_ascii=False)
+
+    validate_quest_content_response(parsed_dict, misja_id=misja_id, stage=stage)
     dms = round((time.perf_counter() - started_at) * 1000) if started_at is not None else None
 
     logs = create_logs(
