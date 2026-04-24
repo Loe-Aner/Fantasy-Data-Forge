@@ -127,7 +127,7 @@ MODEL_PRICING = {
         "input_per_1m": 0.5,
         "output_per_1m": 3.0
     },
-    "qwen3.5-397b-a17b": {
+    "qwen3.5-397B-A17B": {
         "provider": "qwen",
         "langchain_package": ["langchain-community", "langchain-qwq"],
         "langchain_class": ["ChatTongyi", "ChatQwen"],
@@ -143,7 +143,7 @@ MODEL_PRICING = {
         "input_per_1m": 0.3,
         "output_per_1m": 2.4
     },
-    "glm-5.1": {
+    "GLM-5.1": {
         "provider": "glm",
         "langchain_package": ["langchain-community", "langchain-openai"],
         "langchain_class": ["ChatZhipuAI", "ChatOpenAI"],
@@ -151,7 +151,7 @@ MODEL_PRICING = {
         "input_per_1m": 1.4,
         "output_per_1m": 4.4
     },
-    "glm-5": {
+    "GLM-5": {
         "provider": "glm",
         "langchain_package": ["langchain-community", "langchain-openai"],
         "langchain_class": ["ChatZhipuAI", "ChatOpenAI"],
@@ -167,7 +167,15 @@ MODEL_PRICING = {
         "input_per_1m": 0.30,
         "output_per_1m": 1.20
     },
-    "kimi-k2.5": {
+    "Kimi-K2.6": {
+        "provider": "moonshot",
+        "langchain_package": "langchain-moonshot",
+        "langchain_class": "ChatMoonshot",
+        "currency": "USD",
+        "input_per_1m": 0.95,
+        "output_per_1m": 4.00
+    },
+    "Kimi-K2.5": {
         "provider": "moonshot",
         "langchain_package": "langchain-moonshot",
         "langchain_class": "ChatMoonshot",
