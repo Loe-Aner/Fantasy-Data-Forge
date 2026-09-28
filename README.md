@@ -20,7 +20,7 @@ A ponieważ najlepsze projekty powstają tam, gdzie technologia spotyka pasję -
 | | |
 | :--- | :--- |
 | **🛡️ Klasa** | Ekspert ds. Raportowania (BI & CRM) |
-| **⚔️ Specjalizacja** | Data & BI Engineering ; AI Engineering ; Backend & integracje |
+| **⚔️ Specjalizacja** | BI Engineering ; AI Engineering |
 | **✨ Umiejętność pasywna** | *„Pod Maską"* - potrzeba zrozumienia, **dlaczego** coś działa, nie tylko jak tego użyć |
 | **📚 Lore** | WoW ; Warhammer FB/40K ; Harry Potter ; Wiedźmin ; Dragon Age ; Śródziemie |
 
